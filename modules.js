@@ -70,5 +70,11 @@ window.AUTO_MODULES = [
     subtitle: 'Automotive · Class IX / X',
     file: 'suspension.html', color: '#a855f7',
     icon: '<path d="M7 3h10M7 21h10M6 3c0 3 12 3 12 6s-12 3-12 6 12 3 12 6"/>'
+  },
+  {
+    id: 'turbo', label: 'Turbo', title: 'Turbocharger',
+    subtitle: 'Forced Induction · Simulator',
+    file: 'turbocharger.html', color: '#ef4444',
+    icon: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><line x1="12" y1="4" x2="12" y2="9.5"/><line x1="12" y1="14.5" x2="12" y2="20"/><line x1="4" y1="12" x2="9.5" y2="12"/><line x1="14.5" y1="12" x2="20" y2="12"/>'
   }
 ];
