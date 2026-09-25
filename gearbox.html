@@ -325,12 +325,14 @@
       </div>
       <div id="stroke-desc" style="margin-top:12px">
         <strong>Gearbox.</strong> The input shaft drives the countershaft through a single gear pair. Fixed gears on the countershaft
-        always spin at the same rate. Each output gear is free on the output shaft until its synchro hub locks it — the selected
-        gear then forces the output shaft to turn at that gear's ratio. Reverse uses an extra idler gear to flip the output direction.
+        always spin at the same rate. Every gear on the output shaft is permanently meshed with the countershaft — that mesh never
+        breaks. What actually engages or disengages a gear is the small toothed <em>dog collar</em> next to it: the sliding synchro
+        hub moves over and locks its own teeth into that collar, clamping the gear to the output shaft. Move the hub away and the
+        gear keeps spinning freely, still meshed, but no longer driving anything. Reverse uses an extra idler gear to flip the
+        output direction.
         <div style="margin-top:8px;font-size:11px;color:#9aa3b2">
-          Watch the hub, not just the colour: only the engaged gear's synchro hub slides over and the gear turns fully solid with a
-          glowing ring. Every other gear stays dim and semi-transparent — it's still spinning, but it isn't locked to the output
-          shaft, so it isn't transmitting any power.
+          Watch the small gold collar next to each gear, not the main gear teeth: only the hub actually slides across and locks
+          onto <em>one</em> collar at a time — that's the real engage/disengage motion.
         </div>
         <div style="margin-top:8px;font-size:11px;color:#9aa3b2">
           Typical passenger car ratios — 1st&nbsp;3.50:1 · 2nd&nbsp;2.00:1 · 3rd&nbsp;1.40:1 · 4th&nbsp;1.00:1 (direct) · R&nbsp;3.60:1
@@ -570,16 +572,26 @@
   gbCounterGrp.add(cogOnX(G4_X, R_G4_BOT, gbMats.gearFix, gbMats.gearFixT, Math.PI / teethFor(R_G4_BOT)));
   gbCounterGrp.add(cogOnX(GR_X, R_GR_BOT, gbMats.gearFix, gbMats.gearFixT, Math.PI / teethFor(R_GR_BOT)));
 
-  function freeGear(x, r, markerColor) {
+  function freeGear(x, r, markerColor, dogSide) {
     const g = new THREE.Group(); g.position.set(x, SH_Y_TOP, 0);
-    /* Each free gear gets its OWN material clone (not the shared gbMats.gearFry) so it can be
-       dimmed independently — only the engaged gear stays fully solid; the rest read as "not
-       transmitting power" instead of all looking equally meshed. */
-    const matBody  = gbMats.gearFry.clone();  matBody.transparent  = true; matBody.opacity  = 0.4;
-    const matTooth = gbMats.gearFryT.clone(); matTooth.transparent = true; matTooth.opacity = 0.4;
-    const cog = Base.makeCog(r, 0.10, teethFor(r), r*0.15, r*0.12, matBody, matTooth);
+    const cog = Base.makeCog(r, 0.10, teethFor(r), r*0.15, r*0.12, gbMats.gearFry, gbMats.gearFryT);
     cog.rotation.z = Math.PI/2;
     g.add(cog);
+
+    /* Dog-clutch collar: a small toothed ring fixed to this gear, on the side facing its hub.
+       This — not the gear teeth — is the actual disengage/engage mechanism: the gear itself
+       never leaves mesh with the countershaft; only this collar gets locked to (or freed from)
+       the sliding hub collar. dogSide = +1/-1 says which face of the gear the collar sits on;
+       reverse (dogSide 0) has no hub in this model, so it gets none. */
+    let dogTeeth = null;
+    if (dogSide) {
+      const collarX = dogSide * 0.09;
+      const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.05,CYL_SEGS), gbMats.hub);
+      collar.rotation.z = Math.PI/2; collar.position.x = collarX; g.add(collar);
+      dogTeeth = makeDogRing(0.16, 10, 0.03, 0.05, gbMats.hubT);
+      dogTeeth.position.x = collarX + dogSide * 0.03;
+      g.add(dogTeeth);
+    }
     const marker = new THREE.Mesh(new THREE.BoxGeometry(0.10,0.14,0.05),
       new THREE.MeshBasicMaterial({ color: markerColor }));
     marker.position.set(0, r + 0.055, 0); g.add(marker);
@@ -597,14 +609,28 @@
     );
     glow.rotation.y = Math.PI/2; glow.visible = false; g.add(glow);
     gearboxGroup.add(g);
-    return { group: g, ring, glow, matBody, matTooth };
+    return { group: g, ring, glow, dogTeeth };
+  }
+  /* A ring of small teeth protruding along the shaft axis (local +x/-x), used for both the
+     hub's collar faces and each gear's dog collar — the two interlock visually when the hub
+     slides in. */
+  function makeDogRing(r, count, toothW, toothD, mat) {
+    const grp = new THREE.Group();
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2;
+      const tooth = new THREE.Mesh(new THREE.BoxGeometry(toothD, toothW, toothW), mat);
+      tooth.position.set(0, r * Math.cos(a), r * Math.sin(a));
+      tooth.rotation.x = a;
+      grp.add(tooth);
+    }
+    return grp;
   }
   const gbFree = [
-    freeGear(G1_X, R_G1_TOP, 0x38bdf8),
-    freeGear(G2_X, R_G2_TOP, 0x22c55e),
-    freeGear(G3_X, R_G3_TOP, 0xf59e0b),
-    freeGear(G4_X, R_G4_TOP, 0xa855f7),
-    freeGear(GR_X, R_GR_TOP, 0xef4444)
+    freeGear(G1_X, R_G1_TOP, 0x38bdf8, +1),
+    freeGear(G2_X, R_G2_TOP, 0x22c55e, -1),
+    freeGear(G3_X, R_G3_TOP, 0xf59e0b, +1),
+    freeGear(G4_X, R_G4_TOP, 0xa855f7, -1),
+    freeGear(GR_X, R_GR_TOP, 0xef4444, 0)
   ];
 
   /* How far off-center the hub slides to physically "lock" onto a gear (in scene units). */
@@ -617,6 +643,8 @@
     for (const dx of [-0.12, 0.12]) {
       const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.185,0.185,0.04,CYL_SEGS), gbMats.hubT);
       ring.rotation.z = Math.PI/2; ring.position.x = dx; g.add(ring);
+      const teeth = makeDogRing(0.16, 10, 0.03, 0.05, gbMats.hubT);
+      teeth.position.x = dx + Math.sign(dx) * 0.035; g.add(teeth);
     }
     gbOutputGrp.add(g);
     const fork = new THREE.Group(); fork.position.set(xNeutral, SH_Y_TOP, 0);
@@ -707,26 +735,23 @@
     gbCounterGrp.rotation.x = gbAngCounter;
     gbOutputGrp.rotation.x  = gbAngOutput;
 
-    const fadeLerp = Math.min(1, dt * 5);
+    const hubLerp = Math.min(1, dt * 5);
 
     for (let i = 0; i < 5; i++) {
       gbFree[i].group.rotation.x = (gbCurrentGear === i+1) ? gbAngOutput : gbFreeAng[i];
       const isActive = (gbCurrentGear === i+1);
       gbFree[i].ring.visible = isActive;
       gbFree[i].glow.visible = isActive;
-      /* Only the engaged gear stays fully solid; every other gear fades to translucent so it
-         reads as free-spinning / not driving the output, instead of looking equally "meshed". */
-      const targetOp = isActive ? 1.0 : 0.4;
-      gbFree[i].matBody.opacity  += (targetOp - gbFree[i].matBody.opacity)  * fadeLerp;
-      gbFree[i].matTooth.opacity += (targetOp - gbFree[i].matTooth.opacity) * fadeLerp;
     }
 
     /* Slide each synchro hub toward whichever gear (if any) it's currently locking, and back to
-       its centered/neutral spot otherwise — this is the actual "engaging" motion. */
+       its centered/neutral spot otherwise. This is the real mechanism: the hub's dog teeth slide
+       up against the gear's own dog collar and lock it to the output shaft — the gear teeth
+       themselves never leave mesh with the countershaft. */
     const hub12Target = gbCurrentGear === 1 ? gbHub12.xLeft : gbCurrentGear === 2 ? gbHub12.xRight : gbHub12.xNeutral;
     const hub34Target = gbCurrentGear === 3 ? gbHub34.xLeft : gbCurrentGear === 4 ? gbHub34.xRight : gbHub34.xNeutral;
-    gbHub12.curX += (hub12Target - gbHub12.curX) * fadeLerp;
-    gbHub34.curX += (hub34Target - gbHub34.curX) * fadeLerp;
+    gbHub12.curX += (hub12Target - gbHub12.curX) * hubLerp;
+    gbHub34.curX += (hub34Target - gbHub34.curX) * hubLerp;
     gbHub12.group.position.x = gbHub12.curX; gbHub12.fork.position.x = gbHub12.curX;
     gbHub34.group.position.x = gbHub34.curX; gbHub34.fork.position.x = gbHub34.curX;
 
