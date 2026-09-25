@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0a0d13">
 <meta name="description" content="Interactive 3D automotive learning lab.">
+<meta name="author" content="Hassan J Khan">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -26,6 +27,7 @@
   --bg-elev:#141a26;
   --panel:rgba(20,26,38,.82);
   --accent:#38bdf8;
+  --accent-2:#a855f7;
   --text:#e8edf7;
   --text-dim:#94a3b8;
   --text-dimmer:#64748b;
@@ -48,6 +50,7 @@ html.light-theme{
   --bg-elev:#f0f3f8;
   --panel:rgba(255,255,255,.95);
   --accent:#2563eb;
+  --accent-2:#7c3aed;
   --text:#0a0d13;
   --text-dim:#475569;
   --text-dimmer:#64748b;
@@ -116,15 +119,36 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .brand-mark{
   width:40px;height:40px;flex:0 0 auto;
   border-radius:12px;
-  background:linear-gradient(135deg,#38bdf8,#a855f7);
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
   color:#0a0d13;
   display:grid;place-items:center;
-  box-shadow:0 6px 22px rgba(56,189,248,.28);
+  box-shadow:0 6px 22px color-mix(in srgb,var(--accent) 32%,transparent);
+  position:relative;
+  overflow:hidden;
+}
+.brand-mark::after{
+  content:"";
+  position:absolute;inset:0;
+  background:linear-gradient(120deg,transparent 40%,rgba(255,255,255,.35) 50%,transparent 60%);
+  transform:translateX(-120%);
+  animation:sheen 3.2s var(--ease) infinite;
+}
+@keyframes sheen{
+  0%,60%{transform:translateX(-120%)}
+  100%{transform:translateX(120%)}
 }
 .brand-mark svg{width:24px;height:24px}
 .brand-copy{flex:1;min-width:0}
 .brand-title{
   font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1.1;
+  display:flex;align-items:baseline;gap:6px;
+}
+.brand-title .brand-dot{
+  width:4px;height:4px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 8px var(--accent);
+  display:inline-block;
+  transform:translateY(-3px);
 }
 .brand-sub{
   font-size:11.5px;color:var(--text-dimmer);
@@ -152,12 +176,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
   border-radius:13px;
   height:42px;
   padding:0 14px;
-  transition:background .18s,border-color .18s;
+  transition:background .18s,border-color .18s,box-shadow .18s;
 }
 html.light-theme .search-wrap{background:rgba(15,23,42,.05)}
 .search-wrap:focus-within{
   background:rgba(255,255,255,.08);
-  border-color:var(--border-bright);
+  border-color:color-mix(in srgb,var(--accent) 40%,transparent);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 10%,transparent);
 }
 html.light-theme .search-wrap:focus-within{background:rgba(15,23,42,.08)}
 .search-wrap svg{
@@ -341,10 +366,68 @@ html.light-theme .recent-item{background:rgba(15,23,42,.04)}
   max-width:280px;margin:0 auto;
 }
 
+/* ─── About ─────────────────────────────────────────────── */
 .about-content{
   padding:8px 18px 40px;
   max-width:640px;margin:0 auto;
 }
+.about-hero{
+  position:relative;
+  border-radius:22px;
+  padding:26px 22px 24px;
+  margin-bottom:14px;
+  background:
+    radial-gradient(140% 120% at 0% 0%,
+      color-mix(in srgb,var(--accent) 22%,transparent) 0%,
+      transparent 55%),
+    radial-gradient(140% 120% at 100% 100%,
+      color-mix(in srgb,var(--accent-2) 22%,transparent) 0%,
+      transparent 55%),
+    rgba(255,255,255,.03);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+html.light-theme .about-hero{
+  background:
+    radial-gradient(140% 120% at 0% 0%,
+      color-mix(in srgb,var(--accent) 16%,white) 0%,
+      transparent 55%),
+    radial-gradient(140% 120% at 100% 100%,
+      color-mix(in srgb,var(--accent-2) 14%,white) 0%,
+      transparent 55%),
+    #fff;
+}
+.about-hero .ah-eyebrow{
+  font-size:10.5px;font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:10px;
+}
+.about-hero h2{
+  font-size:22px;font-weight:800;
+  letter-spacing:-.025em;
+  line-height:1.15;
+  margin-bottom:10px;
+}
+.about-hero p{
+  font-size:13.5px;line-height:1.6;
+  color:var(--text-dim);
+  max-width:440px;
+}
+.about-hero .ah-tags{
+  display:flex;flex-wrap:wrap;gap:6px;
+  margin-top:16px;
+}
+.about-hero .ah-tag{
+  font-size:10.5px;font-weight:700;
+  padding:5px 10px;border-radius:999px;
+  background:color-mix(in srgb,var(--accent) 14%,transparent);
+  color:var(--accent);
+  border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  letter-spacing:.01em;
+}
+
 .about-card{
   background:rgba(255,255,255,.045);
   border:1px solid var(--border);
@@ -362,24 +445,95 @@ html.light-theme .about-card{background:rgba(15,23,42,.04)}
   color:var(--text-dim);
 }
 .about-card p + p{margin-top:10px}
+.about-card strong{color:var(--text);font-weight:700}
+
+/* Maker signature card */
+.maker-card{
+  position:relative;
+  display:flex;align-items:center;gap:16px;
+  padding:20px;
+  border-radius:20px;
+  margin-bottom:14px;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb,var(--accent) 12%,transparent) 0%,
+      color-mix(in srgb,var(--accent-2) 10%,transparent) 100%);
+  border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);
+  overflow:hidden;
+}
+html.light-theme .maker-card{
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb,var(--accent) 10%,white) 0%,
+      color-mix(in srgb,var(--accent-2) 8%,white) 100%);
+}
+.maker-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 100% 0%,
+      color-mix(in srgb,var(--accent-2) 30%,transparent) 0%,
+      transparent 50%);
+  pointer-events:none;
+  opacity:.6;
+}
+.maker-avatar{
+  position:relative;
+  width:54px;height:54px;flex:0 0 auto;
+  border-radius:16px;
+  display:grid;place-items:center;
+  font-size:20px;font-weight:900;
+  letter-spacing:-.04em;
+  color:#0a0d13;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 40%,transparent);
+  z-index:1;
+}
+.maker-copy{
+  position:relative;
+  flex:1;min-width:0;
+  z-index:1;
+}
+.maker-role{
+  font-size:10.5px;font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:4px;
+}
+.maker-name{
+  font-size:18px;font-weight:800;
+  letter-spacing:-.02em;
+  line-height:1.15;
+  color:var(--text);
+}
+.maker-tag{
+  font-size:12px;color:var(--text-dim);
+  margin-top:4px;
+  line-height:1.4;
+}
+
 .about-credits{
   text-align:center;
   padding:24px 20px 0;
   font-size:11.5px;color:var(--text-dimmer);
-  line-height:1.6;
+  line-height:1.7;
 }
-.about-badges{
-  display:flex;flex-wrap:wrap;gap:8px;
-  margin-top:14px;
+.about-credits .dot{
+  display:inline-block;
+  width:3px;height:3px;
+  border-radius:50%;
+  background:var(--text-dimmer);
+  margin:0 6px;
+  transform:translateY(-3px);
+  opacity:.5;
 }
-.about-badge{
-  font-size:11px;font-weight:700;
-  padding:6px 11px;border-radius:999px;
-  background:rgba(255,255,255,.045);
-  border:1px solid var(--border);
+.about-credits .sig{
+  font-weight:700;
   color:var(--text-dim);
+  letter-spacing:.01em;
 }
-html.light-theme .about-badge{background:rgba(15,23,42,.04)}
 
 #bottom-nav{
   position:absolute;
@@ -421,7 +575,7 @@ html.light-theme .about-badge{background:rgba(15,23,42,.04)}
 .nav-tab:active{background:rgba(255,255,255,.05)}
 
 /* ═══════════════════════════════════════════════════════════════
-   MODULE SCREEN — no header bar, just floating buttons
+   MODULE SCREEN
    ═══════════════════════════════════════════════════════════════ */
 #module-screen{
   position:fixed;inset:0;
@@ -435,7 +589,6 @@ html.light-theme .about-badge{background:rgba(15,23,42,.04)}
 }
 #module-screen.active{transform:translateX(0)}
 
-/* Two floating buttons — top-left back, top-right more */
 .floating-btn{
   position:absolute;
   top:calc(10px + var(--safe-t));
@@ -460,7 +613,6 @@ html.light-theme .about-badge{background:rgba(15,23,42,.04)}
 #btn-back{left:calc(10px + var(--safe-l))}
 #btn-more{right:calc(10px + var(--safe-r))}
 
-/* Hidden m-title / m-sub holders (kept for JS compatibility) */
 .module-head-copy{display:none}
 
 #module-frame-host{
@@ -751,6 +903,10 @@ html.light-theme .sheet-reset{background:rgba(239,68,68,.08);color:#dc2626}
   pointer-events:none;
 }
 #boot-loader.hidden{opacity:0}
+.boot-inner{
+  display:flex;flex-direction:column;
+  align-items:center;gap:16px;
+}
 .boot-ring{
   width:36px;height:36px;
   border-radius:50%;
@@ -758,7 +914,25 @@ html.light-theme .sheet-reset{background:rgba(239,68,68,.08);color:#dc2626}
   border-top-color:var(--accent);
   animation:spin .9s linear infinite;
 }
+.boot-credit{
+  font-size:10.5px;font-weight:700;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--text-dimmer);
+  opacity:0;
+  animation:fadeUp .6s .35s var(--ease) forwards;
+}
+.boot-credit span{
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:.85;transform:translateY(0)}
+}
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{
@@ -799,14 +973,19 @@ html.light-theme .sheet-reset{background:rgba(239,68,68,.08);color:#dc2626}
   </defs>
 </svg>
 
-<div id="boot-loader"><div class="boot-ring"></div></div>
+<div id="boot-loader">
+  <div class="boot-inner">
+    <div class="boot-ring"></div>
+    <div class="boot-credit">Crafted by <span>Hassan J Khan</span></div>
+  </div>
+</div>
 
 <div id="home-screen">
   <header class="home-header">
     <div class="header-row">
       <div class="brand-mark"><svg><use href="#i-logo"/></svg></div>
       <div class="brand-copy">
-        <div class="brand-title">Auto Lab</div>
+        <div class="brand-title">Auto Lab<span class="brand-dot"></span></div>
         <div class="brand-sub" id="module-count">Interactive 3D learning</div>
       </div>
       <button id="install-btn" hidden aria-label="Install app">
@@ -839,7 +1018,6 @@ html.light-theme .sheet-reset{background:rgba(239,68,68,.08);color:#dc2626}
 </div>
 
 <div id="module-screen" aria-hidden="true">
-  <!-- Hidden title holders kept for JS compatibility -->
   <div class="module-head-copy">
     <div class="module-head-title" id="m-title">—</div>
     <div class="module-head-sub" id="m-sub">—</div>
@@ -847,12 +1025,10 @@ html.light-theme .sheet-reset{background:rgba(239,68,68,.08);color:#dc2626}
 
   <div id="module-frame-host"></div>
 
-  <!-- Floating back button — top-left -->
   <button class="floating-btn" id="btn-back" aria-label="Back">
     <svg><use href="#i-back"/></svg>
   </button>
 
-  <!-- Floating more button — top-right -->
   <button class="floating-btn" id="btn-more" aria-label="More options">
     <svg><use href="#i-more"/></svg>
   </button>
@@ -983,7 +1159,8 @@ function pushRecent(id){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   EMBED FIX — info chip positioned between the two floating buttons
+   EMBED FIX — injects into each module iframe to keep the shell
+   chrome from colliding with module-owned UI.
    ═══════════════════════════════════════════════════════════════ */
 function injectEmbedFix(fr){
   try{
@@ -1387,27 +1564,50 @@ function renderAbout(){
   const wrap = document.createElement('div');
   wrap.className = 'about-content';
   wrap.innerHTML = `
-    <div class="about-card">
-      <h3>Auto Lab</h3>
-      <p>An interactive 3D learning lab for automotive systems — built for students and curious minds alike.</p>
-      <p>Each module runs a real-time 3D simulation you can orbit, zoom, and interact with. Everything works offline once installed.</p>
-      <div class="about-badges">
-        <span class="about-badge">${modules.length} modules</span>
-        <span class="about-badge">Offline ready</span>
-        <span class="about-badge">No ads</span>
+    <div class="about-hero">
+      <div class="ah-eyebrow">Auto Lab · 3D Learning</div>
+      <h2>An interactive lab for the machines that move us.</h2>
+      <p>Explore engines, gearboxes, brakes and more — each one running as a live 3D simulation you can orbit, zoom and drive in real time.</p>
+      <div class="ah-tags">
+        <span class="ah-tag">${modules.length} Modules</span>
+        <span class="ah-tag">Offline Ready</span>
+        <span class="ah-tag">Installable</span>
+        <span class="ah-tag">No Ads</span>
       </div>
     </div>
+
     <div class="about-card">
       <h3>How to use</h3>
       <p><strong>Tap any module</strong> to open it. Inside, drag the 3D view to orbit, pinch to zoom, and use the floating controls at the bottom.</p>
-      <p>Tap the <strong>info chip</strong> at the top-left to expand module details. View toggles (theme, wireframe, x-ray) live in the <strong>...</strong> menu — your choices are remembered.</p>
+      <p>Tap the <strong>info chip</strong> at the top-left to expand module details. View toggles — theme, wireframe, x-ray — live in the <strong>...</strong> menu and are remembered between sessions.</p>
     </div>
+
+    <div class="maker-card">
+      <div class="maker-avatar">HK</div>
+      <div class="maker-copy">
+        <div class="maker-role">Designed &amp; Developed by</div>
+        <div class="maker-name">Hassan J Khan</div>
+        <div class="maker-tag">Engineer · Maker · Curious about how things move</div>
+      </div>
+    </div>
+
+    <div class="about-card">
+      <h3>Built with</h3>
+      <p>Real-time 3D by <strong>Three.js</strong>. Zero external UI frameworks — just clean vanilla JavaScript, tuned for smooth performance on mobile.</p>
+      <p>Runs entirely in your browser. Install it to your home screen and it works fully offline.</p>
+    </div>
+
     <div class="about-credits">
-      Auto Lab · Built with Three.js<br>
-      Optimized for mobile · Installable as an app
+      <span class="sig">Auto Lab</span>
+      <span class="dot"></span>
+      <span class="sig">Hassan J Khan</span>
+      <br>
+      © <span id="about-year"></span> · Crafted with care
     </div>
   `;
   homeMain.appendChild(wrap);
+  const y = wrap.querySelector('#about-year');
+  if(y) y.textContent = new Date().getFullYear();
 }
 
 /* ─── Tabs / search ─────────────────────────────────────── */
@@ -1513,6 +1713,11 @@ function closeModule(){
   if(!state.active) return;
   const id = state.active;
   postTo(id, {type:'command', action:'setPlaying', value:false});
+
+  // ── FIX: clear the `active` class on the iframe so the perf-guard
+  //        correctly pauses its render loop while it's hidden.
+  if (iframes[id]) iframes[id].classList.remove('active');
+
   moduleScreen.classList.remove('active');
   moduleScreen.setAttribute('aria-hidden','true');
   homeScreen.classList.remove('behind');
