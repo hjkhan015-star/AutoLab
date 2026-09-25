@@ -1,5 +1,5 @@
 /* Auto Lab service worker — caches the app shell + all modules for offline use */
-const VERSION = 'autolab-v4.0';
+const VERSION = 'autolab-v4.4';
 const CORE    = `${VERSION}-core`;
 const RUNTIME = `${VERSION}-runtime`;
 
@@ -8,6 +8,7 @@ const CORE_ASSETS = [
   './index.html',
   './manifest.webmanifest',
   './modules.js',
+  './perf-guard.js',
   './base.css',
   './embed-fix.css',
   './module-base.js',
@@ -29,7 +30,8 @@ const CORE_ASSETS = [
   './braking.html',
   './ignition.html',
   './mpfi.html',
-  './suspension.html'
+  './suspension.html',
+  './turbocharger.html'
 ];
 
 self.addEventListener('install', (event) => {
