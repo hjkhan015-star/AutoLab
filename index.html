@@ -895,6 +895,7 @@ html.light-theme .sheet-reset{background:rgba(239,68,68,.08);color:#dc2626}
 </div>
 
 <script src="modules.js"></script>
+<script src="perf-guard.js"></script>
 <script>
 (function(){
 'use strict';
@@ -997,9 +998,6 @@ function injectEmbedFix(fr){
     const old = doc.getElementById('shell-embed-fix');
     if (old) old.remove();
 
-    /* Measure the shell's own chrome so we never drift if it's
-       ever resized. The back/more buttons are the widest top
-       elements; the module-pill is the tallest bottom element. */
     const btnEl  = document.getElementById('btn-back');
     const pillEl = document.getElementById('module-pill');
     const btnRect  = btnEl  ? btnEl.getBoundingClientRect()  : { width: 42, height: 42 };
@@ -1010,33 +1008,18 @@ function injectEmbedFix(fr){
     const safeL = 'env(safe-area-inset-left, 0px)';
     const safeR = 'env(safe-area-inset-right, 0px)';
 
-    /* Margin either side of the info chip when there's room
-       for the floating buttons. */
     const sideInset = Math.ceil(btnRect.width + 16);
-    /* How far above the bottom of the iframe the shell pill sits. */
     const botInset  = Math.ceil(pillRect.height + 16);
     const topInset  = 10;
 
-    /* On narrow screens the buttons sit closer to the edges, so
-       reserve less — otherwise we'd eat the whole panel width. */
     const isNarrow = window.matchMedia('(max-width: 720px)').matches;
     const lr = isNarrow ? '10px' : `${sideInset}px`;
 
     const s = doc.createElement('style');
     s.id = 'shell-embed-fix';
     s.textContent = `
-      /* Hide only the hint text — the module's own playback bar
-         is trimmed below to just its module-unique controls. */
       #hint{display:none!important}
 
-      /* ──────────────────────────────────────────────────────
-         MODULE-SPECIFIC CONTROLS BAR
-         The shell provides play/reset/speed/labels/gas, so hide
-         only those sub-controls. Everything else inside
-         #module-controls (e.g. differential's Traction + Locked,
-         braking's ABS + Circuit Fail + Air Bubble) stays visible
-         and reachable, re-parented above the shell pill.
-         ────────────────────────────────────────────────────── */
       body.embedded #module-controls #btn-play,
       body.embedded #module-controls #btn-reset,
       body.embedded #module-controls .slider-group,
@@ -1062,17 +1045,12 @@ function injectEmbedFix(fr){
         z-index:20!important;
       }
 
-      /* Auto-hide the bar on modules that have no extras at all. */
       @supports selector(:has(*)) {
         body.embedded #module-controls:not(:has(.select-group, .toggle)) {
           display:none!important;
         }
       }
 
-      /* ──────────────────────────────────────────────────────
-         INFO PANEL — positioned between the floating shell
-         buttons. Collapsed = compact chip. Expanded = full panel.
-         ────────────────────────────────────────────────────── */
       body.embedded #edu-panel{
         position:absolute!important;
         top:calc(${topInset}px + ${safeT})!important;
@@ -1166,7 +1144,6 @@ function injectEmbedFix(fr){
         -webkit-overflow-scrolling:touch!important;
       }
 
-      /* Interactive overlays above the shell pill */
       #steer-overlay,
       #crank-overlay,
       #accel-overlay,
@@ -1196,7 +1173,7 @@ function ensureIframe(mod){
   fr.dataset.module = mod.id;
   fr.loading = 'eager';
   fr.setAttribute('allow','autoplay; fullscreen');
-  fr.src = mod.file;
+  fr.srcdoc = window.AUTO_MODULE_HTML[mod.id] || '';
   fr.addEventListener('load', () => {
     injectEmbedFix(fr);
     const nudge = () => {
@@ -1412,7 +1389,7 @@ function renderAbout(){
   wrap.innerHTML = `
     <div class="about-card">
       <h3>Auto Lab</h3>
-      <p>An interactive 3D learning lab for automotive systems — built for Class IX / X students and curious minds alike.</p>
+      <p>An interactive 3D learning lab for automotive systems — built for students and curious minds alike.</p>
       <p>Each module runs a real-time 3D simulation you can orbit, zoom, and interact with. Everything works offline once installed.</p>
       <div class="about-badges">
         <span class="about-badge">${modules.length} modules</span>
