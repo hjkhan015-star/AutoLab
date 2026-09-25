@@ -127,14 +127,14 @@
     </button>
     <div class="slider-group">
       <span>Engine RPM</span>
-      <input type="range" id="speed" min="0.15" max="2.5" step="0.05" value="0.85" aria-label="Engine RPM">
+      <input type="range" id="speed" min="0.15" max="2.5" step="0.05" value="0.15" aria-label="Engine RPM">
       <span id="rpm-label">~800 rpm</span>
     </div>
     <label class="toggle"><input type="checkbox" id="chk-labels" checked> Labels</label>
     <label class="toggle"><input type="checkbox" id="chk-gas" checked> Spark</label>
   </div>
 
-  <div id="hint">Drag to orbit · Use the RPM slider to change engine speed · Watch the spark advance</div>
+  <div id="hint">Drag to orbit · RPM slider for engine speed · Click the key to toggle ignition</div>
   <div id="labels-root"></div>
 
   <script type="importmap">
@@ -826,10 +826,11 @@
     return mesh;
   }
 
-  /* ── 1. Battery + → Switch left post ── */
+  /* ── 1. Battery + → Switch left post (routed below the plate) ── */
   addWire([
     posTermTip.clone(),
-    new THREE.Vector3(posTermTip.x, SW.y, SW.z),
+    new THREE.Vector3(posTermTip.x, SW.y - 0.38, SW.z),
+    new THREE.Vector3(swConnL.x, SW.y - 0.38, SW.z),
     swConnL.clone()
   ], 0.022, M.wireRed, 0xff4455, null);
 
@@ -868,10 +869,15 @@
   ], 0.032, M.wireBlue, 0x4a8fff, null);
 
   /* ── 6. Distributor posts → each plug ──
-        Each wire is raised to a different Y level so they don't overlap. */
+        The rotor turns at half crank speed and sweeps the posts in the
+        order 0° → 270° → 180° → 90°. Firing order is 1-3-4-2, so post i
+        must feed plug POST_TO_PLUG[i], or the rotor can never align with
+        the correct post at the moment that cylinder fires. */
+  const POST_TO_PLUG = [0, 1, 3, 2];
   distPosts.forEach((post, i) => {
-    const plugX = PLUG_XS[i];
-    const plugTop = plugTopPositions[i];
+    const plugIdx = POST_TO_PLUG[i];
+    const plugX = PLUG_XS[plugIdx];
+    const plugTop = plugTopPositions[plugIdx];
 
     /* vertical fan: closer posts sit higher */
     const overY = DIST.y + 0.55 + i * 0.06;
@@ -884,7 +890,7 @@
       new THREE.Vector3(plugX, plugTop.y + 0.20, 0),
       new THREE.Vector3(plugX, plugTop.y + 0.10, 0),
       plugTop.clone()
-    ], 0.020, M.wireBlue, 0x4a8fff, i);
+    ], 0.020, M.wireBlue, 0x4a8fff, plugIdx);
   });
 
   /* ── 7. Battery − → Ground ── */
@@ -990,7 +996,7 @@
     { id:'bat',    text:'12V Battery',      pos: new THREE.Vector3(BAT.x, BAT.y - 0.45, BAT.z) },
     { id:'switch', text:'Ignition switch',  pos: new THREE.Vector3(SW.x, SW.y + 0.32, SW.z) },
     { id:'fuse',   text:'Fuse',             pos: new THREE.Vector3(FUSE.x, FUSE.y + 0.24, FUSE.z) },
-    { id:'coil',   text:'Ignition coil',    pos: new THREE.Vector3(COIL.x, COIL.y + 0.85, COIL.z) },
+    { id:'coil',   text:'Ignition coil',    pos: new THREE.Vector3(COIL.x - 0.34, COIL.y + 0.58, COIL.z) },
     { id:'dist',   text:'Distributor',      pos: new THREE.Vector3(DIST.x, DIST.y + 1.10, DIST.z) },
     { id:'ecu',    text:'ECU',              pos: new THREE.Vector3(ECU.x, ECU.y - 0.42, ECU.z) },
     { id:'gnd',    text:'Ground (frame)',   pos: new THREE.Vector3(GND.x - 0.10, GND.y - 0.32, GND.z) },
@@ -999,7 +1005,7 @@
     { id:'plug3',  text:'Spark plug 3',     pos: new THREE.Vector3(PLUG_XS[2], PLUG_Y - 1.15, 0) },
     { id:'plug4',  text:'Spark plug 4',     pos: new THREE.Vector3(PLUG_XS[3], PLUG_Y - 1.15, 0) }
   ];
-  labelDefs.forEach(d => labels.add(d.id, d.text));
+  labelDefs.forEach(d => labels.add(d.id, d.text, d.pos));
 
   /* ═══════════════════════════════════════════════════════════
      TIMING MODEL
@@ -1049,7 +1055,9 @@
 
   function updateRpmLabel() {
     if (!rpmLabelEl) return;
-    rpmLabelEl.textContent = '~' + Math.round(rpmFromSlider(state.speedMul)) + ' rpm';
+    const s = (typeof state.speedMul === 'number') ? state.speedMul
+                                                     : parseFloat(document.getElementById('speed').value);
+    rpmLabelEl.textContent = '~' + Math.round(rpmFromSlider(s)) + ' rpm';
   }
   updateRpmLabel();
 
@@ -1143,175 +1151,369 @@
     document.querySelector('#panel-toggle svg').style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
   });
 
-  Base.wireCommonUI(state, { onReset: () => {
-    crankAngle = 0; prevCrankAngle = 0; currentRPM = 800; plugFlash.fill(0);
-    updateRpmLabel();
-  }});
-  Base.wirePanelToggle();
+  /* ═══════════════════════════════════════════════════════════
+     SIM STATE
+     ═══════════════════════════════════════════════════════════ */
+  const ORDER          = [0, 2, 3, 1];   // firing order 1-3-4-2 (cyl indices)
+  const VIS_SLOW       = 0.08;           // visual slow-motion (HUD shows true rpm)
+  const CHARGE_WIN_DEG = 64;             // coil dwell window, in crank degrees
+  const START_CRANK    = 690;            // cyl 1 fires first after start/reset
 
-  const bridge = Base.createBridge('ignition', (d) => {
-    if (d.type !== 'command') return;
-    switch (d.action) {
-      case 'setPlaying': state.playing = !!d.value; break;
-      case 'setSpeed':   state.speedMul = +d.value;
-                         const sp = document.getElementById('speed');
-                         if (sp) sp.value = d.value;
-                         updateRpmLabel();
-                         break;
-      case 'setLabels':  state.showLabels = !!d.value; break;
-      case 'setGas':     state.showGas = !!d.value; break;
-      case 'reset':      crankAngle = 0; prevCrankAngle = 0;
-                         currentRPM = 800; plugFlash.fill(0); break;
-    }
+  let advNow = timingAdvance(currentRPM);
+  let ignitionOn = true;
+  let coilFlash = 0, rotorFlash = 0, ecuBlink = 0, wirePulseShared = 0;
+  let lastFireCyl = -1, lastFireAt = -1e9;
+  let chargeLevel = 0, nextFireCyl = 0;
+  const wirePulseCyl = [0, 0, 0, 0];
+  const markerPulse  = [0, 0, 0, 0];
+  const flameLevel   = [0, 0, 0, 0];
+
+  crankAngle = START_CRANK;
+  prevCrankAngle = START_CRANK;
+
+  /* extra DOM refs */
+  const markerEls   = Array.from(document.querySelectorAll('#cycle-bar .cycle-marker'));
+  const iconPlayEl  = document.getElementById('icon-play');
+  const iconPauseEl = document.getElementById('icon-pause');
+  const speedEl     = document.getElementById('speed');
+  const labelRoot   = document.getElementById('labels-root');
+  const markerForCyl = [null, null, null, null];
+  ORDER.forEach((cyl, k) => { markerForCyl[cyl] = markerEls[k]; });
+
+  let fireTextCache = '';
+  function setFireText(txt, color) {
+    if (fireTextCache === txt) return;
+    fireTextCache = txt;
+    tcFireEl.textContent = txt;
+    tcFireEl.style.color = color;
+  }
+
+  /* flame kernel inside each bore — the "mixture ignites" beat */
+  const flameMeshes = PLUG_XS.map(x => {
+    const m = new THREE.Mesh(
+      new THREE.SphereGeometry(0.055, 12, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    m.position.set(x, PLUG_Y - 0.62, 0);
+    m.renderOrder = 4;
+    system.add(m);
+    return m;
   });
-  bridge.ready();
+
+  /* jagged spark-bolt texture for the arc sprites */
+  function makeArcTexture() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    const bolt = () => {
+      g.beginPath();
+      g.moveTo(66, 10); g.lineTo(56, 38); g.lineTo(73, 52);
+      g.lineTo(55, 82); g.lineTo(66, 118); g.stroke();
+      g.beginPath(); g.moveTo(56, 38); g.lineTo(38, 46); g.stroke();
+      g.beginPath(); g.moveTo(73, 52); g.lineTo(92, 62); g.stroke();
+      g.beginPath(); g.moveTo(55, 82); g.lineTo(40, 92); g.stroke();
+    };
+    g.strokeStyle = 'rgba(255,214,120,.85)'; g.lineWidth = 9;
+    g.shadowColor = '#ffc248'; g.shadowBlur = 16; bolt();
+    g.strokeStyle = '#ffffff'; g.lineWidth = 3; g.shadowBlur = 5; bolt();
+    return new THREE.CanvasTexture(c);
+  }
+  const arcTexture = makeArcTexture();
+  plugs.forEach(p => {
+    p.arcSprite.material.map = arcTexture;
+    p.arcSprite.material.needsUpdate = true;
+    p.arcSprite.userData.rot = 0;
+    p.arcSprite.scale.setScalar(0.6);
+  });
+
+  const ECU_ON  = new THREE.Color(0x18b070);
+  const ECU_OFF = new THREE.Color(0x0e2f1e);
+  const ECU_HOT = new THREE.Color(0x9dffc8);
+
+  const fireAngle = i => (((FIRING_ANGLE[i] - advNow) % 720) + 720) % 720;
+
+  function fireCyl(i) {
+    plugFlash[i] = 1; flameLevel[i] = 1;
+    wirePulseCyl[i] = 1; wirePulseShared = 1;
+    coilFlash = 1; rotorFlash = 1; ecuBlink = 1;
+    markerPulse[i] = 1;
+    lastFireCyl = i; lastFireAt = performance.now();
+    plugs[i].arcSprite.userData.rot = Math.random() * TAU;
+    spawnSparkBurst(i);
+    tcPips.forEach(p => p.classList.toggle('firing', Number(p.dataset.cyl) === i + 1));
+    setFireText(`Cyl ${i + 1} — SPARK`, '#ffd166');
+  }
+
+  function updateNextFire() {
+    let best = Infinity;
+    for (let i = 0; i < 4; i++) {
+      const d = ((fireAngle(i) - crankAngle) % 720 + 720) % 720;
+      if (d < best) { best = d; nextFireCyl = i; }
+    }
+    chargeLevel = ignitionOn ? 1 - Math.min(1, best / CHARGE_WIN_DEG) : 0;
+  }
+
+  /* ── label elements: reuse what labels.add() created, else make our own ── */
+  const labelEls = (() => {
+    let els = Array.from(labelRoot.children);
+    if (els.length !== labelDefs.length) {
+      while (labelRoot.firstChild) labelRoot.removeChild(labelRoot.firstChild);
+      els = labelDefs.map(() => { const el = document.createElement('div'); labelRoot.appendChild(el); return el; });
+    }
+    els.forEach((el, i) => {
+      if (!el.textContent) el.textContent = labelDefs[i].text;
+      Object.assign(el.style, {
+        position: 'absolute', left: '0', top: '0', visibility: 'hidden',
+        font: '700 10.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        letterSpacing: '.02em', whiteSpace: 'nowrap',
+        color: '#e8edf4', background: 'rgba(12,16,24,.78)',
+        border: '1px solid rgba(255,255,255,.16)',
+        borderRadius: '6px', padding: '2px 7px',
+        pointerEvents: 'none', willChange: 'transform'
+      });
+    });
+    return els;
+  })();
+
+  const _lv = new THREE.Vector3();
+  function updateLabels() {
+    const show = state.showLabels !== false;
+    const cRect = renderer.domElement.getBoundingClientRect();
+    const rRect = labelRoot.getBoundingClientRect();
+    const ox = cRect.left - rRect.left, oy = cRect.top - rRect.top;
+    for (let i = 0; i < labelEls.length; i++) {
+      const el = labelEls[i];
+      if (!show) { el.style.visibility = 'hidden'; continue; }
+      _lv.copy(labelDefs[i].pos).project(camera);
+      if (_lv.z > 1) { el.style.visibility = 'hidden'; continue; }
+      const x = (_lv.x * 0.5 + 0.5) * cRect.width + ox;
+      const y = (-_lv.y * 0.5 + 0.5) * cRect.height + oy;
+      el.style.visibility = 'visible';
+      el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-135%)`;
+    }
+  }
+
+  /* ── ignition key: click the key in 3D to cut power ── */
+  const raycaster = new THREE.Raycaster();
+  const pointerNDC = new THREE.Vector2();
+  let pdownX = 0, pdownY = 0, pdownT = 0;
+  const canvasEl = renderer.domElement;
+
+  function pickSwitch(e) {
+    const r = canvasEl.getBoundingClientRect();
+    pointerNDC.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    raycaster.setFromCamera(pointerNDC, camera);
+    return raycaster.intersectObject(swGroup, true).length > 0;
+  }
+  function setIgnition(on) {
+    ignitionOn = on;
+    swRingGlow.material.color.setHex(on ? 0xffb030 : 0xff4455);
+    if (!on) {
+      plugFlash.fill(0); flameLevel.fill(0); wirePulseCyl.fill(0);
+      wirePulseShared = 0; coilFlash = 0; rotorFlash = 0; ecuBlink = 0;
+      tcPips.forEach(p => p.classList.remove('firing'));
+      setFireText('Ignition OFF', '#ff5566');
+    }
+  }
+  canvasEl.addEventListener('pointerdown', e => { pdownX = e.clientX; pdownY = e.clientY; pdownT = performance.now(); });
+  canvasEl.addEventListener('pointerup', e => {
+    if (performance.now() - pdownT > 450) return;
+    const dx = e.clientX - pdownX, dy = e.clientY - pdownY;
+    if (dx * dx + dy * dy > 36) return;            // it was an orbit drag
+    if (pickSwitch(e)) setIgnition(!ignitionOn);
+  });
+  canvasEl.addEventListener('pointermove', e => {
+    canvasEl.style.cursor = pickSwitch(e) ? 'pointer' : '';
+  });
+  swKnobGroup.rotation.z = -0.95;                  // key-turn intro on load
+
+  function resetEffects() {
+    advNow = timingAdvance(currentRPM);
+    plugFlash.fill(0); flameLevel.fill(0);
+    wirePulseCyl.fill(0); markerPulse.fill(0);
+    wirePulseShared = 0; coilFlash = 0; rotorFlash = 0; ecuBlink = 0;
+    lastFireCyl = -1; lastFireAt = -1e9; chargeLevel = 0;
+    tcPips.forEach(p => p.classList.remove('firing'));
+    markerEls.forEach(el => {
+      el.style.boxShadow = '';
+      const s = el.firstElementChild; if (s) s.style.color = '';
+    });
+    setFireText('Starting…', '#f59e0b');
+  }
+
+  function updateReadouts() {
+    let shownRpm = currentRPM;
+    if (currentRPM > 30 && currentRPM < 1200) {    // idle lope
+      const t = performance.now() / 1000;
+      shownRpm += Math.sin(t * 17) * 9 + Math.sin(t * 7.3 + 2) * 7;
+    }
+    shownRpm = Math.max(0, Math.round(shownRpm));
+    const a = Math.round(advNow);
+    lrRpmEl.textContent   = `${shownRpm} rpm`;
+    tcRpmEl.textContent   = `${shownRpm}`;
+    lrAdvEl.textContent   = `${a}° BTDC`;
+    tcAdvEl.textContent   = `${a}° BTDC`;
+    lrDwellEl.textContent = `${dwellMs(currentRPM).toFixed(1)} ms`;
+
+    if (!ignitionOn) setFireText('Ignition OFF', '#ff5566');
+    else if (performance.now() - lastFireAt < 340 && lastFireCyl >= 0)
+      setFireText(`Cyl ${lastFireCyl + 1} — SPARK`, '#ffd166');
+    else if (chargeLevel > 0.03)
+      setFireText(`Cyl ${nextFireCyl + 1} charging…`, '#8d9aaa');
+    else
+      setFireText(`Next: Cyl ${nextFireCyl + 1}`, '#f59e0b');
+
+    /* keep play/pause icons in sync with state (idempotent) */
+    const playing = state.playing !== false;
+    iconPauseEl.style.display = playing ? 'block' : 'none';
+    iconPlayEl.style.display  = playing ? 'none'  : 'block';
+  }
 
   /* ═══════════════════════════════════════════════════════════
-     ANIMATION LOOP
+     MAIN LOOP
      ═══════════════════════════════════════════════════════════ */
   const clock = new THREE.Clock();
-  let frame = 0;
-  let lastFiringCyl = 0;
-  let lastFireTime = 0;
-  let coilCharge = 0;
-  const wireGlow = [0, 0, 0, 0];
+  const _camQ = new THREE.Quaternion();
+  let uiAcc = 0;
 
-  function animate() {
-    requestAnimationFrame(animate);
-    frame++;
-
+  function tick() {
+    requestAnimationFrame(tick);
     const dt = Math.min(clock.getDelta(), 0.05);
-    const simDt = state.playing ? dt : 0;
-
-    /* RPM follows the slider directly — single control. */
-    const targetRPM = rpmFromSlider(state.speedMul);
-    currentRPM += (targetRPM - currentRPM) * Math.min(1, dt * 3.5);
-
-    const advance = timingAdvance(currentRPM);
-    const dwell   = dwellMs(currentRPM);
-    const loadFactor = Math.max(0, Math.min(1, (currentRPM - 800) / 5200));
-
-    const degPerSec = (currentRPM / 60) * 360;
-    prevCrankAngle = crankAngle;
-    crankAngle = (crankAngle + degPerSec * simDt) % 720;
-
-    /* ── Firing detection ── */
-    if (simDt > 0) {
-      for (let cyl = 0; cyl < 4; cyl++) {
-        const sparkAt = ((FIRING_ANGLE[cyl] - advance) + 720) % 720;
-        if (angleCrossed(prevCrankAngle, crankAngle, sparkAt)) {
-          lastFiringCyl = cyl + 1;
-          lastFireTime = performance.now();
-          plugFlash[cyl] = 1.0;
-          wireGlow[cyl] = 1.0;
-          spawnSparkBurst(cyl);
-
-          const pip = pipForCylinder(cyl + 1);
-          if (pip) {
-            pip.classList.add('firing');
-            setTimeout(() => pip.classList.remove('firing'), 130);
-          }
-          coilCharge = 1.0;
-        }
-      }
-    }
-
-    /* ── Plug flashes + arcs ── */
-    for (let i = 0; i < 4; i++) {
-      if (plugFlash[i] > 0) {
-        plugFlash[i] = Math.max(0, plugFlash[i] - dt * 5.5);
-        const f = plugFlash[i];
-        plugs[i].flash.material.opacity = f * 0.95;
-        plugs[i].flash.scale.setScalar(0.7 + (1 - f) * 1.8);
-        plugs[i].electrodeMat.emissiveIntensity = f * 3.0;
-        plugs[i].arcSprite.material.opacity = f * 0.85;
-        plugs[i].arcSprite.lookAt(camera.position);
-      } else {
-        plugs[i].flash.material.opacity = 0;
-        plugs[i].electrodeMat.emissiveIntensity = 0;
-        plugs[i].arcSprite.material.opacity = 0;
-      }
-    }
-
-    /* ── Coil glow ── */
-    if (coilCharge > 0) {
-      coilCharge = Math.max(0, coilCharge - dt * (1 / Math.max(0.08, dwell / 1000)));
-    }
-    const dwellGlow = 0.28 + 0.55 * coilCharge;
-    coilGlow.material.opacity = state.showGas !== false ? dwellGlow : 0;
-    coilGlow.material.color.setHex(coilCharge > 0.9 ? 0xfff0a0 : 0x38bdf8);
-
-    /* ── Per-wire glow ── */
-    for (let i = 0; i < 4; i++) {
-      if (wireGlow[i] > 0) wireGlow[i] = Math.max(0, wireGlow[i] - dt * 4.5);
-    }
-    wireMeshes.forEach(w => {
-      if (!w.glowMat) return;
-      if (w.cylIndex !== null) {
-        w.glowMat.opacity = wireGlow[w.cylIndex] * 0.9;
-      } else {
-        const since = performance.now() - lastFireTime;
-        const pulse = Math.max(0, 1 - since / 220);
-        w.glowMat.opacity = 0.03 + pulse * 0.25;
-      }
-    });
-
-    /* ── Rotor spin — ½ crank speed ── */
-    rotorPivot.rotation.y = -(crankAngle * 0.5) * Math.PI / 180;
-
-    /* ── Switch knob — smooth ON sweep driven by RPM ── */
-    swKnobGroup.rotation.z = -0.30 + loadFactor * 0.55;
-    swRingGlow.material.opacity = 0.15 + loadFactor * 0.35;
-
-    /* ── Fuse glow ── */
-    fuseGlow.material.opacity = 0.10 + loadFactor * 0.55;
-    fuseFilament.material.opacity = 0.35 + loadFactor * 0.6;
-
-    updateSparkBurst(dt);
-
-    /* ── ECU LED ── */
-    const sinceFire = performance.now() - lastFireTime;
-    ecuLed.material.color.setHex(sinceFire < 90 ? 0x3aff90 : 0x0a3a1a);
-
-    /* ── DOM readouts @ ~15 Hz ── */
-    if (frame % 4 === 0) {
-      if (lrRpmEl)   lrRpmEl.textContent   = Math.round(currentRPM) + ' rpm';
-      if (lrAdvEl)   lrAdvEl.textContent   = advance.toFixed(1) + '° BTDC';
-      if (lrDwellEl) lrDwellEl.textContent = dwell.toFixed(2) + ' ms';
-      if (tcAdvEl)   tcAdvEl.textContent   = advance.toFixed(1) + '° BTDC';
-      if (tcRpmEl)   tcRpmEl.textContent   = Math.round(currentRPM);
-
-      if (tcFireEl) {
-        if (sinceFire < 200) {
-          tcFireEl.textContent = `Cyl ${lastFiringCyl} firing`;
-          tcFireEl.style.color = '#f59e0b';
-        } else {
-          const next = (crankAngle + 20) % 720;
-          let nextCyl = 1, best = 9999;
-          for (let cyl = 0; cyl < 4; cyl++) {
-            const d = (FIRING_ANGLE[cyl] - next + 720) % 720;
-            if (d < best) { best = d; nextCyl = cyl + 1; }
-          }
-          tcFireEl.textContent = `Cyl ${nextCyl} firing soon…`;
-          tcFireEl.style.color = '#94a3b8';
-        }
-      }
-
-      if (cycleProgEl) cycleProgEl.style.width = (crankAngle / 720 * 100).toFixed(1) + '%';
-      drawAdvanceCurve(currentRPM, advance);
-    }
-
-    if (state.showLabels && frame % 2 === 0) {
-      labelDefs.forEach(d => labels.project(d.id, d.pos, camera, wrap));
-    } else if (!state.showLabels) {
-      labels.hideAll();
-    }
-
     controls.update();
+
+    const simDt = state.playing !== false ? dt : 0;
+
+    if (simDt > 0) {
+      /* rpm eases toward the slider target */
+      const sliderVal = (typeof state.speedMul === 'number' && isFinite(state.speedMul))
+        ? state.speedMul : parseFloat(speedEl.value);
+      const targetRPM = rpmFromSlider(sliderVal);
+      currentRPM += (targetRPM - currentRPM) * (1 - Math.exp(-simDt * (targetRPM > currentRPM ? 3.0 : 1.8)));
+      if (currentRPM < 25 && targetRPM < 25) currentRPM = targetRPM;
+
+      /* advance eases along the curve */
+      advNow += (timingAdvance(currentRPM) - advNow) * (1 - Math.exp(-simDt * 2.5));
+
+      /* crank rotation & firing */
+      prevCrankAngle = crankAngle;
+      crankAngle = (crankAngle + Math.max(0, currentRPM) * 6 * VIS_SLOW * simDt) % 720;
+      if (ignitionOn) {
+        for (let i = 0; i < 4; i++) {
+          if (angleCrossed(prevCrankAngle, crankAngle, fireAngle(i))) fireCyl(i);
+        }
+      }
+
+      coilFlash       = Math.max(0, coilFlash - simDt * 6.5);
+      rotorFlash      = Math.max(0, rotorFlash - simDt * 5);
+      ecuBlink        = Math.max(0, ecuBlink - simDt * 9);
+      wirePulseShared = Math.max(0, wirePulseShared - simDt * 4.5);
+      for (let i = 0; i < 4; i++) {
+        wirePulseCyl[i] = Math.max(0, wirePulseCyl[i] - simDt * 4.5);
+        plugFlash[i]    = Math.max(0, plugFlash[i] - simDt * 4.2);
+        flameLevel[i]   = Math.max(0, flameLevel[i] - simDt * 3.2);
+        markerPulse[i]  = Math.max(0, markerPulse[i] - simDt * 2.6);
+      }
+    }
+
+    /* next fire / coil dwell charge */
+    updateNextFire();
+
+    /* rotor — half crank speed, phase-locked to the posts. The +advNow/2
+       term IS the mechanical advance: the rotor's lead over the posts grows
+       as rpm rises, exactly like centrifugal advance weights. */
+    rotorPivot.rotation.y = THREE.MathUtils.degToRad(crankAngle / 2 + advNow / 2);
+    rotorTip.material.emissiveIntensity = 0.9 + rotorFlash * 3.2;
+
+    /* ignition key knob */
+    swKnobGroup.rotation.z += ((ignitionOn ? 0.85 : -0.85) - swKnobGroup.rotation.z) * (1 - Math.exp(-dt * 10));
+
+    /* glows */
+    coilGlow.material.opacity     = ignitionOn ? Math.min(0.95, 0.07 + chargeLevel * 0.33 + coilFlash * 0.6) : 0;
+    fuseGlow.material.opacity     = ignitionOn ? Math.min(0.8, 0.08 + (currentRPM / 6000) * 0.28 + wirePulseShared * 0.3) : 0;
+    fuseFilament.material.opacity = ignitionOn ? 0.35 + chargeLevel * 0.65 : 0.12;
+    swRingGlow.material.opacity   = ignitionOn ? 0.16 + chargeLevel * 0.24 : 0.14;
+    ecuLed.material.color.copy(ignitionOn ? ECU_ON : ECU_OFF).lerp(ECU_HOT, Math.min(1, ecuBlink));
+    ecuLed.scale.setScalar(1 + ecuBlink * 0.45);
+
+    for (const w of wireMeshes) {
+      if (!w.glowMat) continue;
+      if (!ignitionOn) { w.glowMat.opacity = 0; continue; }
+      const p = w.cylIndex === null ? wirePulseShared : wirePulseCyl[w.cylIndex];
+      w.glowMat.opacity = Math.min(1, (w.cylIndex === null ? 0.05 : 0) + p * 0.9);
+    }
+
+    /* spark plugs + flame kernels */
+    const gasOn = state.showGas !== false;
+    _camQ.copy(camera.quaternion);
+    for (let i = 0; i < 4; i++) {
+      const p = plugs[i];
+      const f = gasOn ? plugFlash[i] : 0;
+      p.electrodeMat.emissiveIntensity = f * 3.2;
+      p.flash.material.opacity = f * 0.95;
+      p.flash.scale.setScalar(0.6 + f * 0.8);
+      const a = p.arcSprite;
+      if (f > 0.02) {
+        a.visible = true;
+        a.material.opacity = Math.min(1, f * 1.5);
+        a.scale.setScalar(0.55 + f * 0.5);
+        a.quaternion.copy(_camQ);
+        a.rotateZ(a.userData.rot || 0);
+      } else {
+        a.visible = false;
+      }
+      const fl = flameMeshes[i], fv = gasOn ? flameLevel[i] : 0;
+      fl.material.opacity = fv * 0.8;
+      fl.scale.setScalar(0.7 + (1 - fv) * 1.2);   // kernel expands as it fades
+    }
+
+    updateSparkBurst(simDt);
+
+    /* 720° cycle bar */
+    cycleProgEl.style.width = (crankAngle / 7.2).toFixed(2) + '%';
+    for (let i = 0; i < 4; i++) {
+      const el = markerForCyl[i], g = markerPulse[i];
+      if (!el) continue;
+      el.style.boxShadow = `0 0 ${(4 + g * 16).toFixed(1)}px rgba(245,158,11,${(0.35 + g * 0.65).toFixed(2)})`;
+      const sp = el.firstElementChild;
+      if (sp) sp.style.color = g > 0.3 ? '#ffd166' : '';
+    }
+
+    /* HUD at 10 Hz */
+    uiAcc += dt;
+    if (uiAcc >= 0.1) {
+      uiAcc = 0;
+      updateReadouts();
+      drawAdvanceCurve(currentRPM, advNow);
+    }
+
+    updateLabels();
     renderer.render(scene, camera);
   }
-  animate();
-  bridge.setStatus('Ignition', '#f59e0b');
+
+  /* ═══════════════════════════════════════════════════════════
+     BRIDGE TO BASE UI
+     ═══════════════════════════════════════════════════════════ */
+  Base.wireCommonUI(state, { onReset: () => {
+    crankAngle = START_CRANK;
+    prevCrankAngle = START_CRANK;
+    currentRPM = 0;                       // spin up from rest
+    if (!ignitionOn) setIgnition(true);
+    resetEffects();
+  }});
+
+  /* defensive: keep checkbox state in sync even if wireCommonUI doesn't wire them */
+  const chkLabelsEl = document.getElementById('chk-labels');
+  const chkGasEl    = document.getElementById('chk-gas');
+  chkLabelsEl.addEventListener('change', () => { state.showLabels = chkLabelsEl.checked; });
+  chkGasEl.addEventListener('change',    () => { state.showGas    = chkGasEl.checked; });
+  speedEl.addEventListener('input', updateRpmLabel);
+
+  updateRpmLabel();                       // state.speedMul is set now
+  updateNextFire();
+  updateReadouts();
+  drawAdvanceCurve(currentRPM, advNow);
+  tick();
   </script>
 </body>
 </html>
