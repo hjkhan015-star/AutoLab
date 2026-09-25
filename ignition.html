@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<title>Ignition System — Auto Lab</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* Timing card (top-right) */
+  #timing-card {
+    position: fixed;
+    top: calc(74px + var(--safe-t,0px));
+    right: calc(14px + var(--safe-r,0px));
+    z-index: 18;
+    background: rgba(10,14,20,.85);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 12px;
+    padding: 10px 12px;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    pointer-events: none;
+    min-width: 190px;
+  }
+  html.light-theme #timing-card {
+    background: rgba(255,255,255,.95);
+    border-color: rgba(15,23,42,.14);
+  }
+  #timing-card .tc-label {
+    font-size: 9px; letter-spacing: .1em;
+    text-transform: uppercase; color: #8d9aaa;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+  }
+  #timing-card .tc-fire {
+    font-size: 12px; font-weight: 800;
+    margin-top: 4px; color: #f59e0b;
+    transition: color .2s;
+  }
+  #timing-card .tc-row {
+    display: flex; justify-content: space-between;
+    gap: 12px; margin-top: 4px;
+    font-size: 11px; color: #94a3b8;
+  }
+  #timing-card .tc-row b { color: #e5e7eb; font-weight: 800; }
+  html.light-theme #timing-card .tc-row b { color: #0a0d13; }
+  #timing-card .tc-seq {
+    display: flex; gap: 4px; margin-top: 8px;
+  }
+  #timing-card .tc-pip {
+    flex: 1;
+    height: 22px;
+    border-radius: 5px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.10);
+    display: grid; place-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 10px; font-weight: 800;
+    color: #64748b;
+    transition: background .08s, color .08s, border-color .08s, box-shadow .08s;
+  }
+  #timing-card .tc-pip.firing {
+    background: #f59e0b;
+    color: #0a0d13;
+    border-color: #f59e0b;
+    box-shadow: 0 0 14px rgba(245,158,11,.7);
+  }
+  html.light-theme #timing-card .tc-pip {
+    background: rgba(15,23,42,.06);
+    border-color: rgba(15,23,42,.14);
+  }
+  html.light-theme #timing-card .tc-pip.firing {
+    background: #f59e0b;
+    color: #0a0d13;
+    border-color: #f59e0b;
+  }
+  /* Advance curve chart */
+  #adv-curve {
+    display: block;
+    width: 100%;
+    height: 64px;
+    margin-top: 8px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding-top: 4px;
+  }
+  html.light-theme #adv-curve { border-top-color: rgba(15,23,42,.08); }
+
+  /* Cycle bar (bottom center, above controls) */
+  #cycle-bar-wrap {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(72px + var(--safe-b, 0px));
+    z-index: 15;
+    width: min(420px, calc(100vw - 40px));
+    pointer-events: none;
+  }
+  #cycle-bar {
+    position: relative;
+    height: 8px;
+    background: rgba(10,14,20,.78);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 6px;
+    overflow: hidden;
+    backdrop-filter: blur(9px);
+  }
+  html.light-theme #cycle-bar {
+    background: rgba(255,255,255,.88);
+    border-color: rgba(15,23,42,.14);
+  }
+  #cycle-progress {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, #38bdf8, #f59e0b);
+    width: 0%;
+    transition: width .06s linear;
+  }
+  .cycle-marker {
+    position: absolute;
+    top: -2px; bottom: -2px;
+    width: 2px;
+    background: #f59e0b;
+    box-shadow: 0 0 6px rgba(245,158,11,.75);
+  }
+  .cycle-marker span {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: #94a3b8;
+    font-family: ui-monospace, monospace;
+    font-weight: 800;
+  }
+  #cycle-labels {
+    display: flex; justify-content: space-between;
+    margin-top: 4px;
+    font-size: 9px; color: #64748b;
+    font-family: ui-monospace, monospace;
+    letter-spacing: .05em;
+  }
+  body.embedded #cycle-bar-wrap {
+    bottom: calc(80px + var(--safe-b, 0px)) !important;
+  }
+
+  /* Throttle slider overlay (bottom-right) */
+  #thr-overlay {
+    position: fixed;
+    z-index: 20;
+    right: calc(16px + var(--safe-r, 0px));
+    bottom: calc(82px + var(--safe-b, 0px));
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none;
+    gap: 8px;
+  }
+  #thr-track {
+    position: relative;
+    width: 62px;
+    height: 148px;
+    pointer-events: auto;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  #thr-fill-mask {
+    position: absolute; inset: 0;
+    border-radius: 14px; overflow: hidden;
+    background: rgba(10,14,20,.72);
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), 0 10px 24px rgba(0,0,0,.55);
+  }
+  html.light-theme #thr-fill-mask {
+    background: rgba(255,255,255,.88);
+    border-color: rgba(15,23,42,.14);
+  }
+  #thr-track.active #thr-fill-mask { border-color: rgba(245,158,11,.55); }
+  #thr-fill {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
+    background: linear-gradient(180deg, #f59e0b, #fbbf24);
+  }
+  #thr-pad {
+    position: absolute; left: -6px; right: -6px;
+    bottom: 0%; height: 42px;
+    transform: translateY(50%);
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,.55));
+  }
+  #thr-pad svg { width: 100%; height: 100%; display: block; }
+  .tp-plate { fill: #242b35; stroke: #a9b4c3; stroke-width: 1.4; }
+  .tp-grip { fill: #5e6b7d; }
+  html.light-theme .tp-plate { fill: #e2e8f0; stroke: #334155; }
+  html.light-theme .tp-grip { fill: #cbd5e1; }
+  #thr-track.active .tp-plate { stroke: #f59e0b; }
+  #thr-control-label {
+    color: #aab4c3; font-size: 10px; font-weight: 700;
+    letter-spacing: .55px; text-transform: uppercase;
+    background: rgba(10,14,20,.78);
+    padding: 4px 10px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.08);
+    backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  html.light-theme #thr-control-label {
+    background: rgba(255,255,255,.94);
+    color: #475569;
+    border-color: rgba(15,23,42,.14);
+  }
+  body.embedded #thr-overlay {
+    position: absolute !important;
+    bottom: calc(80px + var(--safe-b,0px)) !important;
+    right: 14px !important;
+    z-index: 20 !important;
+  }
+  body.embedded #timing-card {
+    position: absolute !important;
+    top: calc(74px + var(--safe-t,0px)) !important;
+    right: 12px !important;
+    z-index: 14 !important;
+  }
+  @media (max-width: 520px) {
+    #timing-card { min-width: 160px; padding: 8px 10px; }
+    #timing-card .tc-fire { font-size: 11px; }
+    #adv-curve { height: 54px; }
+    #cycle-bar-wrap { width: calc(100vw - 20px); }
+  }
+</style>
+</head>
+<body>
+  <div id="canvas-wrap"></div>
+
+  <div id="edu-panel" class="panel">
+    <div id="panel-head">
+      <div>
+        <h1 id="module-kicker">Electrical Systems</h1>
+        <div id="module-title">Ignition System &amp; Spark Timing</div>
+      </div>
+      <button id="panel-toggle" aria-label="Toggle info" aria-expanded="false">
+        <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+      </button>
+    </div>
+    <div id="panel-body">
+      <div id="stroke-badge" style="background:rgba(245,158,11,.18);color:#f59e0b">
+        <span class="dot" style="background:#f59e0b"></span><span>Ignition</span>
+      </div>
+
+      <div id="live-readout" style="display:flex;flex-direction:column;gap:5px;margin-top:10px;font-size:11.5px;color:var(--muted)">
+        <div style="display:flex;justify-content:space-between"><span>Engine speed</span><b id="lr-rpm" style="color:var(--text);font-variant-numeric:tabular-nums">800 rpm</b></div>
+        <div style="display:flex;justify-content:space-between"><span>Timing advance</span><b id="lr-adv" style="color:var(--text);font-variant-numeric:tabular-nums">10° BTDC</b></div>
+        <div style="display:flex;justify-content:space-between"><span>Coil dwell</span><b id="lr-dwell" style="color:var(--text);font-variant-numeric:tabular-nums">3.2 ms</b></div>
+        <div style="display:flex;justify-content:space-between"><span>Firing order</span><b style="color:var(--text);font-family:ui-monospace,monospace">1–3–4–2</b></div>
+      </div>
+
+      <div id="stroke-desc" style="margin-top:12px">
+        <strong>Ignition.</strong> The ignition coil is a transformer — 12 V from the battery
+        flows through its primary winding, building a magnetic field. When the ECU breaks that
+        circuit, the field collapses and induces 20,000–40,000 V in the secondary winding.
+        That high voltage jumps the spark plug gap, igniting the air–fuel mixture.
+        <br><br>
+        <strong>Timing matters.</strong> The mixture doesn't burn instantly — it takes a few
+        milliseconds to fully ignite. So the spark must fire <em>before</em> the piston reaches
+        TDC. At idle, this is ~10° <strong>before</strong> TDC. As RPM rises, that lead must grow,
+        or peak pressure arrives too late and power is lost. This is the <em>timing advance curve</em>.
+
+        <div style="margin-top:8px;font-size:11px;color:#9aa3b2">
+          Modern systems use <strong>coil-on-plug</strong> — one coil per cylinder, no distributor.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timing card -->
+  <div id="timing-card">
+    <div class="tc-label">Live Firing</div>
+    <div class="tc-fire" id="tc-fire">Cyl 1 firing soon…</div>
+    <div class="tc-row"><span>Advance</span><b id="tc-adv">10° BTDC</b></div>
+    <div class="tc-row"><span>RPM</span><b id="tc-rpm">800</b></div>
+    <div class="tc-seq">
+      <div class="tc-pip" data-cyl="1">1</div>
+      <div class="tc-pip" data-cyl="3">3</div>
+      <div class="tc-pip" data-cyl="4">4</div>
+      <div class="tc-pip" data-cyl="2">2</div>
+    </div>
+    <canvas id="adv-curve" width="360" height="128"></canvas>
+  </div>
+
+  <!-- 4-stroke cycle bar -->
+  <div id="cycle-bar-wrap">
+    <div id="cycle-bar">
+      <div id="cycle-progress"></div>
+      <div class="cycle-marker" data-marker="0" style="left:0%"><span>1</span></div>
+      <div class="cycle-marker" data-marker="1" style="left:25%"><span>3</span></div>
+      <div class="cycle-marker" data-marker="2" style="left:50%"><span>4</span></div>
+      <div class="cycle-marker" data-marker="3" style="left:75%"><span>2</span></div>
+    </div>
+    <div id="cycle-labels">
+      <span>0°</span><span>180°</span><span>360°</span><span>540°</span><span>720°</span>
+    </div>
+  </div>
+
+  <div id="module-controls" class="panel">
+    <button class="ctrl-btn" id="btn-play" aria-label="Pause">
+      <svg id="icon-play" viewBox="0 0 24 24" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+      <svg id="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+    </button>
+    <button class="ctrl-btn" id="btn-reset" aria-label="Reset">
+      <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </button>
+    <div class="slider-group">
+      <span>Base RPM</span>
+      <input type="range" id="speed" min="0.15" max="2.5" step="0.05" value="0.85" aria-label="Base RPM">
+      <span id="rpm-label">~800 rpm</span>
+    </div>
+    <label class="toggle"><input type="checkbox" id="chk-labels" checked> Labels</label>
+    <label class="toggle"><input type="checkbox" id="chk-gas" checked> Spark</label>
+  </div>
+
+  <!-- Throttle slider -->
+  <div id="thr-overlay">
+    <div id="thr-track" role="slider" tabindex="0"
+         aria-label="Throttle — hold to raise RPM"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="thr-fill-mask"><div id="thr-fill"></div></div>
+      <div id="thr-pad">
+        <svg viewBox="0 0 70 44" aria-hidden="true">
+          <rect class="tp-plate" x="4" y="4" width="62" height="36" rx="9"/>
+          <rect class="tp-grip" x="12" y="12" width="46" height="4" rx="2"/>
+          <rect class="tp-grip" x="12" y="20" width="46" height="4" rx="2"/>
+          <rect class="tp-grip" x="12" y="28" width="46" height="4" rx="2"/>
+        </svg>
+      </div>
+    </div>
+    <div id="thr-control-label">RPM · <span id="thr-pct-label">0%</span></div>
+  </div>
+
+  <div id="hint">Drag to orbit · Hold the throttle (or Space) to raise RPM · Watch the spark advance</div>
+  <div id="labels-root"></div>
+
+  <script type="importmap">
+  { "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  } }
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+  import * as Base from './module-base.js';
+
+  /* ═══════════════════════════════════════════════════════════
+     SHELL + QUALITY
+     ═══════════════════════════════════════════════════════════ */
+  const IS_EMBEDDED = window.parent && window.parent !== window;
+  if (IS_EMBEDDED) document.body.classList.add('embedded');
+
+  const isCoarse = matchMedia('(pointer: coarse)').matches;
+  const cores    = navigator.hardwareConcurrency || 4;
+  const mem      = navigator.deviceMemory || 4;
+  const isLowEnd = cores <= 4 || mem <= 2;
+  const isMidEnd = !isLowEnd && (cores <= 6 || isCoarse);
+
+  const CYL_SEGS    = isLowEnd ? 16 : 24;
+  const SPARK_COUNT = isLowEnd ? 20 : 32;
+
+  const { scene, camera, renderer, controls, wrap } = Base.buildScene({
+    fov: 42,
+    camPos: isCoarse ? [2.4, 1.8, 3.4] : [3.0, 2.2, 4.0],
+    target: [0, 0.1, 0],
+    floorY: -2.15
+  });
+  Base.attachResize(camera, renderer, wrap, 42);
+  const particleTex = Base.createParticleTexture();
+  const labels = Base.createLabelSystem();
+  const state = Base.createUIState();
+
+  /* ═══════════════════════════════════════════════════════════
+     MATERIALS
+     ═══════════════════════════════════════════════════════════ */
+  const M = {
+    steel:     new THREE.MeshStandardMaterial({ color:0xa8b0be, metalness:0.88, roughness:0.28 }),
+    steelDark: new THREE.MeshStandardMaterial({ color:0x3d4555, metalness:0.78, roughness:0.42 }),
+    alum:      new THREE.MeshStandardMaterial({ color:0xc5ccd6, metalness:0.82, roughness:0.28 }),
+    copper:    new THREE.MeshStandardMaterial({ color:0xc58a35, metalness:0.85, roughness:0.32 }),
+    battery:   new THREE.MeshStandardMaterial({ color:0x1a1f2a, metalness:0.25, roughness:0.65 }),
+    batteryPos:new THREE.MeshStandardMaterial({ color:0xdc2626, metalness:0.30, roughness:0.50 }),
+    batteryNeg:new THREE.MeshStandardMaterial({ color:0x1e293b, metalness:0.30, roughness:0.50 }),
+    plugBody:  new THREE.MeshStandardMaterial({ color:0xd4dbe6, metalness:0.80, roughness:0.25 }),
+    plugIns:   new THREE.MeshStandardMaterial({ color:0xf1f5f9, metalness:0.05, roughness:0.40 }),
+    coilTower: new THREE.MeshStandardMaterial({ color:0x2a3038, metalness:0.30, roughness:0.60 }),
+    coilBody:  new THREE.MeshStandardMaterial({ color:0x1a1f2a, metalness:0.30, roughness:0.65 }),
+    spark:     new THREE.MeshBasicMaterial({ color:0xfef08a, transparent:true, opacity:0 }),
+    electrode: new THREE.MeshStandardMaterial({ color:0xc58a35, metalness:0.85, roughness:0.32, emissive:0xff8800, emissiveIntensity:0 })
+  };
+
+  const system = new THREE.Group();
+  scene.add(system);
+
+  /* ═══════════════════════════════════════════════════════════
+     BATTERY (left)
+     ═══════════════════════════════════════════════════════════ */
+  const BAT_X = -1.8;
+
+  const batGroup = new THREE.Group();
+  batGroup.position.set(BAT_X, -0.6, 0);
+  system.add(batGroup);
+
+  const battery = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.55, 0.42), M.battery);
+  battery.castShadow = true;
+  batGroup.add(battery);
+
+  const posTerm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.09, 12), M.batteryPos);
+  posTerm.position.set(0.18, 0.32, 0);
+  batGroup.add(posTerm);
+
+  const negTerm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.09, 12), M.batteryNeg);
+  negTerm.position.set(-0.18, 0.32, 0);
+  batGroup.add(negTerm);
+
+  function makePipe(a, b, r = 0.014, mat = M.copper) {
+    const va = new THREE.Vector3(...a);
+    const vb = new THREE.Vector3(...b);
+    const dir = new THREE.Vector3().subVectors(vb, va);
+    const len = dir.length();
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 8), mat);
+    m.position.copy(va).add(vb).multiplyScalar(0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+    m.castShadow = true;
+    return m;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     IGNITION COIL
+     ═══════════════════════════════════════════════════════════ */
+  const COIL_X = -0.6, COIL_Y = 0.6;
+
+  const coilGroup = new THREE.Group();
+  coilGroup.position.set(COIL_X, COIL_Y, 0);
+  system.add(coilGroup);
+
+  const coilBody = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.42, CYL_SEGS), M.coilBody);
+  coilBody.castShadow = true;
+  coilGroup.add(coilBody);
+
+  const coilTop = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.12, CYL_SEGS), M.coilTower);
+  coilTop.position.y = 0.26;
+  coilGroup.add(coilTop);
+
+  const coilOutput = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.10, 10), M.steel);
+  coilOutput.position.y = 0.36;
+  coilGroup.add(coilOutput);
+
+  const coilGlow = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.17, 0.19, 0.44, CYL_SEGS),
+    new THREE.MeshBasicMaterial({
+      color:0x38bdf8, transparent:true, opacity:0,
+      blending: THREE.AdditiveBlending, depthWrite:false
+    })
+  );
+  coilGroup.add(coilGlow);
+
+  system.add(makePipe([BAT_X + 0.18, -0.28, 0], [COIL_X - 0.20, COIL_Y - 0.20, 0], 0.014, M.copper));
+
+  /* ═══════════════════════════════════════════════════════════
+     DISTRIBUTOR + CAP WIRES
+     ═══════════════════════════════════════════════════════════ */
+  const DIST_X = 0.0, DIST_Y = 0.6;
+
+  const distGroup = new THREE.Group();
+  distGroup.position.set(DIST_X, DIST_Y, 0);
+  system.add(distGroup);
+
+  const distCap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.18, CYL_SEGS), M.coilBody);
+  distCap.castShadow = true;
+  distGroup.add(distCap);
+
+  const distBase = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.30, CYL_SEGS), M.steelDark);
+  distBase.position.y = -0.24;
+  distGroup.add(distBase);
+
+  /* Rotating rotor inside the distributor — visibly spins at half crank speed */
+  const distRotorPivot = new THREE.Group();
+  distRotorPivot.position.y = 0.02;
+  distGroup.add(distRotorPivot);
+  const distRotor = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.03, 0.06), M.copper);
+  distRotor.position.x = 0.10;
+  distRotorPivot.add(distRotor);
+  const distRotorTip = new THREE.Mesh(new THREE.SphereGeometry(0.028, 12, 8),
+    new THREE.MeshStandardMaterial({ color:0xf59e0b, emissive:0xf59e0b, emissiveIntensity:0.8 }));
+  distRotorTip.position.set(0.24, 0, 0);
+  distRotorPivot.add(distRotorTip);
+
+  system.add(makePipe([COIL_X + 0.06, COIL_Y + 0.36, 0], [DIST_X, DIST_Y + 0.16, 0], 0.012, M.copper));
+
+  /* Spark plug factory */
+  function makeSparkPlug() {
+    const g = new THREE.Group();
+
+    const ins = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.045, 0.22, 12), M.plugIns);
+    ins.position.y = 0.11;
+    g.add(ins);
+
+    const hex = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.08, 6), M.steel);
+    hex.position.y = -0.05;
+    g.add(hex);
+
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.16, 10), M.plugBody);
+    shaft.position.y = -0.17;
+    g.add(shaft);
+
+    /* Electrode glow material is unique per plug so we can animate each one */
+    const electrodeMat = M.electrode.clone();
+    const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.06, 8), electrodeMat);
+    tip.position.y = -0.28;
+    g.add(tip);
+
+    /* Flash sphere */
+    const flash = new THREE.Mesh(new THREE.SphereGeometry(0.10, 12, 8), M.spark.clone());
+    flash.position.y = -0.34;
+    g.add(flash);
+
+    return { group: g, flash, electrodeMat };
+  }
+
+  const PLUG_XS = [-0.90, -0.30, 0.30, 0.90];
+  const PLUG_Y  = -0.50;
+  const plugs = [];
+  PLUG_XS.forEach(x => {
+    const p = makeSparkPlug();
+    p.group.position.set(x, PLUG_Y, 0);
+    system.add(p.group);
+    plugs.push(p);
+  });
+
+  PLUG_XS.forEach(x => {
+    system.add(makePipe([DIST_X, DIST_Y + 0.14, 0], [x, PLUG_Y + 0.24, 0], 0.010, M.copper));
+  });
+
+  /* ═══════════════════════════════════════════════════════════
+     CRANKSHAFT
+     ═══════════════════════════════════════════════════════════ */
+  const crankGroup = new THREE.Group();
+  crankGroup.position.set(0.0, -1.4, 0);
+  system.add(crankGroup);
+
+  const crankShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.4, CYL_SEGS), M.steelDark);
+  crankShaft.rotation.z = Math.PI / 2;
+  crankShaft.castShadow = true;
+  crankGroup.add(crankShaft);
+
+  const crankPinGroup = new THREE.Group();
+  crankGroup.add(crankPinGroup);
+
+  const crankPin = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.30, 12), M.steel);
+  crankPin.rotation.x = Math.PI / 2;
+  crankPin.position.y = 0.22;
+  crankPinGroup.add(crankPin);
+
+  const crankMarker = new THREE.Mesh(
+    new THREE.SphereGeometry(0.045, 14, 10),
+    new THREE.MeshStandardMaterial({ color:0x38bdf8, emissive:0x38bdf8, emissiveIntensity:0.8 })
+  );
+  crankMarker.position.y = 0.30;
+  crankMarker.position.z = 0.14;
+  crankPinGroup.add(crankMarker);
+
+  const tdcMark = new THREE.Mesh(
+    new THREE.BoxGeometry(0.06, 0.04, 0.06),
+    new THREE.MeshStandardMaterial({ color:0x22c55e, emissive:0x22c55e, emissiveIntensity:0.4 })
+  );
+  tdcMark.position.set(0, 0.28, 0);
+  crankGroup.add(tdcMark);
+
+  /* ═══════════════════════════════════════════════════════════
+     SPARK BURST PARTICLES
+     Repurposed: they're emitted from a plug when that cylinder fires.
+     ═══════════════════════════════════════════════════════════ */
+  const sparkGeo = new THREE.BufferGeometry();
+  const sparkPositions = new Float32Array(SPARK_COUNT * 3);
+  const sparkColors    = new Float32Array(SPARK_COUNT * 3);
+  sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
+  sparkGeo.setAttribute('color',    new THREE.BufferAttribute(sparkColors, 3));
+  const sparkMat = new THREE.PointsMaterial({
+    map: particleTex,
+    size: 0.11,
+    sizeAttenuation: true,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.95,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const sparkParticles = new THREE.Points(sparkGeo, sparkMat);
+  sparkParticles.visible = false;
+  system.add(sparkParticles);
+
+  const sparkData = [];
+  for (let i = 0; i < SPARK_COUNT; i++) {
+    sparkData.push({ life: 0, maxLife: 0, vx: 0, vy: 0, vz: 0, x: 0, y: 0, z: 0 });
+  }
+
+  /* Per-plug active flash timers */
+  const plugFlash = [0, 0, 0, 0];
+
+  function spawnSparkBurst(plugIdx) {
+    const x0 = PLUG_XS[plugIdx];
+    const y0 = PLUG_Y - 0.34;
+    const z0 = 0;
+    let placed = 0;
+    for (let i = 0; i < SPARK_COUNT && placed < 14; i++) {
+      const s = sparkData[i];
+      if (s.life > 0) continue;
+      const a = Math.random() * Math.PI * 2;
+      const r = Math.random() * 0.6 + 0.5;
+      s.x = x0; s.y = y0; s.z = z0;
+      s.vx = Math.cos(a) * r;
+      s.vy = 0.8 + Math.random() * 1.4;
+      s.vz = Math.sin(a) * r;
+      s.maxLife = 0.25 + Math.random() * 0.35;
+      s.life = s.maxLife;
+      placed++;
+    }
+  }
+
+  function updateSparkBurst(dt) {
+    let anyAlive = false;
+    for (let i = 0; i < SPARK_COUNT; i++) {
+      const s = sparkData[i];
+      const i3 = i * 3;
+      if (s.life > 0) {
+        anyAlive = true;
+        s.life -= dt;
+        s.vy -= 9 * dt;
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.z += s.vz * dt;
+        const f = Math.max(0, s.life / s.maxLife);
+        sparkPositions[i3]     = s.x;
+        sparkPositions[i3 + 1] = s.y;
+        sparkPositions[i3 + 2] = s.z;
+        sparkColors[i3]     = 1.0;
+        sparkColors[i3 + 1] = 0.6 + 0.4 * f;
+        sparkColors[i3 + 2] = 0.15 * f;
+      } else {
+        sparkPositions[i3 + 1] = -100;
+        sparkColors[i3]     = 0;
+        sparkColors[i3 + 1] = 0;
+        sparkColors[i3 + 2] = 0;
+      }
+    }
+    sparkGeo.attributes.position.needsUpdate = true;
+    sparkGeo.attributes.color.needsUpdate = true;
+    sparkParticles.visible = anyAlive && state.showGas !== false;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     LABELS
+     ═══════════════════════════════════════════════════════════ */
+  const labelDefs = [
+    { id:'bat',    text:'Battery (12V)',  pos: new THREE.Vector3(BAT_X, -1.00, 0.30) },
+    { id:'coil',   text:'Ignition coil',  pos: new THREE.Vector3(COIL_X, COIL_Y + 0.55, 0) },
+    { id:'dist',   text:'Distributor',    pos: new THREE.Vector3(DIST_X, DIST_Y + 0.40, 0) },
+    { id:'plug1',  text:'Spark plug 1',   pos: new THREE.Vector3(PLUG_XS[0], PLUG_Y - 0.55, 0) },
+    { id:'plug2',  text:'Spark plug 2',   pos: new THREE.Vector3(PLUG_XS[1], PLUG_Y - 0.55, 0) },
+    { id:'plug3',  text:'Spark plug 3',   pos: new THREE.Vector3(PLUG_XS[2], PLUG_Y - 0.55, 0) },
+    { id:'plug4',  text:'Spark plug 4',   pos: new THREE.Vector3(PLUG_XS[3], PLUG_Y - 0.55, 0) },
+    { id:'crank',  text:'Crankshaft',     pos: new THREE.Vector3(1.20, -1.20, 0.30) },
+    { id:'tdc',    text:'TDC mark',       pos: new THREE.Vector3(0.55, -1.10, 0) }
+  ];
+  labelDefs.forEach(d => labels.add(d.id, d.text));
+
+  /* ═══════════════════════════════════════════════════════════
+     TIMING MODEL
+     ═══════════════════════════════════════════════════════════ */
+  let throttle = 0;
+  let crankAngle = 0;         /* 0..720 */
+  let prevCrankAngle = 0;
+  let currentRPM = 800;
+
+  /*
+    Firing order 1-3-4-2 (as advertised in the panel).
+
+    Referenced to a 720° window where Cylinder 1's TDC is at 0°:
+      Cyl 1 fires at   0°
+      Cyl 3 fires at 180°
+      Cyl 4 fires at 360°
+      Cyl 2 fires at 540°
+
+    So, indexed by cylinder number 0..3:
+      cyl 1 (idx 0) →   0°
+      cyl 2 (idx 1) → 540°
+      cyl 3 (idx 2) → 180°
+      cyl 4 (idx 3) → 360°
+  */
+  const FIRING_ANGLE = [0, 540, 180, 360];
+
+  /* Timing advance curve (°BTDC) */
+  function timingAdvance(rpm) {
+    const r = Math.max(600, Math.min(6000, rpm));
+    if (r < 1500) return 10 + (r - 600) / 900 * 5;
+    if (r < 3000) return 15 + (r - 1500) / 1500 * 10;
+    if (r < 5000) return 25 + (r - 3000) / 2000 * 7;
+    return 32;
+  }
+
+  /* Dwell time (ms) — shorter at high RPM to avoid saturating the coil */
+  function dwellMs(rpm) {
+    const r = Math.max(400, Math.min(6500, rpm));
+    return Math.max(1.4, 4.5 - (r - 400) / 6500 * 3.0);
+  }
+
+  /* Does target lie in (prev, curr] on a 0..720 wrap? */
+  function angleCrossed(prev, curr, target) {
+    const delta  = (curr - prev + 720) % 720;
+    const rel    = (target - prev + 720) % 720;
+    return delta > 0 && rel < delta;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     THROTTLE INPUT
+     ═══════════════════════════════════════════════════════════ */
+  const thrTrackEl  = document.getElementById('thr-track');
+  const thrFillEl   = document.getElementById('thr-fill');
+  const thrPctLblEl = document.getElementById('thr-pct-label');
+  let thrDragging = false;
+  let thrPointerId = null;
+  let thrReturnRAF = 0;
+  let spaceHeld = false;
+
+  function setThrottle(v) {
+    throttle = Math.max(0, Math.min(1, v));
+    const pct = Math.round(throttle * 100);
+    if (thrFillEl) thrFillEl.style.height = pct + '%';
+    if (thrPctLblEl) thrPctLblEl.textContent = pct + '%';
+    if (thrTrackEl) thrTrackEl.setAttribute('aria-valuenow', String(pct));
+  }
+  function thrPercentFromEvent(e) {
+    const r = thrTrackEl.getBoundingClientRect();
+    return Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
+  }
+  function cancelThrReturn() {
+    if (thrReturnRAF) { cancelAnimationFrame(thrReturnRAF); thrReturnRAF = 0; }
+  }
+  function springReleaseThr() {
+    cancelThrReturn();
+    const step = () => {
+      const next = throttle * 0.85;
+      setThrottle(next < 0.004 ? 0 : next);
+      thrReturnRAF = throttle > 0 ? requestAnimationFrame(step) : 0;
+    };
+    thrReturnRAF = requestAnimationFrame(step);
+  }
+  thrTrackEl.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    cancelThrReturn();
+    thrDragging = true;
+    thrPointerId = e.pointerId;
+    try { thrTrackEl.setPointerCapture(e.pointerId); } catch (_) {}
+    thrTrackEl.classList.add('active');
+    setThrottle(thrPercentFromEvent(e));
+  });
+  thrTrackEl.addEventListener('pointermove', e => {
+    if (!thrDragging || e.pointerId !== thrPointerId) return;
+    e.preventDefault();
+    setThrottle(thrPercentFromEvent(e));
+  });
+  function endThrDrag() {
+    if (!thrDragging) return;
+    thrDragging = false;
+    thrPointerId = null;
+    thrTrackEl.classList.remove('active');
+    springReleaseThr();
+  }
+  thrTrackEl.addEventListener('pointerup', endThrDrag);
+  thrTrackEl.addEventListener('pointercancel', endThrDrag);
+  thrTrackEl.addEventListener('lostpointercapture', endThrDrag);
+
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space' && !e.repeat && !e.target.closest('button, input')) {
+      e.preventDefault();
+      spaceHeld = true;
+      cancelThrReturn();
+      thrTrackEl.classList.add('active');
+    }
+  });
+  window.addEventListener('keyup', e => {
+    if (e.code === 'Space') {
+      spaceHeld = false;
+      if (!thrDragging) {
+        thrTrackEl.classList.remove('active');
+        springReleaseThr();
+      }
+    }
+  });
+
+  /* ═══════════════════════════════════════════════════════════
+     LIVE UI REFS
+     ═══════════════════════════════════════════════════════════ */
+  const lrRpmEl   = document.getElementById('lr-rpm');
+  const lrAdvEl   = document.getElementById('lr-adv');
+  const lrDwellEl = document.getElementById('lr-dwell');
+  const tcFireEl  = document.getElementById('tc-fire');
+  const tcAdvEl   = document.getElementById('tc-adv');
+  const tcRpmEl   = document.getElementById('tc-rpm');
+  const tcPips    = document.querySelectorAll('.tc-pip');
+  const cycleProgEl = document.getElementById('cycle-progress');
+  const advCanvas = document.getElementById('adv-curve');
+  const advCtx    = advCanvas ? advCanvas.getContext('2d') : null;
+  const rpmLabelEl = document.getElementById('rpm-label');
+
+  function updateRpmLabel() {
+    if (!rpmLabelEl) return;
+    rpmLabelEl.textContent = '~' + Math.round(400 + state.speedMul * 900) + ' rpm';
+  }
+  updateRpmLabel();
+
+  /* Map a cylinder number (1..4) → DOM pip */
+  function pipForCylinder(cyl) {
+    for (const p of tcPips) if (Number(p.dataset.cyl) === cyl) return p;
+    return null;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     ADVANCE-CURVE 2D CHART
+     ═══════════════════════════════════════════════════════════ */
+  const RPM_MAX = 6500;
+  const ADV_MAX = 35;
+
+  function drawAdvanceCurve(rpm, advance) {
+    if (!advCtx) return;
+    const W = advCanvas.width, H = advCanvas.height;
+    const padL = 34, padR = 12, padT = 12, padB = 26;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    advCtx.clearRect(0, 0, W, H);
+
+    /* Grid */
+    advCtx.strokeStyle = 'rgba(148,163,184,.15)';
+    advCtx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = padT + plotH * i / 4;
+      advCtx.beginPath();
+      advCtx.moveTo(padL, y); advCtx.lineTo(padL + plotW, y);
+      advCtx.stroke();
+    }
+    for (let i = 0; i <= 6; i++) {
+      const x = padL + plotW * i / 6;
+      advCtx.beginPath();
+      advCtx.moveTo(x, padT); advCtx.lineTo(x, padT + plotH);
+      advCtx.stroke();
+    }
+
+    /* Curve */
+    advCtx.beginPath();
+    for (let r = 600; r <= RPM_MAX; r += 100) {
+      const a = timingAdvance(r);
+      const x = padL + (r / RPM_MAX) * plotW;
+      const y = padT + plotH - (a / ADV_MAX) * plotH;
+      if (r === 600) advCtx.moveTo(x, y);
+      else advCtx.lineTo(x, y);
+    }
+    advCtx.strokeStyle = '#f59e0b';
+    advCtx.lineWidth = 2;
+    advCtx.stroke();
+
+    /* Live dot */
+    const lx = padL + (Math.min(rpm, RPM_MAX) / RPM_MAX) * plotW;
+    const ly = padT + plotH - (Math.min(advance, ADV_MAX) / ADV_MAX) * plotH;
+    advCtx.beginPath();
+    advCtx.arc(lx, ly, 5, 0, Math.PI * 2);
+    advCtx.fillStyle = '#fff';
+    advCtx.fill();
+    advCtx.strokeStyle = '#f59e0b';
+    advCtx.lineWidth = 2;
+    advCtx.stroke();
+
+    /* Pulse ring */
+    const t = performance.now() * 0.004;
+    const r = 8 + Math.sin(t) * 2;
+    advCtx.beginPath();
+    advCtx.arc(lx, ly, r, 0, Math.PI * 2);
+    advCtx.strokeStyle = 'rgba(245,158,11,.5)';
+    advCtx.lineWidth = 1;
+    advCtx.stroke();
+
+    /* Labels */
+    advCtx.fillStyle = 'rgba(148,163,184,.85)';
+    advCtx.font = 'bold 10px ui-monospace, monospace';
+    advCtx.textAlign = 'right';
+    advCtx.textBaseline = 'middle';
+    advCtx.fillText('32°', padL - 5, padT + 2);
+    advCtx.fillText('0°',  padL - 5, padT + plotH);
+    advCtx.textAlign = 'center';
+    advCtx.textBaseline = 'top';
+    advCtx.fillText('0', padL, padT + plotH + 4);
+    advCtx.fillText('RPM', padL + plotW / 2, padT + plotH + 4);
+    advCtx.fillText('6500', padL + plotW, padT + plotH + 4);
+
+    /* Title */
+    advCtx.fillStyle = 'rgba(245,158,11,.9)';
+    advCtx.font = 'bold 10px -apple-system, sans-serif';
+    advCtx.textAlign = 'left';
+    advCtx.fillText('TIMING ADVANCE CURVE', padL, 2);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     PANEL TOGGLE
+     ═══════════════════════════════════════════════════════════ */
+  const eduPanel = document.getElementById('edu-panel');
+  document.getElementById('panel-toggle').onclick = (e) => {
+    e.stopPropagation();
+    if (document.body.classList.contains('embedded')) {
+      eduPanel.classList.toggle('expanded');
+      const expanded = eduPanel.classList.contains('expanded');
+      e.currentTarget.setAttribute('aria-expanded', String(expanded));
+      e.currentTarget.querySelector('svg').style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+    } else {
+      const body = document.getElementById('panel-body');
+      const hidden = body.style.display === 'none';
+      body.style.display = hidden ? 'block' : 'none';
+      e.currentTarget.querySelector('svg').style.transform = hidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+    }
+  };
+  document.getElementById('panel-head').addEventListener('click', (e) => {
+    if (!document.body.classList.contains('embedded')) return;
+    if (e.target.closest('#panel-toggle')) return;
+    eduPanel.classList.toggle('expanded');
+    const expanded = eduPanel.classList.contains('expanded');
+    document.getElementById('panel-toggle').setAttribute('aria-expanded', String(expanded));
+    document.querySelector('#panel-toggle svg').style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+  });
+
+  /* ═══════════════════════════════════════════════════════════
+     UI + BRIDGE
+     ═══════════════════════════════════════════════════════════ */
+  Base.wireCommonUI(state, { onReset: () => {
+    setThrottle(0);
+    crankAngle = 0;
+    prevCrankAngle = 0;
+    currentRPM = 800;
+    plugFlash.fill(0);
+  }});
+  Base.wirePanelToggle();
+
+  const bridge = Base.createBridge('ignition', (d) => {
+    if (d.type !== 'command') return;
+    switch (d.action) {
+      case 'setPlaying': state.playing = !!d.value; break;
+      case 'setSpeed':   state.speedMul = +d.value;
+                         const sp = document.getElementById('speed');
+                         if (sp) sp.value = d.value;
+                         updateRpmLabel();
+                         break;
+      case 'setLabels':  state.showLabels = !!d.value; break;
+      case 'setGas':     state.showGas = !!d.value; break;
+      case 'reset':      setThrottle(0); crankAngle = 0; prevCrankAngle = 0; currentRPM = 800; plugFlash.fill(0); break;
+    }
+  });
+  bridge.ready();
+
+  /* ═══════════════════════════════════════════════════════════
+     MAIN LOOP
+     ═══════════════════════════════════════════════════════════ */
+  const clock = new THREE.Clock();
+  let frame = 0;
+  let lastFiringCyl = 0;
+  let lastFireTime = 0;
+  let coilCharge = 0;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    frame++;
+
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const sim = state.playing ? dt * state.speedMul : 0;
+
+    /* ── Spacebar = throttle up ── */
+    if (spaceHeld) setThrottle(Math.min(1, throttle + dt * 0.9));
+
+    /* ── RPM ramps smoothly toward target ── */
+    const targetRPM = 800 + throttle * 5200;
+    currentRPM += (targetRPM - currentRPM) * Math.min(1, dt * 3.5);
+
+    /* ── Advance and dwell at the current RPM ── */
+    const advance = timingAdvance(currentRPM);
+    const dwell   = dwellMs(currentRPM);
+
+    /* ── Advance crank angle (RPM → °/s: RPM/60 * 360) ── */
+    const degPerSec = (currentRPM / 60) * 360;
+    prevCrankAngle = crankAngle;
+    crankAngle = (crankAngle + degPerSec * sim) % 720;
+
+    /* ── Detect firing events ──
+       Spark fires at (FIRING_ANGLE[cyl] − advance). If we crossed
+       that target during this frame, fire the cylinder. */
+    if (sim > 0) {
+      for (let cyl = 0; cyl < 4; cyl++) {
+        const sparkAt = ((FIRING_ANGLE[cyl] - advance) + 720) % 720;
+        if (angleCrossed(prevCrankAngle, crankAngle, sparkAt)) {
+          /* Fire! */
+          lastFiringCyl = cyl + 1;
+          lastFireTime = performance.now();
+          plugFlash[cyl] = 1.0;
+          spawnSparkBurst(cyl);
+
+          const pip = pipForCylinder(cyl + 1);
+          if (pip) {
+            pip.classList.add('firing');
+            setTimeout(() => pip.classList.remove('firing'), 130);
+          }
+
+          /* Coil field collapse flash */
+          coilCharge = 1.0;
+        }
+      }
+    }
+
+    /* ── Update plug flash & electrode glow ── */
+    for (let i = 0; i < 4; i++) {
+      if (plugFlash[i] > 0) {
+        plugFlash[i] = Math.max(0, plugFlash[i] - dt * 5.5);
+        const f = plugFlash[i];
+        plugs[i].flash.material.opacity = f * 0.9;
+        plugs[i].flash.scale.setScalar(0.7 + (1 - f) * 1.6);
+        plugs[i].electrodeMat.emissiveIntensity = f * 2.5;
+      } else {
+        plugs[i].flash.material.opacity = 0;
+        plugs[i].electrodeMat.emissiveIntensity = 0;
+      }
+    }
+
+    /* ── Coil glow: brightens during dwell, flashes on fire ── */
+    /* Simplified model: coilCharge resets on fire, then rebuilds over dwell */
+    if (coilCharge > 0) {
+      coilCharge = Math.max(0, coilCharge - dt * (1 / Math.max(0.08, dwell / 1000)));
+    }
+    const cycleFrac = Math.min(1, (performance.now() % 500) / 500);
+    const dwellGlow = 0.25 + 0.55 * coilCharge;
+    coilGlow.material.opacity = state.showGas !== false ? dwellGlow : 0;
+    coilGlow.material.color.setHex(coilCharge > 0.9 ? 0xfef08a : 0x38bdf8);
+
+    /* ── Visual rotation: crank + distributor rotor ── */
+    crankGroup.rotation.z      = -crankAngle * Math.PI / 180;
+    crankPinGroup.rotation.z   = -crankAngle * Math.PI / 180;
+    /* Distributor rotor spins at exactly ½ crank speed (4-stroke) */
+    distRotorPivot.rotation.y  =  (crankAngle * 0.5) * Math.PI / 180;
+
+    /* ── Spark particle burst update ── */
+    updateSparkBurst(dt);
+
+    /* ── DOM readouts (throttled to ~15 Hz) ── */
+    if (frame % 4 === 0) {
+      if (lrRpmEl)   lrRpmEl.textContent   = Math.round(currentRPM) + ' rpm';
+      if (lrAdvEl)   lrAdvEl.textContent   = advance.toFixed(1) + '° BTDC';
+      if (lrDwellEl) lrDwellEl.textContent = dwell.toFixed(2) + ' ms';
+      if (tcAdvEl)   tcAdvEl.textContent   = advance.toFixed(1) + '° BTDC';
+      if (tcRpmEl)   tcRpmEl.textContent   = Math.round(currentRPM);
+
+      /* Firing announcement */
+      if (tcFireEl) {
+        const since = performance.now() - lastFireTime;
+        if (since < 200) {
+          tcFireEl.textContent = `Cyl ${lastFiringCyl} firing`;
+          tcFireEl.style.color = '#f59e0b';
+        } else {
+          /* Next expected */
+          const next = (crankAngle + 20) % 720;
+          let nextCyl = 1, best = 9999;
+          for (let cyl = 0; cyl < 4; cyl++) {
+            const d = (FIRING_ANGLE[cyl] - next + 720) % 720;
+            if (d < best) { best = d; nextCyl = cyl + 1; }
+          }
+          tcFireEl.textContent = `Cyl ${nextCyl} firing soon…`;
+          tcFireEl.style.color = '#94a3b8';
+        }
+      }
+
+      /* Cycle bar */
+      if (cycleProgEl) {
+        cycleProgEl.style.width = (crankAngle / 720 * 100).toFixed(1) + '%';
+      }
+
+      /* Advance curve chart */
+      drawAdvanceCurve(currentRPM, advance);
+    }
+
+    /* ── Labels at 30 Hz ── */
+    if (state.showLabels && frame % 2 === 0) {
+      labelDefs.forEach(d => labels.project(d.id, d.pos, camera, wrap));
+    } else if (!state.showLabels) {
+      labels.hideAll();
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  animate();
+  bridge.setStatus('Ignition', '#f59e0b');
+  </script>
+</body>
+</html>
