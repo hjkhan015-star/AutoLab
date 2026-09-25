@@ -2067,13 +2067,6 @@ window.addEventListener('appinstalled', () => {
    version — causing exactly this kind of "works in a browser tab,
    breaks in the installed app" mismatch. */
 if('serviceWorker' in navigator){
-  let refreshedOnce = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if(refreshedOnce) return;
-    refreshedOnce = true;
-    location.reload();
-  });
-
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js', {scope:'./'}).catch(err => {
       console.warn('[Auto Lab] SW registration failed:', err);
