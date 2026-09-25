@@ -7,57 +7,26 @@
 <title>Turbocharger — Auto Lab</title>
 <link rel="stylesheet" href="base.css">
 <style>
-  /* ── Boost gauge panel ── */
   #boost-panel {
-    position: fixed;
-    top: calc(74px + var(--safe-t,0px));
-    right: calc(14px + var(--safe-r,0px));
-    z-index: 18;
+    position: fixed; top: calc(74px + var(--safe-t,0px));
+    right: calc(14px + var(--safe-r,0px)); z-index: 18;
     background: rgba(10,14,20,.86);
     border: 1px solid rgba(255,255,255,.10);
-    border-radius: 12px;
-    padding: 10px 12px;
+    border-radius: 12px; padding: 10px 12px;
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     font-family: ui-monospace, Menlo, Consolas, monospace;
-    pointer-events: none;
-    min-width: 176px;
+    pointer-events: none; min-width: 176px;
   }
-  html.light-theme #boost-panel {
-    background: rgba(255,255,255,.95);
-    border-color: rgba(15,23,42,.14);
-  }
-  #boost-panel .bp-label {
-    font-size: 9px; letter-spacing: .1em;
-    text-transform: uppercase; color: #8d9aaa;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    font-weight: 700;
-  }
-  #boost-panel .bp-value {
-    font-size: 22px; font-weight: 800;
-    margin-top: 2px; color: #64748b;
-    transition: color .25s;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
+  html.light-theme #boost-panel { background: rgba(255,255,255,.95); border-color: rgba(15,23,42,.14); }
+  #boost-panel .bp-label { font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: #8d9aaa; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 700; }
+  #boost-panel .bp-value { font-size: 22px; font-weight: 800; margin-top: 2px; color: #64748b; transition: color .25s; font-variant-numeric: tabular-nums; line-height: 1; }
   #boost-panel .bp-value span { font-size: 11px; font-weight: 700; opacity: .7; margin-left: 3px; }
-  #boost-panel .bp-bar {
-    height: 5px; background: rgba(255,255,255,.10);
-    border-radius: 10px; overflow: hidden; margin-top: 7px;
-  }
-  #boost-panel .bp-fill {
-    height: 100%; width: 0%; background: #64748b;
-    border-radius: 10px; transition: width .12s linear, background .25s;
-  }
-  #boost-panel .bp-row {
-    display: flex; justify-content: space-between;
-    gap: 12px; margin-top: 5px; font-size: 11px; color: #94a3b8;
-  }
-  #boost-panel .bp-row b {
-    color: #e5e7eb; font-weight: 800; font-variant-numeric: tabular-nums;
-  }
+  #boost-panel .bp-bar { height: 5px; background: rgba(255,255,255,.10); border-radius: 10px; overflow: hidden; margin-top: 7px; }
+  #boost-panel .bp-fill { height: 100%; width: 0%; background: #64748b; border-radius: 10px; transition: width .12s linear, background .25s; }
+  #boost-panel .bp-row { display: flex; justify-content: space-between; gap: 12px; margin-top: 5px; font-size: 11px; color: #94a3b8; }
+  #boost-panel .bp-row b { color: #e5e7eb; font-weight: 800; font-variant-numeric: tabular-nums; }
   html.light-theme #boost-panel .bp-row b { color: #0a0d13; }
 
-  /* ── Accelerator pedal ── */
   #accel-overlay {
     position: fixed; z-index: 50;
     right: calc(16px + var(--safe-r,0px));
@@ -65,133 +34,46 @@
     display: flex; flex-direction: column; align-items: center;
     pointer-events: none;
   }
-  #accel-readout {
-    margin-bottom: 8px;
-    font-family: ui-monospace, Menlo, Consolas, monospace;
-    font-size: 12px; font-weight: 800;
-    color: #e5e7eb;
-    background: rgba(10,14,20,.76);
-    padding: 3px 11px; border-radius: 20px;
-    border: 1px solid rgba(255,255,255,.08);
-    backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
-  }
-  #accel-track {
-    position: relative;
-    width: 54px; height: 158px;
-    pointer-events: auto; cursor: pointer;
-    touch-action: none; user-select: none; -webkit-user-select: none;
-  }
-  #accel-fill-mask {
-    position: absolute; inset: 0;
-    border-radius: 16px; overflow: hidden;
-    background: rgba(10,14,20,.65);
-    border: 1px solid rgba(255,255,255,.10);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), 0 10px 24px rgba(0,0,0,.55);
-    transition: border-color .2s;
-  }
-  html.light-theme #accel-fill-mask {
-    background: rgba(255,255,255,.88); border-color: rgba(15,23,42,.14);
-  }
+  #accel-readout { margin-bottom: 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; font-weight: 800; color: #e5e7eb; background: rgba(10,14,20,.76); padding: 3px 11px; border-radius: 20px; border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(9px); }
+  #accel-track { position: relative; width: 54px; height: 158px; pointer-events: auto; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
+  #accel-fill-mask { position: absolute; inset: 0; border-radius: 16px; overflow: hidden; background: rgba(10,14,20,.65); border: 1px solid rgba(255,255,255,.10); box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), 0 10px 24px rgba(0,0,0,.55); transition: border-color .2s; }
+  html.light-theme #accel-fill-mask { background: rgba(255,255,255,.88); border-color: rgba(15,23,42,.14); }
   #accel-track.active #accel-fill-mask { border-color: rgba(56,189,248,.5); }
-  #accel-fill {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
-    background: linear-gradient(180deg, #f59e0b, #fbbf24);
-  }
-  #accel-pedal {
-    position: absolute; left: -4px; right: -4px;
-    bottom: 0%; height: 34px;
-    transform: translateY(50%);
-    filter: drop-shadow(0 6px 10px rgba(0,0,0,.6));
-  }
+  #accel-fill { position: absolute; left: 0; right: 0; bottom: 0; height: 0%; background: linear-gradient(180deg, #f59e0b, #fbbf24); }
+  #accel-pedal { position: absolute; left: -4px; right: -4px; bottom: 0%; height: 34px; transform: translateY(50%); filter: drop-shadow(0 6px 10px rgba(0,0,0,.6)); }
   #accel-pedal svg { width: 100%; height: 100%; display: block; }
   .pedal-plate { fill: #242b35; stroke: #a9b4c3; stroke-width: 1.4; }
   .pedal-grip { fill: #5e6b7d; }
   html.light-theme .pedal-plate { fill: #e2e8f0; stroke: #334155; }
   html.light-theme .pedal-grip { fill: #cbd5e1; }
   #accel-track.active .pedal-plate { stroke: #f59e0b; }
-  #accel-control-label {
-    margin-top: 7px;
-    color: #aab4c3; font-size: 10.5px; font-weight: 700;
-    letter-spacing: .55px; text-transform: uppercase;
-    background: rgba(10,14,20,.76);
-    padding: 5px 11px; border-radius: 20px;
-    border: 1px solid rgba(255,255,255,.08);
-    backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
-    pointer-events: none;
-  }
-  html.light-theme #accel-control-label {
-    background: rgba(255,255,255,.94);
-    color: #475569;
-    border-color: rgba(15,23,42,.14);
-  }
-  #accel-control-pct {
-    color: #e5e7eb;
-    font-family: ui-monospace, Menlo, Consolas, monospace;
-  }
+  #accel-control-label { margin-top: 7px; color: #aab4c3; font-size: 10.5px; font-weight: 700; letter-spacing: .55px; text-transform: uppercase; background: rgba(10,14,20,.76); padding: 5px 11px; border-radius: 20px; border: 1px solid rgba(255,255,255,.08); backdrop-filter: blur(9px); pointer-events: none; }
+  html.light-theme #accel-control-label { background: rgba(255,255,255,.94); color: #475569; border-color: rgba(15,23,42,.14); }
+  #accel-control-pct { color: #e5e7eb; font-family: ui-monospace, Menlo, Consolas, monospace; }
   @media (max-width: 600px) {
-    #accel-overlay {
-      right: calc(10px + var(--safe-r,0px));
-      bottom: calc(70px + var(--safe-b,0px));
-    }
+    #accel-overlay { right: calc(10px + var(--safe-r,0px)); bottom: calc(70px + var(--safe-b,0px)); }
     #accel-track { width: 44px; height: 128px; }
     #accel-control-label { font-size: 9px; padding: 4px 8px; }
     #boost-panel { min-width: 148px; padding: 8px 10px; }
     #boost-panel .bp-value { font-size: 18px; }
   }
 
-  /* ── 3-D labels (local label system) ── */
-  #labels-root {
-    position: absolute; inset: 0;
-    pointer-events: none; z-index: 12; overflow: hidden;
-  }
-  .lbl3d {
-    position: absolute; left: 0; top: 0;
-    padding: 3px 9px; border-radius: 20px;
-    background: rgba(10,14,20,.72);
-    border: 1px solid rgba(255,255,255,.10);
-    color: #c9d3e2; font-size: 10.5px; font-weight: 700;
-    letter-spacing: .03em; white-space: nowrap;
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-    will-change: transform;
-  }
-  html.light-theme .lbl3d {
-    background: rgba(255,255,255,.92);
-    border-color: rgba(15,23,42,.14);
-    color: #0f172a;
-  }
+  #labels-root { position: absolute; inset: 0; pointer-events: none; z-index: 12; overflow: hidden; }
+  .lbl3d { position: absolute; left: 0; top: 0; padding: 3px 9px; border-radius: 20px; background: rgba(10,14,20,.72); border: 1px solid rgba(255,255,255,.10); color: #c9d3e2; font-size: 10.5px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; backdrop-filter: blur(6px); will-change: transform; }
+  html.light-theme .lbl3d { background: rgba(255,255,255,.92); border-color: rgba(15,23,42,.14); color: #0f172a; }
 
-  /* ── Flow legend inside the edu panel ── */
-  #flow-legend {
-    display: flex; flex-wrap: wrap; gap: 6px 12px;
-    margin-top: 10px; font-size: 10.5px; color: #9aa3b2;
-  }
+  #flow-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px; font-size: 10.5px; color: #9aa3b2; }
   #flow-legend span { display: inline-flex; align-items: center; gap: 5px; }
-  #flow-legend i {
-    width: 9px; height: 9px; border-radius: 50%;
-    display: inline-block; flex: 0 0 auto;
-  }
+  #flow-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
 
-  /* ── Rotor slow-mo button ── */
-  #btn-rotorslow.active {
-    background: #38bdf8; color: #0b0e14;
-    box-shadow: 0 0 12px rgba(56,189,248,.45);
-  }
+  #btn-rotorslow.active { background: #38bdf8; color: #0b0e14; box-shadow: 0 0 12px rgba(56,189,248,.45); }
 
-  /* ── Embed mode ── */
   body.embedded {
     --shell-header-h: calc(64px + env(safe-area-inset-top, 0px));
     --shell-pill-h: calc(64px + env(safe-area-inset-bottom, 0px));
   }
-  body.embedded #accel-overlay {
-    position: absolute !important;
-    bottom: calc(var(--shell-pill-h) + 14px) !important;
-    right: 14px !important; z-index: 20 !important;
-  }
-  body.embedded #boost-panel {
-    position: absolute !important;
-    top: calc(var(--shell-header-h) + 10px) !important;
-    right: 12px !important; z-index: 16 !important;
-  }
+  body.embedded #accel-overlay { position: absolute !important; bottom: calc(var(--shell-pill-h) + 14px) !important; right: 14px !important; z-index: 20 !important; }
+  body.embedded #boost-panel { position: absolute !important; top: calc(var(--shell-header-h) + 10px) !important; right: 12px !important; z-index: 16 !important; }
 </style>
 </head>
 <body>
@@ -220,15 +102,7 @@
       </div>
 
       <div id="stroke-desc" style="margin-top:12px;font-size:13px;line-height:1.5;color:var(--muted)">
-        <strong>Turbocharger.</strong> Hot exhaust gas (orange particles) leaves the
-        engine, loops up and over, and enters the turbine from below — spinning the
-        <strong>turbine wheel</strong> (visible through the glass housing, with a
-        motion-blur disc that fades in as it speeds up). Through the shared shaft,
-        the compressor pulls in fresh air: <em>light, sparse</em> particles at the
-        filter become a <em>dense</em> amber stream as they're compressed. The
-        intercooler cools the charge (amber → blue) before it reaches the intake
-        manifold. The <strong>wastegate</strong> bleeds excess exhaust to cap boost;
-        the <strong>blow-off valve</strong> vents the charge pipe when you lift off.
+        <strong>Turbocharger.</strong> Hot exhaust gas leaves the engine, dives down behind the block, and enters the turbine from below — spinning the <strong>turbine wheel</strong>. Through the shared shaft, the compressor pulls in fresh air: light sparse particles become a dense amber stream as they're compressed. The intercooler cools the charge before it reaches the intake manifold. The <strong>wastegate</strong> bleeds excess exhaust to cap boost; the <strong>blow-off valve</strong> vents the charge pipe when you lift off.
       </div>
 
       <div id="flow-legend">
@@ -301,9 +175,6 @@
   import * as THREE from 'three';
   import * as Base from './module-base.js';
 
-  /* ═══════════════════════════════════════════════════════════
-     CONSTANTS / QUALITY
-     ═══════════════════════════════════════════════════════════ */
   const TAU = Math.PI * 2;
   const DEG = Math.PI / 180;
 
@@ -317,25 +188,20 @@
   const isMidEnd = !isLowEnd && (cores <= 6 || isCoarse);
 
   const BLADE_N  = isLowEnd ? 8 : 12;
-  const TUBE_SEG = isLowEnd ? 40 : 72;
   const TUBE_RAD = isLowEnd ? 8 : 12;
 
-  /* Particle counts — this is what encodes density */
   const P = {
-    fresh:   isLowEnd ?  10 : isMidEnd ?  16 :  24,   // light, sparse air
-    charge:  isLowEnd ?  34 : isMidEnd ?  56 :  84,   // hot, dense charge
-    cooled:  isLowEnd ?  40 : isMidEnd ?  64 :  96,   // cold, dense charge
-    exhaust: isLowEnd ?  34 : isMidEnd ?  54 :  80,   // hot gas to turbine
-    tail:    isLowEnd ?  18 : isMidEnd ?  28 :  40,   // post-turbine exhaust
-    cyl:     isLowEnd ?  14 : isMidEnd ?  24 :  36,   // in-cylinder charge
-    swirl:   isLowEnd ?   6 : isMidEnd ?   8 :  12,   // turbine volute swirl
+    fresh:   isLowEnd ?  10 : isMidEnd ?  16 :  24,
+    charge:  isLowEnd ?  34 : isMidEnd ?  56 :  84,
+    cooled:  isLowEnd ?  40 : isMidEnd ?  64 :  96,
+    exhaust: isLowEnd ?  34 : isMidEnd ?  54 :  80,
+    tail:    isLowEnd ?  18 : isMidEnd ?  28 :  40,
+    cyl:     isLowEnd ?  14 : isMidEnd ?  24 :  36,
+    swirl:   isLowEnd ?   6 : isMidEnd ?   8 :  12,
     bov:     isLowEnd ?  12 : isMidEnd ?  18 :  24,
     wg:      isLowEnd ?   8 : isMidEnd ?  11 :  14
   };
 
-  /* ═══════════════════════════════════════════════════════════
-     SCENE
-     ═══════════════════════════════════════════════════════════ */
   const { scene, camera, renderer, controls, wrap } = Base.buildScene({
     fov: 42,
     camPos: isCoarse ? [1.5, 1.5, 5.5] : [1.8, 1.8, 6.5],
@@ -349,11 +215,9 @@
   /* ═══════════════════════════════════════════════════════════
      MATERIALS
      ═══════════════════════════════════════════════════════════ */
-  /* Glass pipe — single consistent look, no colour-coded pipes.
-     Gas state is shown by the particles, not by the pipe. */
   const glassPipe = new THREE.MeshStandardMaterial({
     color: 0x9bb6cc, metalness: 0.55, roughness: 0.16,
-    transparent: true, opacity: 0.26, depthWrite: false,
+    transparent: true, opacity: 0.28, depthWrite: false,
     side: THREE.FrontSide
   });
   const glassHousing = new THREE.MeshStandardMaterial({
@@ -374,13 +238,10 @@
     valve:        new THREE.MeshStandardMaterial({ color: 0xb8c0cc, metalness: 0.80, roughness: 0.25 }),
     spring:       new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.30 }),
     sparkIns:     new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.05, roughness: 0.40 }),
-
-    /* Turbine & compressor parts — constant metal, NO heat glow */
     bladeCold:    new THREE.MeshStandardMaterial({ color: 0xc8d0dd, metalness: 0.88, roughness: 0.25, transparent: true, opacity: 1, depthWrite: false }),
     bladeHot:     new THREE.MeshStandardMaterial({ color: 0xb9c1ce, metalness: 0.88, roughness: 0.28, transparent: true, opacity: 1, depthWrite: false }),
     shaft:        new THREE.MeshStandardMaterial({ color: 0x8a94a5, metalness: 0.90, roughness: 0.25 }),
     accent:       new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.9 }),
-
     icCore:       new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.82, roughness: 0.32 }),
     icFin:        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85, roughness: 0.40 }),
     icTank:       new THREE.MeshStandardMaterial({ color: 0x4a5568, metalness: 0.70, roughness: 0.42 }),
@@ -393,51 +254,91 @@
   scene.add(system);
 
   /* ═══════════════════════════════════════════════════════════
-     LAYOUT — compact turbo, schematic-style piping
+     LAYOUT
      ═══════════════════════════════════════════════════════════ */
-  const FILTER     = new THREE.Vector3(-1.50,  1.20, 0);
-  const COMP       = new THREE.Vector3(-0.45,  1.20, 0);   // compressor
-  const BEARING    = new THREE.Vector3( 0.00,  1.20, 0);   // bearing center
-  const TURB       = new THREE.Vector3( 0.45,  1.20, 0);   // turbine
+  const FILTER  = new THREE.Vector3(-1.50,  1.20, 0);
+  const COMP    = new THREE.Vector3(-0.45,  1.20, 0);
+  const BEARING = new THREE.Vector3( 0.00,  1.20, 0);
+  const TURB    = new THREE.Vector3( 0.45,  1.20, 0);
 
-  const IC_POS     = new THREE.Vector3(-1.10, -0.75, 0.35);
-  const IC_W       = 1.10;
-  const IC_H       = 0.45;
-  const IC_D       = 0.34;
+  const IC_POS  = new THREE.Vector3(-1.10, -0.75, 0.35);
+  const IC_W    = 1.10, IC_H = 0.45, IC_D = 0.34;
 
-  const ENG        = new THREE.Vector3( 0.80, -0.75, 0);
-  const BORE       = 0.30;
-  const CRANK_R    = 0.16;
-  const ROD_LEN    = 0.68;
+  const ENG     = new THREE.Vector3( 0.80, -0.75, 0);
+  const BORE    = 0.30;
+  const CRANK_R = 0.16;
+  const ROD_LEN = 0.68;
   const CYL_BOTTOM = ENG.y + 0.05;
   const CYL_TOP    = ENG.y + 1.05;
   const CRANK_Y    = ENG.y - 0.55;
 
-  /* Engine-local Y helper (children of engineGroup use this) */
   const EY = (worldY) => worldY - ENG.y;
 
+  const PORT = {
+    filterOut : new THREE.Vector3(FILTER.x + 0.16,  FILTER.y, 0),
+    compIn    : new THREE.Vector3(COMP.x - 0.38,    COMP.y, 0),
+    compOut   : new THREE.Vector3(COMP.x,           COMP.y - 0.55, 0),
+    turbIn    : new THREE.Vector3(TURB.x,           TURB.y - 0.56, 0),
+    turbOut   : new THREE.Vector3(TURB.x + 0.40,    TURB.y, 0),
+    icIn      : new THREE.Vector3(IC_POS.x - IC_W/2 - 0.05, IC_POS.y + IC_H/2 + 0.15, IC_POS.z),
+    icOut     : new THREE.Vector3(IC_POS.x + IC_W/2 + 0.05, IC_POS.y + IC_H/2 + 0.15, IC_POS.z),
+    intake    : new THREE.Vector3(ENG.x - BORE - 0.22, CYL_TOP + 0.14, 0),
+    exhaust   : new THREE.Vector3(ENG.x + BORE + 0.22, CYL_TOP + 0.14, 0)
+  };
+
   /* ═══════════════════════════════════════════════════════════
-     HELPERS
+     ORTHOGONAL PIPE HELPERS
      ═══════════════════════════════════════════════════════════ */
-  function makeTube(curve, radius) {
-    const geo = new THREE.TubeGeometry(curve, TUBE_SEG * 2, radius, TUBE_RAD, false);
-    const mesh = new THREE.Mesh(geo, glassPipe);
-    mesh.castShadow = false;
-    mesh.renderOrder = 2;
-    return mesh;
+
+  /* Build a CurvePath from a Manhattan polyline — used for particle streams */
+  function makeOrthoCurve(waypoints) {
+    const path = new THREE.CurvePath();
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const a = waypoints[i];
+      const b = waypoints[i + 1];
+      if (a.distanceTo(b) < 1e-4) continue;
+      path.add(new THREE.LineCurve3(a.clone(), b.clone()));
+    }
+    return path;
   }
 
-  /* Small opaque steel collars at each pipe end so the glass reads
-     as a pipe rather than an empty wisp. */
-  function addCollar(curve, t, radius) {
-    const p = curve.getPoint(t);
-    const tan = curve.getTangent(t).normalize();
+  /* Build a visible pipe from connected cylinders + sphere joints at corners.
+     Hard 90° corners, no diagonal smoothing. */
+  function makeStraightPipe(waypoints, radius, mat) {
+    const group = new THREE.Group();
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const a = waypoints[i];
+      const b = waypoints[i + 1];
+      const dir = new THREE.Vector3().subVectors(b, a);
+      const len = dir.length();
+      if (len < 1e-4) continue;
+      const geo = new THREE.CylinderGeometry(radius, radius, len, TUBE_RAD, 1, false);
+      const mesh = new THREE.Mesh(geo, mat || glassPipe);
+      mesh.position.copy(a).addScaledVector(dir, 0.5);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+      mesh.renderOrder = 2;
+      group.add(mesh);
+    }
+    /* Sphere joints at interior corners — with matching radius, they blend into an L */
+    for (let i = 1; i < waypoints.length - 1; i++) {
+      const sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(radius, TUBE_RAD, 8),
+        mat || glassPipe
+      );
+      sphere.position.copy(waypoints[i]);
+      sphere.renderOrder = 2;
+      group.add(sphere);
+    }
+    return group;
+  }
+
+  function addCollarAt(point, dir, radius) {
     const ring = new THREE.Mesh(
       new THREE.TorusGeometry(radius + 0.013, 0.018, 8, 18),
       M.steelDark
     );
-    ring.position.copy(p);
-    ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tan);
+    ring.position.copy(point);
+    ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir.clone().normalize());
     ring.castShadow = true;
     system.add(ring);
   }
@@ -463,7 +364,6 @@
     return g;
   }
 
-  /* Canvas motion-blur streak texture used on the wheel blur discs */
   function makeStreakTexture() {
     const c = document.createElement('canvas');
     c.width = c.height = 256;
@@ -491,16 +391,13 @@
   const streakTex = makeStreakTexture();
 
   /* ═══════════════════════════════════════════════════════════
-     AIR FILTER (opaque — the "source")
+     AIR FILTER
      ═══════════════════════════════════════════════════════════ */
   const airFilter = new THREE.Group();
   airFilter.position.copy(FILTER);
   system.add(airFilter);
 
-  const afBody = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.22, 0.22, 0.30, 20),
-    M.filter
-  );
+  const afBody = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.30, 20), M.filter);
   afBody.rotation.z = Math.PI / 2;
   afBody.castShadow = true;
   airFilter.add(afBody);
@@ -514,7 +411,7 @@
   }
 
   /* ═══════════════════════════════════════════════════════════
-     COMPRESSOR — glass housing, visible wheel
+     COMPRESSOR
      ═══════════════════════════════════════════════════════════ */
   const compressorAssembly = new THREE.Group();
   compressorAssembly.position.copy(COMP);
@@ -528,14 +425,16 @@
   compHousing.renderOrder = 2;
   compressorAssembly.add(compHousing);
 
-  const compInlet = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.12, 0.12, 0.20, 16),
-    glassHousing
-  );
+  const compInlet = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.20, 16), glassHousing);
   compInlet.rotation.z = Math.PI / 2;
   compInlet.position.set(-0.28, 0, 0);
   compInlet.renderOrder = 2;
   compressorAssembly.add(compInlet);
+
+  const compOutlet = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.26, 16), glassHousing);
+  compOutlet.position.set(0, -0.42, 0);
+  compOutlet.renderOrder = 2;
+  compressorAssembly.add(compOutlet);
 
   const compressorWheel = makeImpeller(0.22, BLADE_N + 2, M.bladeCold, M.steel, -0.35, 0.70);
   compressorAssembly.add(compressorWheel);
@@ -559,11 +458,10 @@
   compressorAssembly.add(blurCompGroup);
 
   /* ═══════════════════════════════════════════════════════════
-     BEARING HOUSING (short — wheels sit close together)
+     BEARING + SHAFT
      ═══════════════════════════════════════════════════════════ */
   const bearingHousing = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.11, 0.11, 0.48, 20),
-    M.alum
+    new THREE.CylinderGeometry(0.11, 0.11, 0.48, 20), M.alum
   );
   bearingHousing.rotation.z = Math.PI / 2;
   bearingHousing.position.copy(BEARING);
@@ -584,7 +482,7 @@
   system.add(shaft);
 
   /* ═══════════════════════════════════════════════════════════
-     TURBINE — glass housing, wheel visible, inlet from BELOW
+     TURBINE
      ═══════════════════════════════════════════════════════════ */
   const turbineAssembly = new THREE.Group();
   turbineAssembly.position.copy(TURB);
@@ -598,20 +496,12 @@
   turbineHousing.renderOrder = 2;
   turbineAssembly.add(turbineHousing);
 
-  /* Inlet stub — enters from the BOTTOM (schematic style) */
-  const turbInlet = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.10, 0.10, 0.28, 16),
-    glassHousing
-  );
-  turbInlet.position.set(0, -0.42, 0);   // cylinder axis is Y — no rotation needed
+  const turbInlet = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.28, 16), glassHousing);
+  turbInlet.position.set(0, -0.42, 0);
   turbInlet.renderOrder = 2;
   turbineAssembly.add(turbInlet);
 
-  /* Outlet stub — axial out the back */
-  const turbOutlet = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.12, 0.12, 0.20, 16),
-    glassHousing
-  );
+  const turbOutlet = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.20, 16), glassHousing);
   turbOutlet.rotation.z = Math.PI / 2;
   turbOutlet.position.set(0.30, 0, 0);
   turbOutlet.renderOrder = 2;
@@ -645,91 +535,97 @@
   intercooler.position.copy(IC_POS);
   system.add(intercooler);
 
-  const icCore = new THREE.Mesh(new THREE.BoxGeometry(IC_W, IC_H, IC_D), M.icCore);
-  icCore.castShadow = true;
-  intercooler.add(icCore);
-
-  const IC_FINS = isLowEnd ? 12 : 22;
-  const finGeo = new THREE.BoxGeometry(IC_W - 0.03, 0.006, IC_D - 0.03);
-  const icFins = new THREE.InstancedMesh(finGeo, M.icFin, IC_FINS);
   const _im = new THREE.Object3D();
-  for (let i = 0; i < IC_FINS; i++) {
-    _im.position.set(0, -IC_H/2 + 0.03 + (i / (IC_FINS - 1)) * (IC_H - 0.06), 0);
+
+  const IC_ROWS = isLowEnd ? 6 : 10;
+  const IC_ROW_GAP = 0.011;
+  const rowH = ((IC_H - 0.06) - (IC_ROWS - 1) * IC_ROW_GAP) / IC_ROWS;
+  const rowMesh = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(IC_W - 0.02, rowH, IC_D - 0.02), M.icCore, IC_ROWS
+  );
+  for (let i = 0; i < IC_ROWS; i++) {
+    _im.position.set(0, -(IC_H - 0.06) / 2 + rowH / 2 + i * (rowH + IC_ROW_GAP), 0);
     _im.updateMatrix();
-    icFins.setMatrixAt(i, _im.matrix);
+    rowMesh.setMatrixAt(i, _im.matrix);
   }
-  icFins.instanceMatrix.needsUpdate = true;
-  intercooler.add(icFins);
+  rowMesh.castShadow = true;
+  intercooler.add(rowMesh);
 
-  const tankGeo = new THREE.BoxGeometry(0.08, IC_H, IC_D);
+  const IC_FINS = isLowEnd ? 15 : 27;
+  const finStep = (IC_W - 0.04) / (IC_FINS - 1);
+  const finMesh = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.0065, IC_H - 0.05, IC_D + 0.035), M.icFin, IC_FINS
+  );
+  for (let i = 0; i < IC_FINS; i++) {
+    _im.position.set(-(IC_W - 0.04) / 2 + i * finStep, 0, 0);
+    _im.updateMatrix();
+    finMesh.setMatrixAt(i, _im.matrix);
+  }
+  finMesh.castShadow = true;
+  intercooler.add(finMesh);
+
+  const headerGeo = new THREE.BoxGeometry(IC_W + 0.03, 0.028, IC_D + 0.05);
+  const headerTop = new THREE.Mesh(headerGeo, M.icTank);
+  headerTop.position.y =  IC_H / 2 - 0.014;
+  const headerBot = new THREE.Mesh(headerGeo, M.icTank);
+  headerBot.position.y = -IC_H / 2 + 0.014;
+  headerTop.castShadow = headerBot.castShadow = true;
+  intercooler.add(headerTop, headerBot);
+
+  const tankGeo = new THREE.CapsuleGeometry(IC_D * 0.52, IC_H - IC_D * 1.04, 6, 16);
   const tankL = new THREE.Mesh(tankGeo, M.icTank);
-  tankL.position.x = -IC_W/2 - 0.04;
-  intercooler.add(tankL);
-  const tankR = new THREE.Mesh(tankGeo, M.icTank);
-  tankR.position.x = IC_W/2 + 0.04;
-  intercooler.add(tankR);
+  tankL.scale.set(0.36, 1, 1);
+  tankL.position.x = -IC_W / 2 - 0.05;
+  tankL.castShadow = true;
+  const tankR = tankL.clone();
+  tankR.position.x = IC_W / 2 + 0.05;
+  intercooler.add(tankL, tankR);
 
-  const icInlet = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.085, 0.085, 0.14, 16),
-    glassHousing
-  );
-  icInlet.position.set(-IC_W/2 - 0.04, IC_H/2 + 0.05, 0);
-  icInlet.renderOrder = 2;
-  intercooler.add(icInlet);
-
-  const icOutlet = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.085, 0.085, 0.14, 16),
-    glassHousing
-  );
-  icOutlet.position.set(IC_W/2 + 0.04, IC_H/2 + 0.05, 0);
-  icOutlet.renderOrder = 2;
-  intercooler.add(icOutlet);
+  const IC_NOZ_Y = IC_H / 2 + 0.06;
+  function makeIcNozzle() {
+    const g = new THREE.Group();
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.082, 0.18, 18), M.icTank);
+    g.add(neck);
+    const bead = new THREE.Mesh(new THREE.TorusGeometry(0.084, 0.015, 8, 20), M.steelDark);
+    bead.rotation.x = Math.PI / 2;
+    bead.position.y = 0.088;
+    g.add(bead);
+    return g;
+  }
+  const icInlet  = makeIcNozzle(); icInlet.position.set(-IC_W / 2 - 0.05, IC_NOZ_Y, 0);
+  const icOutlet = makeIcNozzle(); icOutlet.position.set( IC_W / 2 + 0.05, IC_NOZ_Y, 0);
+  intercooler.add(icInlet, icOutlet);
 
   /* ═══════════════════════════════════════════════════════════
-     ENGINE — single-cylinder cutaway
+     ENGINE (cutaway)
      ═══════════════════════════════════════════════════════════ */
   const engineGroup = new THREE.Group();
   engineGroup.position.copy(ENG);
   system.add(engineGroup);
 
-  const crankBase = new THREE.Mesh(
-    new THREE.BoxGeometry(BORE * 3.2, 0.55, BORE * 3.2),
-    M.engineBlock
-  );
+  const crankBase = new THREE.Mesh(new THREE.BoxGeometry(BORE * 3.2, 0.55, BORE * 3.2), M.engineBlock);
   crankBase.position.y = -0.72;
   crankBase.castShadow = true;
   engineGroup.add(crankBase);
 
   const wallT = 0.05;
-  const cylBack = new THREE.Mesh(
-    new THREE.BoxGeometry(BORE * 2 + wallT * 2, CYL_TOP - CYL_BOTTOM, wallT),
-    M.engineBlock
-  );
+  const cylBack = new THREE.Mesh(new THREE.BoxGeometry(BORE * 2 + wallT * 2, CYL_TOP - CYL_BOTTOM, wallT), M.engineBlock);
   cylBack.position.set(0, EY((CYL_TOP + CYL_BOTTOM) / 2), -BORE - wallT);
   cylBack.castShadow = true;
   engineGroup.add(cylBack);
 
-  const cylLeft = new THREE.Mesh(
-    new THREE.BoxGeometry(wallT, CYL_TOP - CYL_BOTTOM, BORE * 2),
-    M.engineBlock
-  );
+  const cylLeft = new THREE.Mesh(new THREE.BoxGeometry(wallT, CYL_TOP - CYL_BOTTOM, BORE * 2), M.engineBlock);
   cylLeft.position.set(-BORE - wallT/2, EY((CYL_TOP + CYL_BOTTOM) / 2), 0);
   cylLeft.castShadow = true;
   engineGroup.add(cylLeft);
 
-  const cylRight = new THREE.Mesh(
-    new THREE.BoxGeometry(wallT, CYL_TOP - CYL_BOTTOM, BORE * 2),
-    M.engineBlock
-  );
+  const cylRight = new THREE.Mesh(new THREE.BoxGeometry(wallT, CYL_TOP - CYL_BOTTOM, BORE * 2), M.engineBlock);
   cylRight.position.set(BORE + wallT/2, EY((CYL_TOP + CYL_BOTTOM) / 2), 0);
   cylRight.castShadow = true;
   engineGroup.add(cylRight);
 
   const cutMat = M.engineCut;
-  const cutBack = new THREE.Mesh(
-    new THREE.PlaneGeometry(wallT * 2 + BORE * 2, CYL_TOP - CYL_BOTTOM),
-    cutMat
-  );
+  const cutBack = new THREE.Mesh(new THREE.PlaneGeometry(wallT * 2 + BORE * 2, CYL_TOP - CYL_BOTTOM), cutMat);
   cutBack.position.set(0, EY((CYL_TOP + CYL_BOTTOM) / 2), -BORE - wallT + 0.001);
   engineGroup.add(cutBack);
 
@@ -737,50 +633,31 @@
   const headHeight = 0.30;
   const headDepth = BORE * 2 + wallT * 2;
 
-  const headTop = new THREE.Mesh(
-    new THREE.BoxGeometry(headWidth, 0.05, headDepth),
-    M.engineBlock
-  );
+  const headTop = new THREE.Mesh(new THREE.BoxGeometry(headWidth, 0.05, headDepth), M.engineBlock);
   headTop.position.y = EY(CYL_TOP) + headHeight - 0.025;
   headTop.castShadow = true;
   engineGroup.add(headTop);
 
-  const headBack = new THREE.Mesh(
-    new THREE.BoxGeometry(headWidth, headHeight - 0.05, wallT),
-    M.engineBlock
-  );
+  const headBack = new THREE.Mesh(new THREE.BoxGeometry(headWidth, headHeight - 0.05, wallT), M.engineBlock);
   headBack.position.set(0, EY(CYL_TOP) + headHeight/2, -BORE - wallT);
   engineGroup.add(headBack);
 
-  const headLeft = new THREE.Mesh(
-    new THREE.BoxGeometry(wallT, headHeight - 0.05, headDepth),
-    M.engineBlock
-  );
+  const headLeft = new THREE.Mesh(new THREE.BoxGeometry(wallT, headHeight - 0.05, headDepth), M.engineBlock);
   headLeft.position.set(-BORE - wallT/2, EY(CYL_TOP) + headHeight/2, 0);
   engineGroup.add(headLeft);
 
-  const headRight = new THREE.Mesh(
-    new THREE.BoxGeometry(wallT, headHeight - 0.05, headDepth),
-    M.engineBlock
-  );
+  const headRight = new THREE.Mesh(new THREE.BoxGeometry(wallT, headHeight - 0.05, headDepth), M.engineBlock);
   headRight.position.set(BORE + wallT/2, EY(CYL_TOP) + headHeight/2, 0);
   engineGroup.add(headRight);
 
-  const headCutBack = new THREE.Mesh(
-    new THREE.PlaneGeometry(headWidth, headHeight),
-    cutMat
-  );
+  const headCutBack = new THREE.Mesh(new THREE.PlaneGeometry(headWidth, headHeight), cutMat);
   headCutBack.position.set(0, EY(CYL_TOP) + headHeight/2, -BORE - wallT + 0.001);
   engineGroup.add(headCutBack);
 
-  const deck = new THREE.Mesh(
-    new THREE.BoxGeometry(BORE * 2, 0.04, BORE * 2),
-    M.engineBlock
-  );
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(BORE * 2, 0.04, BORE * 2), M.engineBlock);
   deck.position.y = EY(CYL_TOP) - 0.02;
   engineGroup.add(deck);
 
-  /* Intake / exhaust ports on the head — glass so we see through */
   const portGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.22, 12);
   const intakePort = new THREE.Mesh(portGeo, glassHousing);
   intakePort.rotation.z = Math.PI / 2;
@@ -794,87 +671,56 @@
   exhaustPort.renderOrder = 2;
   engineGroup.add(exhaustPort);
 
-  /* ─── Piston ─── */
   const pistonGroup = new THREE.Group();
   engineGroup.add(pistonGroup);
 
-  const pistonBody = new THREE.Mesh(
-    new THREE.CylinderGeometry(BORE * 0.96, BORE * 0.96, 0.20, 24),
-    M.piston
-  );
+  const pistonBody = new THREE.Mesh(new THREE.CylinderGeometry(BORE * 0.96, BORE * 0.96, 0.20, 24), M.piston);
   pistonBody.castShadow = true;
   pistonGroup.add(pistonBody);
 
   for (let i = 0; i < 2; i++) {
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(BORE * 0.96, 0.012, 8, 24),
-      M.ring
-    );
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(BORE * 0.96, 0.012, 8, 24), M.ring);
     ring.rotation.x = Math.PI / 2;
     ring.position.y = 0.06 - i * 0.07;
     pistonGroup.add(ring);
   }
 
-  const wrist = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.05, 0.05, BORE * 0.5, 12),
-    M.steelDark
-  );
+  const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, BORE * 0.5, 12), M.steelDark);
   wrist.rotation.x = Math.PI / 2;
   wrist.position.y = -0.05;
   pistonGroup.add(wrist);
 
-  /* ─── Connecting rod ─── */
-  const conRod = new THREE.Mesh(
-    new THREE.BoxGeometry(0.07, ROD_LEN, 0.10),
-    M.rod
-  );
+  const conRod = new THREE.Mesh(new THREE.BoxGeometry(0.07, ROD_LEN, 0.10), M.rod);
   conRod.castShadow = true;
   engineGroup.add(conRod);
 
-  /* ─── Crank assembly (rotates as a group) ─── */
   const crankSpin = new THREE.Group();
   crankSpin.position.set(0, EY(CRANK_Y), 0);
   engineGroup.add(crankSpin);
 
-  const crankDisc = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.22, 0.22, 0.06, 24),
-    M.steelDark
-  );
+  const crankDisc = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.06, 24), M.steelDark);
   crankDisc.rotation.x = Math.PI / 2;
   crankDisc.position.set(0, 0, -0.12);
   crankSpin.add(crankDisc);
 
-  const crankHub = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.05, 0.05, 0.10, 14),
-    M.steel
-  );
+  const crankHub = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.10, 14), M.steel);
   crankHub.rotation.x = Math.PI / 2;
   crankHub.position.set(0, 0, -0.12);
   crankSpin.add(crankHub);
 
-  const crankCW = new THREE.Mesh(
-    new THREE.BoxGeometry(0.30, 0.30, 0.06),
-    M.steelDark
-  );
+  const crankCW = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.30, 0.06), M.steelDark);
   crankCW.position.set(0, 0, -0.12);
   crankSpin.add(crankCW);
 
-  const crankPin = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.055, 0.055, 0.15, 14),
-    M.steelDark
-  );
+  const crankPin = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.15, 14), M.steelDark);
   crankPin.rotation.x = Math.PI / 2;
   crankPin.position.set(0, CRANK_R, 0.02);
   crankSpin.add(crankPin);
 
-  const crankMarker = new THREE.Mesh(
-    new THREE.SphereGeometry(0.035, 12, 8),
-    M.accent
-  );
+  const crankMarker = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), M.accent);
   crankMarker.position.set(0, 0.14, -0.09);
   crankSpin.add(crankMarker);
 
-  /* ─── Valves ─── */
   const valveY = EY(CYL_TOP) + 0.06;
   const valveXOffset = BORE * 0.55;
 
@@ -898,7 +744,6 @@
   const evSpring = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.010, 6, 14, Math.PI * 4), M.spring);
   evSpring.rotation.x = Math.PI / 2; evSpring.position.y = 0.17; exhaustValve.add(evSpring);
 
-  /* ─── Spark plug ─── */
   const sparkPlug = new THREE.Group();
   sparkPlug.position.set(0, EY(CYL_TOP) + 0.20, 0);
   engineGroup.add(sparkPlug);
@@ -909,7 +754,6 @@
   const spTip = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.06, 6), M.steel);
   spTip.position.y = -0.14; sparkPlug.add(spTip);
 
-  /* ─── Combustion flash ─── */
   const combustionMat = new THREE.MeshBasicMaterial({
     color: 0xffb030, transparent: true, opacity: 0,
     depthWrite: false, blending: THREE.AdditiveBlending
@@ -923,7 +767,6 @@
   combustionLight.position.copy(combustion.position);
   engineGroup.add(combustionLight);
 
-  /* ─── In-cylinder gas volume ─── */
   const gasMat = new THREE.MeshBasicMaterial({
     color: 0x38bdf8, transparent: true, opacity: 0.18,
     depthWrite: false, side: THREE.DoubleSide
@@ -936,116 +779,148 @@
   engineGroup.add(gasVolume);
 
   /* ═══════════════════════════════════════════════════════════
-     PIPE CURVES — schematic layout
+     ORTHOGONAL PIPE WAYPOINTS — every end on a PORT
      ═══════════════════════════════════════════════════════════ */
 
-  /* Fresh air: filter → compressor inlet (short horizontal run) */
-  const freshAirCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(FILTER.x + 0.16, FILTER.y, 0),
-    new THREE.Vector3(-1.10, FILTER.y, 0),
-    new THREE.Vector3(-0.95, FILTER.y, 0),
-    new THREE.Vector3(COMP.x - 0.38, COMP.y, 0)
-  ]);
+  /* 1 — Fresh air: straight horizontal run from filter to compressor */
+  const freshAirWP = [
+    PORT.filterOut.clone(),   // (-1.34, 1.20, 0)
+    PORT.compIn.clone()       // (-0.83, 1.20, 0)
+  ];
 
-  /* Charge pipe: compressor discharge (bottom) → down → left → IC inlet */
-  const chargeCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(COMP.x, COMP.y - 0.22, 0),
-    new THREE.Vector3(COMP.x, COMP.y - 0.50, 0),
-    new THREE.Vector3(COMP.x - 0.10, 0.30, 0.05),
-    new THREE.Vector3(COMP.x - 0.30, 0.05, 0.15),
-    new THREE.Vector3(COMP.x - 0.65, -0.20, 0.25),
-    new THREE.Vector3(COMP.x - 1.00, -0.35, 0.32),
-    new THREE.Vector3(IC_POS.x - IC_W/2 - 0.04, IC_POS.y + IC_H/2 + 0.05, IC_POS.z)
-  ]);
+  /* 2 — Charge pipe: compressor discharge drops down, pulls back in Z,
+         runs left across the IC top, then drops into IC inlet.
+         Uses z=0.35 corridor so it stays clear of the cooled pipe. */
+  const chargeWP = [
+    PORT.compOut.clone(),                                                    // (-0.45, 0.65, 0)
+    new THREE.Vector3(PORT.compOut.x, PORT.compOut.y, 0.35),                 // (-0.45, 0.65, 0.35)
+    new THREE.Vector3(PORT.icIn.x, PORT.compOut.y, 0.35),                    // (-1.70, 0.65, 0.35)
+    PORT.icIn.clone()                                                        // (-1.70, -0.375, 0.35)
+  ];
 
-  /* Cooled pipe: IC outlet (top-right) → right → up → engine intake port */
-  const cooledCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(IC_POS.x + IC_W/2 + 0.04, IC_POS.y + IC_H/2 + 0.05, IC_POS.z),
-    new THREE.Vector3(-0.30, -0.35, 0.30),
-    new THREE.Vector3(-0.10, -0.15, 0.22),
-    new THREE.Vector3(0.05, 0.05, 0.12),
-    new THREE.Vector3(0.20, 0.25, 0.05),
-    new THREE.Vector3(0.32, 0.38, 0.02),
-    new THREE.Vector3(ENG.x - BORE - 0.11, CYL_TOP + 0.14, 0),
-    new THREE.Vector3(ENG.x - BORE + 0.02, CYL_TOP - 0.04, 0)
-  ]);
+  /* 3 — Cooled charge: IC outlet comes forward to z=0, up along x=-0.50,
+         right toward the engine at y=0.44, then into the intake port.
+         Uses z=0 corridor so it stays clear of the charge pipe. */
+  const cooledWP = [
+    PORT.icOut.clone(),                                                      // (-0.50, -0.375, 0.35)
+    new THREE.Vector3(PORT.icOut.x, PORT.icOut.y, 0.00),                     // (-0.50, -0.375, 0)
+    new THREE.Vector3(PORT.icOut.x, PORT.intake.y, 0.00),                    // (-0.50, 0.44, 0)
+    PORT.intake.clone()                                                      // (0.28, 0.44, 0)
+  ];
 
-  /* Exhaust: engine exhaust port → up/right → up → left/down → turbine bottom inlet */
-  const exhaustCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(ENG.x + BORE - 0.02, CYL_TOP - 0.04, 0),
-    new THREE.Vector3(ENG.x + BORE + 0.15, CYL_TOP + 0.20, 0),
-    new THREE.Vector3(ENG.x + BORE + 0.40, 0.75, 0),
-    new THREE.Vector3(ENG.x + BORE + 0.50, 0.98, 0),
-    new THREE.Vector3(ENG.x + BORE + 0.30, 1.10, 0),
-    new THREE.Vector3(TURB.x + 0.30, 1.05, 0),
-    new THREE.Vector3(TURB.x + 0.05, 0.85, 0),
-    new THREE.Vector3(TURB.x, 0.70, 0)
-  ]);
+  /* 4 — Exhaust: right of engine head → continues +X → pulls back behind
+         the block → drops below turbine inlet → left behind the bearing
+         → forward → up into turbine inlet from below.
+         Uses z=-0.40 corridor, entirely behind the engine block. */
+  const exhaustWP = [
+    PORT.exhaust.clone(),                                                    // (1.32, 0.44, 0)
+    new THREE.Vector3(1.55, PORT.exhaust.y, 0),                              // (1.55, 0.44, 0)
+    new THREE.Vector3(1.55, PORT.exhaust.y, -0.40),                          // (1.55, 0.44, -0.40)
+    new THREE.Vector3(1.55, 0.30, -0.40),                                    // (1.55, 0.30, -0.40)
+    new THREE.Vector3(PORT.turbIn.x, 0.30, -0.40),                           // (0.45, 0.30, -0.40)
+    new THREE.Vector3(PORT.turbIn.x, 0.30, 0),                               // (0.45, 0.30, 0)
+    PORT.turbIn.clone()                                                      // (0.45, 0.64, 0)
+  ];
 
-  /* Tailpipe: turbine outlet (right) → out and down */
-  const tailCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(TURB.x + 0.30, TURB.y, 0),
-    new THREE.Vector3(TURB.x + 0.70, TURB.y, -0.05),
-    new THREE.Vector3(TURB.x + 1.10, TURB.y - 0.10, -0.20),
-    new THREE.Vector3(TURB.x + 1.45, TURB.y - 0.35, -0.40),
-    new THREE.Vector3(TURB.x + 1.65, TURB.y - 0.70, -0.55)
-  ]);
+  /* 5 — Tailpipe: right from turbine outlet, pull back, out the back */
+  const tailWP = [
+    PORT.turbOut.clone(),                                                    // (0.85, 1.20, 0)
+    new THREE.Vector3(1.30, PORT.turbOut.y, 0),                              // (1.30, 1.20, 0)
+    new THREE.Vector3(1.30, PORT.turbOut.y, -0.55),                          // (1.30, 1.20, -0.55)
+    new THREE.Vector3(2.10, PORT.turbOut.y, -0.55)                           // (2.10, 1.20, -0.55)
+  ];
 
-  /* Build glass tubes + collars */
-  const freshTube  = makeTube(freshAirCurve,  0.085);
-  const chargeTube = makeTube(chargeCurve,    0.085);
-  const cooledTube = makeTube(cooledCurve,    0.085);
-  const exhaustTube = makeTube(exhaustCurve,  0.080);
-  const tailTube   = makeTube(tailCurve,      0.095);
+  /* Build visible pipes (connected cylinders, hard L-corners) */
+  const freshTube   = makeStraightPipe(freshAirWP, 0.085, glassPipe);
+  const chargeTube  = makeStraightPipe(chargeWP,   0.085, glassPipe);
+  const cooledTube  = makeStraightPipe(cooledWP,   0.085, glassPipe);
+  const exhaustTube = makeStraightPipe(exhaustWP,  0.080, glassPipe);
+  const tailTube    = makeStraightPipe(tailWP,     0.095, glassPipe);
   system.add(freshTube, chargeTube, cooledTube, exhaustTube, tailTube);
 
-  addCollar(freshAirCurve, 0.0, 0.085);
-  addCollar(freshAirCurve, 1.0, 0.085);
-  addCollar(chargeCurve,   0.0, 0.085);
-  addCollar(chargeCurve,   0.5, 0.085);
-  addCollar(chargeCurve,   1.0, 0.085);
-  addCollar(cooledCurve,   0.0, 0.085);
-  addCollar(cooledCurve,   0.5, 0.085);
-  addCollar(cooledCurve,   1.0, 0.085);
-  addCollar(exhaustCurve,  0.0, 0.080);
-  addCollar(exhaustCurve,  0.5, 0.080);
-  addCollar(exhaustCurve,  1.0, 0.080);
-  addCollar(tailCurve,     0.0, 0.095);
+  /* Particle-following curves */
+  const freshAirCurve = makeOrthoCurve(freshAirWP);
+  const chargeCurve   = makeOrthoCurve(chargeWP);
+  const cooledCurve   = makeOrthoCurve(cooledWP);
+  const exhaustCurve  = makeOrthoCurve(exhaustWP);
+  const tailCurve     = makeOrthoCurve(tailWP);
+
+  /* Collars at pipe endpoints */
+  addCollarAt(freshAirWP[0], new THREE.Vector3(-1, 0, 0), 0.085);
+  addCollarAt(freshAirWP[1], new THREE.Vector3(-1, 0, 0), 0.085);
+  addCollarAt(chargeWP[0],   new THREE.Vector3(0, 1, 0),  0.085);
+  addCollarAt(chargeWP[chargeWP.length - 1], new THREE.Vector3(0, 1, 0), 0.085);
+  addCollarAt(cooledWP[0],   new THREE.Vector3(0, 1, 0),  0.085);
+  addCollarAt(cooledWP[cooledWP.length - 1], new THREE.Vector3(1, 0, 0), 0.085);
+  addCollarAt(exhaustWP[0],  new THREE.Vector3(1, 0, 0),  0.080);
+  addCollarAt(exhaustWP[exhaustWP.length - 1], new THREE.Vector3(0, -1, 0), 0.080);
+  addCollarAt(tailWP[0],     new THREE.Vector3(1, 0, 0),  0.095);
 
   /* ═══════════════════════════════════════════════════════════
-     WASTEGATE + BLOW-OFF VALVE
+     WASTEGATE + BLOW-OFF VALVE — now mounted on real pipes
      ═══════════════════════════════════════════════════════════ */
-  const wastegate = new THREE.Group();
-  wastegate.position.set(TURB.x + 0.10, TURB.y + 0.55, 0.28);
-  system.add(wastegate);
 
-  const wgBody = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.14, 16), M.alum);
-  wgBody.rotation.z = Math.PI / 2;
-  wastegate.add(wgBody);
-
-  const wgRod = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.24, 8), M.shaft);
-  wgRod.position.set(-0.19, 0, 0);
-  wastegate.add(wgRod);
-
-  const wgValve = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.025, 14), M.valveBrass);
-  wgValve.rotation.z = Math.PI / 2;
-  wgValve.position.set(-0.33, 0, 0);
-  wastegate.add(wgValve);
+  /* BOV on the charge pipe's horizontal-left segment at y=0.65, z=0.35.
+     Body extends upward (+Y). Vent particles spray up from the cap. */
+  const BOV_ANCHOR = new THREE.Vector3(-1.075, 0.65, 0.35);
 
   const blowoff = new THREE.Group();
-  blowoff.position.set(COMP.x + 0.02, COMP.y + 0.55, 0.26);
+  blowoff.position.copy(BOV_ANCHOR);
   system.add(blowoff);
 
   const bovBody = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.20, 16), M.alum);
+  bovBody.position.y = 0.10;
+  bovBody.castShadow = true;
   blowoff.add(bovBody);
 
   const bovCap = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.04, 16), M.valveCap);
-  bovCap.position.y = 0.12;
+  bovCap.position.y = 0.22;
   blowoff.add(bovCap);
 
   const bovPiston = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.05, 12), M.valveBrass);
-  bovPiston.position.y = -0.14;
+  bovPiston.position.y = 0.04;
   blowoff.add(bovPiston);
+
+  const bovFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.02, 16), M.steelDark);
+  bovFlange.position.y = -0.005;
+  blowoff.add(bovFlange);
+
+  const BOV_VENT = new THREE.Vector3(
+    BOV_ANCHOR.x, BOV_ANCHOR.y + 0.28, BOV_ANCHOR.z
+  );
+
+  /* Wastegate on the exhaust pipe's low horizontal segment (y=0.30, z=-0.40).
+     Body hangs downward (-Y). Vent particles spray down. */
+  const WG_ANCHOR = new THREE.Vector3(1.00, 0.30, -0.40);
+
+  const wastegate = new THREE.Group();
+  wastegate.position.copy(WG_ANCHOR);
+  system.add(wastegate);
+
+  const wgBody = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.16, 16), M.alum);
+  wgBody.position.y = -0.10;
+  wgBody.castShadow = true;
+  wastegate.add(wgBody);
+
+  const wgCap = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.03, 16), M.valveCap);
+  wgCap.position.y = -0.20;
+  wastegate.add(wgCap);
+
+  const wgRod = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.14, 8), M.shaft);
+  wgRod.position.y = -0.31;
+  wastegate.add(wgRod);
+
+  const wgValve = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.025, 14), M.valveBrass);
+  wgValve.position.y = -0.39;
+  wastegate.add(wgValve);
+
+  const wgFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.02, 16), M.steelDark);
+  wgFlange.position.y = -0.005;
+  wastegate.add(wgFlange);
+
+  const WG_VENT = new THREE.Vector3(
+    WG_ANCHOR.x, WG_ANCHOR.y - 0.45, WG_ANCHOR.z
+  );
 
   /* ═══════════════════════════════════════════════════════════
      LOCAL 3-D LABEL SYSTEM
@@ -1084,22 +959,22 @@
   })();
 
   labels.add('filter', 'Air filter',               FILTER.x, FILTER.y + 0.40, 0);
-  labels.add('fresh',  'Fresh air — light, sparse', -1.10, 1.60, 0);
+  labels.add('fresh',  'Fresh air — light, sparse', -1.10, 1.58, 0);
   labels.add('comp',   'Compressor wheel',         COMP.x, COMP.y + 0.50, 0);
-  labels.add('bov',    'Blow-off valve',           COMP.x + 0.02, COMP.y + 0.88, 0.26);
+  labels.add('bov',    'Blow-off valve',           BOV_ANCHOR.x, BOV_ANCHOR.y + 0.55, BOV_ANCHOR.z);
   labels.add('rpm3d',  'Shaft 0k rpm',             BEARING.x, BEARING.y - 0.32, 0.40);
   labels.add('shaft',  'Shared shaft',             BEARING.x, BEARING.y + 0.28, 0);
   labels.add('turb',   'Turbine wheel',            TURB.x, TURB.y + 0.50, 0);
-  labels.add('wg',     'Wastegate',                TURB.x + 0.10, TURB.y + 0.90, 0.28);
-  labels.add('ic',     'Intercooler',              IC_POS.x, IC_POS.y - IC_H/2 - 0.22, IC_POS.z);
-  labels.add('charge', 'Hot compressed (dense)',   COMP.x - 0.55, 0.20, 0.30);
-  labels.add('cooled', 'Cooled dense charge',      -0.15, 0.08, 0.30);
+  labels.add('wg',     'Wastegate',                WG_ANCHOR.x, WG_ANCHOR.y - 0.58, WG_ANCHOR.z);
+  labels.add('ic',     'Intercooler',              IC_POS.x, IC_POS.y - IC_H/2 - 0.24, IC_POS.z);
+  labels.add('charge', 'Hot compressed (dense)',   -1.10, 0.95, 0.35);
+  labels.add('cooled', 'Cooled dense charge',      -0.30, 0.65, 0.10);
   labels.add('engine', 'Engine',                   ENG.x, ENG.y - 1.35, 0);
   labels.add('piston', 'Piston',                   ENG.x - 0.85, ENG.y + 0.20, 0.35);
   labels.add('valves', 'Valves',                   ENG.x + 0.72, CYL_TOP + 0.40, 0);
   labels.add('plug',   'Spark plug',               ENG.x, CYL_TOP + 0.55, 0.30);
-  labels.add('exh',    'Hot exhaust → turbine',    ENG.x + 0.60, 0.95, 0);
-  labels.add('tail',   'Exhaust out',              TURB.x + 1.55, TURB.y - 0.80, -0.55);
+  labels.add('exh',    'Hot exhaust → turbine',    1.40, 0.75, -0.40);
+  labels.add('tail',   'Exhaust out',              1.85, 1.45, -0.55);
 
   /* ═══════════════════════════════════════════════════════════
      PARTICLE STREAMS
@@ -1109,11 +984,11 @@
   const _c2 = new THREE.Color();
 
   const COL = {
-    fresh:    new THREE.Color(0x9ec9ff),  // pale blue — light fresh air
-    charge:   new THREE.Color(0xffb257),  // amber — hot compressed
-    cooled:   new THREE.Color(0x38bdf8),  // sky — cooled, still dense
-    exhHot:   new THREE.Color(0xff6a1a),  // bright orange — hot exhaust
-    exhCold:  new THREE.Color(0x6e7681),  // grey — cold exhaust
+    fresh:    new THREE.Color(0x9ec9ff),
+    charge:   new THREE.Color(0xffb257),
+    cooled:   new THREE.Color(0x38bdf8),
+    exhHot:   new THREE.Color(0xff6a1a),
+    exhCold:  new THREE.Color(0x6e7681),
     tailHot:  new THREE.Color(0xff5522),
     tailCold: new THREE.Color(0x8b93a0)
   };
@@ -1124,13 +999,9 @@
     geo.setAttribute('color',    new THREE.BufferAttribute(new Float32Array(count * 3), 3));
     const mat = new THREE.PointsMaterial({
       map: particleTex,
-      size: size,
-      sizeAttenuation: true,
-      vertexColors: true,
-      transparent: true,
-      opacity: opacity,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending
+      size, sizeAttenuation: true,
+      vertexColors: true, transparent: true, opacity,
+      depthWrite: false, blending: THREE.AdditiveBlending
     });
     const points = new THREE.Points(geo, mat);
     points.frustumCulled = false;
@@ -1177,7 +1048,7 @@
   }
 
   /* ═══════════════════════════════════════════════════════════
-     TURBINE VOLUTE SWIRL (hot gas spiralling onto the wheel)
+     TURBINE VOLUTE SWIRL
      ═══════════════════════════════════════════════════════════ */
   const swirlGeo = new THREE.BufferGeometry();
   swirlGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(P.swirl * 3), 3));
@@ -1231,7 +1102,7 @@
   }
 
   /* ═══════════════════════════════════════════════════════════
-     BOV & WASTEGATE FX POOLS
+     BOV & WG FX POOLS
      ═══════════════════════════════════════════════════════════ */
   const BOV_N = P.bov;
   const bovGeo = new THREE.BufferGeometry();
@@ -1256,13 +1127,12 @@
     for (let i = 0; i < BOV_N && placed < Math.min(14, BOV_N); i++) {
       const p = bovData[i];
       if (p.life > 0) continue;
-      const a = Math.random() * TAU;
-      p.x = blowoff.position.x;
-      p.y = blowoff.position.y + 0.22;
-      p.z = blowoff.position.z;
-      p.vx = Math.cos(a) * 0.7;
-      p.vy = 0.9 + Math.random() * 0.9;
-      p.vz = Math.sin(a) * 0.7;
+      p.x = BOV_VENT.x + (Math.random() - 0.5) * 0.10;
+      p.y = BOV_VENT.y;
+      p.z = BOV_VENT.z + (Math.random() - 0.5) * 0.10;
+      p.vx = (Math.random() - 0.5) * 0.5;
+      p.vy = 1.0 + Math.random() * 0.8;
+      p.vz = (Math.random() - 0.5) * 0.5;
       p.maxLife = 0.4 + Math.random() * 0.35;
       p.life = p.maxLife;
       placed++;
@@ -1292,12 +1162,12 @@
     for (let i = 0; i < WG_N; i++) {
       const p = wgData[i];
       if (p.life > 0) continue;
-      p.x = wastegate.position.x + (Math.random() - 0.5) * 0.10;
-      p.y = wastegate.position.y + 0.10;
-      p.z = wastegate.position.z + (Math.random() - 0.5) * 0.10;
-      p.vx = 0.4 + Math.random() * 0.9;
-      p.vy = 0.7 + Math.random() * 0.8;
-      p.vz = 0.2 + Math.random() * 0.5;
+      p.x = WG_VENT.x + (Math.random() - 0.5) * 0.10;
+      p.y = WG_VENT.y;
+      p.z = WG_VENT.z + (Math.random() - 0.5) * 0.10;
+      p.vx = (Math.random() - 0.5) * 0.4;
+      p.vy = -1.4 - Math.random() * 0.8;
+      p.vz = (Math.random() - 0.5) * 0.4;
       p.maxLife = 0.45 + Math.random() * 0.35;
       p.life = p.maxLife;
       return;
@@ -1369,10 +1239,8 @@
     accelReturnRAF = requestAnimationFrame(step);
   }
   accelTrackEl.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    cancelAccelReturn();
-    accelDragging = true;
-    accelPointerId = e.pointerId;
+    e.preventDefault(); cancelAccelReturn();
+    accelDragging = true; accelPointerId = e.pointerId;
     try { accelTrackEl.setPointerCapture(e.pointerId); } catch (_) {}
     accelTrackEl.classList.add('active');
     setThrottle(accelPercentFromEvent(e));
@@ -1396,18 +1264,14 @@
     if (e.key === 'ArrowDown') { e.preventDefault(); cancelAccelReturn(); setThrottle(throttle - 0.08); }
   });
 
-  let spaceHeld = false;
   window.addEventListener('keydown', e => {
     if (e.code === 'Space' && !e.repeat && !e.target.closest('button, input')) {
-      e.preventDefault();
-      spaceHeld = true;
-      cancelAccelReturn();
+      e.preventDefault(); cancelAccelReturn();
       accelTrackEl.classList.add('active');
     }
   });
   window.addEventListener('keyup', e => {
     if (e.code === 'Space') {
-      spaceHeld = false;
       if (!accelDragging) {
         accelTrackEl.classList.remove('active');
         springRelease();
@@ -1490,7 +1354,6 @@
     document.querySelector('#panel-toggle svg').style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
   });
 
-  /* Rotor slow-mo button */
   const btnRotor = document.getElementById('btn-rotorslow');
   btnRotor.addEventListener('click', () => {
     rotorSlow = !rotorSlow;
@@ -1536,13 +1399,11 @@
     const exhaustEnergy = throttle * load;
     thrEff = throttle * (0.35 + 0.65 * load);
 
-    /* Wastegate cap */
     const wgNeed = boost - WG_TARGET * 0.95;
     const wgTarget = wgNeed > 0 ? Math.min(1, wgNeed * 5 + 0.15) : 0;
     wastegateOpen += (wgTarget - wastegateOpen) * Math.min(1, dt * 2.5);
     if (wastegateOpen < 0.01) wastegateOpen = 0;
 
-    /* Turbine spool with lag */
     let target = 16000 + 136000 * Math.pow(exhaustEnergy, 1.25);
     target *= 1 - 0.42 * wastegateOpen;
     if (throttle < 0.03) target = Math.min(target, 14000);
@@ -1550,11 +1411,9 @@
     turbineRpm += (target - turbineRpm) * (1 - Math.exp(-dt / tau));
     if (turbineRpm < 0) turbineRpm = 0;
 
-    /* Boost follows RPM */
     const boostTarget = MAX_BOOST * Math.pow(Math.max(0, Math.min(1, turbineRpm / 138000)), 2.3);
     boost += (boostTarget - boost) * (1 - Math.exp(-dt / 0.35));
 
-    /* BOV on throttle lift */
     if (prevThrottle > 0.45 && throttle < 0.22 && boost > 0.35) {
       bovOpen = 1; fireBov();
     }
@@ -1562,11 +1421,9 @@
     if (bovOpen > 0.04) boost *= Math.exp(-dt * 2.6);
     prevThrottle = throttle;
 
-    /* EGT */
     const egtTarget = 20 + 900 * Math.min(1.15, exhaustEnergy * 1.15);
     egt += (egtTarget - egt) * (1 - Math.exp(-dt / (egtTarget > egt ? 1.7 : 3.2)));
 
-    /* Intercooler outlet temp */
     const preIC = 20 + boost * 105;
     const iatTarget = 20 + (preIC - 20) * 0.26;
     iatPostIc += (iatTarget - iatPostIc) * (1 - Math.exp(-dt / 0.9));
@@ -1591,24 +1448,19 @@
     const wristLY = crankLY + py;
 
     pistonGroup.position.y = wristLY + 0.05;
-
-    /* Crank assembly rotates as a group */
     crankSpin.rotation.z = -th;
 
-    /* Connecting rod */
     const pinLX = CRANK_R * Math.sin(th);
     const pinLY = crankLY + CRANK_R * Math.cos(th);
     conRod.position.set(pinLX * 0.5, (pinLY + wristLY) * 0.5, 0);
     conRod.rotation.z = Math.atan2(pinLX, wristLY - pinLY);
 
-    /* Valves */
     let inLift = 0, exLift = 0;
     if (crankAngle < 180)       inLift = Math.sin(crankAngle * DEG) * 0.045;
     else if (crankAngle >= 540) exLift = Math.sin((crankAngle - 540) * DEG) * 0.045;
     intakeValve.position.y  = valveY - inLift;
     exhaustValve.position.y = valveY - exLift;
 
-    /* Stroke detection & combustion flash */
     const strokeIdx = Math.floor(crankAngle / 180) % 4;
     if (prevCrank < 360 && crankAngle >= 360) flashT = 1;
     prevCrank = crankAngle;
@@ -1617,7 +1469,6 @@
     combustionLight.intensity = flashT * 2.4;
     combustion.scale.setScalar(0.7 + (1 - flashT) * 0.7);
 
-    /* Gas volume tinted per stroke */
     gasMat.color.setHex(STROKE_COLORS[strokeIdx]);
     const deg = crankAngle % 180;
     let gasOp;
@@ -1627,7 +1478,6 @@
     else                      gasOp = 0.30 - 0.20 * (deg / 180);
     gasMat.opacity = gasOp * (0.6 + 0.4 * throttle);
 
-    /* Fit the gas volume between piston crown and deck */
     const pistonTop = pistonGroup.position.y + 0.10;
     const gasH = Math.max(0.04, chamberTopLocal - pistonTop);
     gasVolume.position.y = (pistonTop + chamberTopLocal) * 0.5;
@@ -1648,68 +1498,33 @@
     const egtF = Math.max(0, Math.min(1, (egt - 20) / 720));
     const boostF = Math.max(0, Math.min(1, boost / 0.8));
 
-    /* Fresh air — sparse, wide wobble, pale blue */
     freshStream.mat.opacity = 0.30 + 0.40 * Math.min(1, thrEff * 1.8);
-    updateStream(
-      freshStream,
-      dt,
-      0.10 + 0.55 * thrEff,
-      0.032, 2.6,
-      (c, p) => { c.copy(COL.fresh).multiplyScalar(p.j); }
-    );
+    updateStream(freshStream, dt, 0.10 + 0.55 * thrEff, 0.018, 2.6,
+      (c, p) => { c.copy(COL.fresh).multiplyScalar(p.j); });
 
-    /* Charge — dense amber (hot compressed) */
     chargeStream.mat.opacity = 0.25 + 0.70 * boostF;
-    updateStream(
-      chargeStream,
-      dt,
-      0.04 + 0.26 * boostF + 0.06 * thrEff,
-      0.008, 3.0,
-      (c, p, t) => {
-        c.copy(COL.charge).multiplyScalar(p.j * (0.85 + 0.30 * (1 - t)));
-      }
-    );
+    updateStream(chargeStream, dt, 0.04 + 0.26 * boostF + 0.06 * thrEff, 0.006, 3.0,
+      (c, p, t) => { c.copy(COL.charge).multiplyScalar(p.j * (0.85 + 0.30 * (1 - t))); });
 
-    /* Cooled — dense blue (post-IC) */
     cooledStream.mat.opacity = 0.25 + 0.70 * boostF;
-    updateStream(
-      cooledStream,
-      dt,
-      0.035 + 0.24 * boostF + 0.04 * thrEff,
-      0.010, 3.2,
-      (c, p) => { c.copy(COL.cooled).multiplyScalar(p.j); }
-    );
+    updateStream(cooledStream, dt, 0.035 + 0.24 * boostF + 0.04 * thrEff, 0.008, 3.2,
+      (c, p) => { c.copy(COL.cooled).multiplyScalar(p.j); });
 
-    /* Exhaust — orange, pulsing with exhaust stroke */
     exhaustStream.mat.opacity = 0.22 + 0.75 * egtF;
-    updateStream(
-      exhaustStream,
-      dt,
-      (0.05 + 0.45 * thrEff) * (0.4 + 1.2 * exPulseSm),
-      0.020, 5.0,
+    updateStream(exhaustStream, dt, (0.05 + 0.45 * thrEff) * (0.4 + 1.2 * exPulseSm), 0.014, 5.0,
       (c, p) => {
         c.copy(COL.exhCold).lerp(COL.exhHot, egtF);
         c.multiplyScalar(p.j * (0.60 + 0.55 * exPulseSm));
-      }
-    );
+      });
 
-    /* Tail — dimmer, cooler */
     tailStream.mat.opacity = 0.28 + 0.55 * egtF;
-    updateStream(
-      tailStream,
-      dt,
-      0.08 + 0.55 * thrEff,
-      0.028, 3.6,
+    updateStream(tailStream, dt, 0.08 + 0.55 * thrEff, 0.020, 3.6,
       (c, p) => {
         c.copy(COL.tailCold).lerp(COL.tailHot, egtF * 0.75);
         c.multiplyScalar(p.j);
-      }
-    );
+      });
   }
 
-  /* ═══════════════════════════════════════════════════════════
-     SWIRL / CYLINDER / BOV / WG UPDATES
-     ═══════════════════════════════════════════════════════════ */
   function updateSwirl(dt) {
     swirlPoints.visible = state.showGas !== false;
     if (!swirlPoints.visible) return;
@@ -1748,15 +1563,15 @@
 
     for (let i = 0; i < P.cyl; i++) {
       const p = cylData[i];
-      if (strokeIdx === 0) {          // intake — charge streams in, drifts down
+      if (strokeIdx === 0) {
         p.a = Math.min(1, p.a + dt * 1.4);
         p.h = Math.max(0.05, p.h - dt * 0.30);
-      } else if (strokeIdx === 1) {   // compression — packed
+      } else if (strokeIdx === 1) {
         p.a = 1;
-      } else if (strokeIdx === 2) {   // power — turbulent expansion
+      } else if (strokeIdx === 2) {
         p.h += (Math.random() - 0.55) * dt * 2.2;
         p.h = Math.max(0, Math.min(1, p.h));
-      } else {                        // exhaust — rise and vent
+      } else {
         p.h = Math.min(1.15, p.h + dt * 0.8);
         p.a -= dt * 0.7;
       }
@@ -1786,7 +1601,7 @@
       if (p.life > 0) {
         p.life -= dt;
         p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
-        p.vy -= 1.2 * dt;
+        p.vy -= 0.6 * dt;
         const f = Math.max(0, p.life / p.maxLife);
         posA.setXYZ(i, p.x, p.y, p.z);
         colA.setXYZ(i, COL.cooled.r * f, COL.cooled.g * f, COL.cooled.b * f);
@@ -1814,7 +1629,7 @@
       if (p.life > 0) {
         p.life -= dt;
         p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
-        p.vy -= 1.6 * dt;
+        p.vy += 0.4 * dt;
         const f = Math.max(0, p.life / p.maxLife) * wastegateOpen;
         posA.setXYZ(i, p.x, p.y, p.z);
         colA.setXYZ(i, _c2.r * f * 0.9, _c2.g * f * 0.9, _c2.b * f * 0.9);
@@ -1841,7 +1656,6 @@
       stepPhysics(dt);
       advanceCrank(dt);
 
-      /* Exhaust stroke pulse (drives exhaust flow & swirl intensity) */
       if (crankAngle >= 500 && crankAngle <= 720) {
         exPulse = Math.sin(((crankAngle - 500) / 220) * Math.PI);
       } else {
@@ -1850,7 +1664,6 @@
       exPulseSm += (exPulse - exPulseSm) * Math.min(1, dt * 8);
     }
 
-    /* Rotor visuals — blades fade, blur disc fades in */
     const srpm = Math.min(1, turbineRpm / MAX_RPM);
     const slowK = rotorSlow ? 0.15 : 1;
     const fadeK = rotorSlow ? 0.35 : 1;
@@ -1869,13 +1682,13 @@
     blurCompMat.opacity = blurOp;
     blurTurbMat.opacity = blurOp;
 
-    /* Wastegate actuator */
+    /* Wastegate actuator — the rod/valve pushes down from the body */
     const wgPush = wastegateOpen * 0.06;
-    wgRod.position.x = -0.19 - wgPush;
-    wgValve.position.x = -0.33 - wgPush;
+    wgRod.position.y   = -0.31 - wgPush;
+    wgValve.position.y = -0.39 - wgPush;
 
-    /* BOV piston */
-    bovPiston.position.y = -0.14 + bovOpen * 0.06;
+    /* BOV piston pops up when open */
+    bovPiston.position.y = 0.04 + bovOpen * 0.05;
 
     updateEngineKinematics(dt);
     updateAllStreams(dt);
@@ -1884,10 +1697,8 @@
     updateBov(dt);
     updateWastegateFx(dt);
 
-    /* Readouts */
     if (state.playing) updateReadouts();
 
-    /* Dynamic shaft-speed label (5 Hz) */
     if (simTime - lastLblT > 0.2) {
       lastLblT = simTime;
       labels.setText('rpm3d', `Shaft ${Math.round(turbineRpm / 1000)}k rpm`);
