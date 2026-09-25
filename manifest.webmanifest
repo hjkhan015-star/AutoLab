@@ -1,0 +1,25 @@
+{
+  "name": "Auto Lab — Automotive Learning",
+  "short_name": "Auto Lab",
+  "description": "Interactive 3D learning lab for automotive systems — engine, gearbox, clutch, cooling, differential and more.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "lang": "en",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png",           "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png",           "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512-maskable.png",  "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg",               "sizes": "any",     "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "4-Stroke Engine", "url": "./index.html#engine" },
+    { "name": "Gearbox",         "url": "./index.html#gearbox" },
+    { "name": "Differential",    "url": "./index.html#differential" },
+    { "name": "Cooling System",  "url": "./index.html#cooling" }
+  ]
+}

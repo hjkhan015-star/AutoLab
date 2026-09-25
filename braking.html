@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<title>Braking System — Auto Lab</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  /* ═══════════════════════════════════════════════════════════
+     BRAKE PEDAL OVERLAY (bottom-right)
+     ═══════════════════════════════════════════════════════════ */
+  #pedal-overlay {
+    position: fixed;
+    z-index: 20;
+    right: calc(16px + var(--safe-r, 0px));
+    bottom: calc(82px + var(--safe-b, 0px));
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none;
+    gap: 8px;
+  }
+  #pedal-track {
+    position: relative;
+    width: 62px; height: 148px;
+    pointer-events: auto; cursor: pointer;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  #pedal-fill-mask {
+    position: absolute; inset: 0;
+    border-radius: 14px; overflow: hidden;
+    background: rgba(10,14,20,.72);
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), 0 10px 24px rgba(0,0,0,.55);
+    transition: border-color .2s;
+  }
+  html.light-theme #pedal-fill-mask {
+    background: rgba(255,255,255,.88);
+    border-color: rgba(15,23,42,.14);
+  }
+  #pedal-track.active #pedal-fill-mask { border-color: rgba(239,68,68,.55); }
+  #pedal-fill {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 0%;
+    background: linear-gradient(180deg, #dc2626, #f87171);
+  }
+  #pedal-pad {
+    position: absolute; left: -6px; right: -6px;
+    bottom: 0%; height: 42px;
+    transform: translateY(50%);
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,.55));
+    transition: filter .15s;
+  }
+  #pedal-track.active #pedal-pad {
+    filter: drop-shadow(0 0 12px rgba(239,68,68,.55)) drop-shadow(0 6px 10px rgba(0,0,0,.55));
+  }
+  #pedal-pad svg { width: 100%; height: 100%; display: block; }
+  .pp-plate { fill: #242b35; stroke: #a9b4c3; stroke-width: 1.4; }
+  .pp-grip { fill: #5e6b7d; }
+  html.light-theme .pp-plate { fill: #e2e8f0; stroke: #334155; }
+  html.light-theme .pp-grip { fill: #cbd5e1; }
+  #pedal-track.active .pp-plate { stroke: #ef4444; }
+  #pedal-readout {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11px; font-weight: 700;
+    color: #fecaca;
+    background: rgba(10,14,20,.82);
+    padding: 4px 11px; border-radius: 20px;
+    border: 1px solid rgba(239,68,68,.28);
+    backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  html.light-theme #pedal-readout {
+    background: rgba(255,255,255,.94);
+    border-color: rgba(239,68,68,.4);
+    color: #b91c1c;
+  }
+  #pedal-control-label {
+    margin-top: 4px;
+    color: #aab4c3; font-size: 10px; font-weight: 700;
+    letter-spacing: .55px; text-transform: uppercase;
+    background: rgba(10,14,20,.78);
+    padding: 4px 10px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.08);
+    backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  html.light-theme #pedal-control-label {
+    background: rgba(255,255,255,.94);
+    color: #475569;
+    border-color: rgba(15,23,42,.14);
+  }
+
+  /* Brake temperature readout (top-right of 3D view) */
+  #brake-temp {
+    position: fixed;
+    top: calc(74px + var(--safe-t,0px));
+    right: calc(14px + var(--safe-r,0px));
+    z-index: 18;
+    background: rgba(10,14,20,.82);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 12px;
+    padding: 8px 12px;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    pointer-events: none;
+    min-width: 130px;
+  }
+  html.light-theme #brake-temp {
+    background: rgba(255,255,255,.94);
+    border-color: rgba(15,23,42,.14);
+  }
+  #brake-temp .bt-label {
+    font-size: 9px; letter-spacing: .1em;
+    text-transform: uppercase; color: #8d9aaa;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+  }
+  #brake-temp .bt-value {
+    font-size: 18px; font-weight: 800;
+    margin-top: 2px;
+    transition: color .3s;
+    font-variant-numeric: tabular-nums;
+  }
+  #brake-temp .bt-bar {
+    height: 4px; background: rgba(255,255,255,.10);
+    border-radius: 10px; overflow: hidden;
+    margin-top: 6px;
+  }
+  #brake-temp .bt-fill {
+    height: 100%; width: 20%; background: #38bdf8;
+    border-radius: 10px;
+    transition: width .25s, background .3s;
+  }
+  #brake-temp .bt-status {
+    font-size: 9.5px; margin-top: 5px; color: #8d9aaa;
+    letter-spacing: .02em;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* ── Pascal's law card (top-left, below the info panel) ── */
+  #pascal-card {
+    position: fixed;
+    top: calc(74px + var(--safe-t,0px));
+    left: calc(14px + var(--safe-l,0px));
+    z-index: 18;
+    background: rgba(10,14,20,.85);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 12px;
+    padding: 10px 14px;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    pointer-events: none;
+    min-width: 200px;
+    max-width: 240px;
+  }
+  html.light-theme #pascal-card {
+    background: rgba(255,255,255,.96);
+    border-color: rgba(15,23,42,.14);
+  }
+  #pascal-card .pc-label {
+    font-size: 9px; letter-spacing: .1em;
+    text-transform: uppercase; color: #8d9aaa;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  #pascal-card .pc-eq {
+    font-size: 12px; font-weight: 800;
+    color: #38bdf8;
+    margin-bottom: 6px;
+    letter-spacing: .01em;
+  }
+  html.light-theme #pascal-card .pc-eq { color: #2563eb; }
+  #pascal-card .pc-row {
+    display: flex; justify-content: space-between;
+    gap: 12px; font-size: 11px; color: #94a3b8;
+    line-height: 1.6;
+  }
+  #pascal-card .pc-row b {
+    color: #e5e7eb; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  html.light-theme #pascal-card .pc-row b { color: #0a0d13; }
+  #pascal-card .pc-mult {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,.08);
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: #94a3b8;
+  }
+  html.light-theme #pascal-card .pc-mult { border-top-color: rgba(15,23,42,.08); }
+  #pascal-card .pc-mult b {
+    color: #22c55e; font-weight: 900;
+    font-family: ui-monospace, monospace;
+  }
+
+  /* Force readout rows in the edu panel */
+  #force-readout .fr-row {
+    display: flex; justify-content: space-between;
+  }
+  #force-readout .fr-row b {
+    color: var(--text); font-variant-numeric: tabular-nums;
+  }
+
+  /* Embed mode */
+  body.embedded #pedal-overlay {
+    position: absolute !important;
+    bottom: calc(80px + var(--safe-b,0px)) !important;
+    right: 14px !important;
+    z-index: 20 !important;
+  }
+  body.embedded #brake-temp {
+    position: absolute !important;
+    top: calc(74px + var(--safe-t,0px)) !important;
+    right: 12px !important;
+    z-index: 14 !important;
+  }
+  body.embedded #pascal-card {
+    position: absolute !important;
+    top: calc(74px + var(--safe-t,0px)) !important;
+    left: auto !important; right: 12px !important;
+    z-index: 13 !important;
+    /* Move to left side to avoid collision with brake-temp */
+    right: auto !important;
+    left: 12px !important;
+  }
+  @media (max-width: 720px) {
+    #brake-temp { min-width: 110px; padding: 6px 10px; }
+    #brake-temp .bt-value { font-size: 15px; }
+    #pascal-card { min-width: 160px; padding: 8px 10px; }
+    #pascal-card .pc-eq { font-size: 11px; }
+    #pascal-card .pc-row { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+  <div id="canvas-wrap"></div>
+
+  <div id="edu-panel" class="panel">
+    <div id="panel-head">
+      <div>
+        <h1 id="module-kicker">Chassis · Class IX / X</h1>
+        <div id="module-title">Hydraulic Braking System</div>
+      </div>
+      <button id="panel-toggle" aria-label="Toggle info" aria-expanded="false">
+        <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+      </button>
+    </div>
+    <div id="panel-body">
+      <div id="stroke-badge" style="background:rgba(239,68,68,.18);color:#ef4444">
+        <span class="dot" style="background:#ef4444"></span><span>Hydraulic Brakes</span>
+      </div>
+
+      <div id="force-readout" style="display:flex;flex-direction:column;gap:5px;margin-top:8px;font-size:11.5px;color:var(--muted)">
+        <div class="fr-row"><span>Pedal force (F₁)</span><b id="fr-pedal">0 N</b></div>
+        <div class="fr-row"><span>Line pressure (P)</span><b id="fr-pres">0 kPa</b></div>
+        <div class="fr-row"><span>Front caliper force</span><b id="fr-cal">0 N</b></div>
+        <div class="fr-row"><span>Rear shoe force</span><b id="fr-shoe">0 N</b></div>
+        <div class="fr-row"><span>Braking torque</span><b id="fr-tq">0 Nm</b></div>
+      </div>
+
+      <div id="stroke-desc" style="margin-top:12px">
+        <strong>Brakes.</strong> Your foot applies a modest force on the pedal.
+        A <strong>vacuum booster</strong> multiplies that ~4×. Inside the
+        <strong>master cylinder</strong>, two small pistons pressurize the fluid
+        — one for the <strong>front circuit</strong> (blue line, disc brakes) and one
+        for the <strong>rear circuit</strong> (red line, drum brakes). Because
+        pressure is equal everywhere (<em>Pascal's law</em>), the small MC piston
+        acting on much larger caliper &amp; wheel-cylinder pistons multiplies force again.
+        Friction converts kinetic energy into heat — glowing rotors and drums.
+        <div style="margin-top:8px;font-size:11px;color:#9aa3b2">
+          Dual circuits are a safety feature: if one line ruptures, the other still brakes the vehicle.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pascal's law card -->
+  <div id="pascal-card">
+    <div class="pc-label">Pascal's Law</div>
+    <div class="pc-eq">P = F₁/A₁ = F₂/A₂</div>
+    <div class="pc-row"><span>F₁ (pedal)</span><b id="pc-f1">0 N</b></div>
+    <div class="pc-row"><span>A₁ (MC piston)</span><b>3.1 cm²</b></div>
+    <div class="pc-row"><span>P (pressure)</span><b id="pc-p">0 kPa</b></div>
+    <div class="pc-row"><span>A₂ (caliper)</span><b>25 cm²</b></div>
+    <div class="pc-row"><span>F₂ (caliper)</span><b id="pc-f2">0 N</b></div>
+    <div class="pc-mult"><span>Force multiplication</span><b id="pc-mult">8.0×</b></div>
+  </div>
+
+  <!-- Brake temperature card -->
+  <div id="brake-temp">
+    <div class="bt-label">Rotor Temperature</div>
+    <div class="bt-value" id="bt-value">32°C</div>
+    <div class="bt-bar"><div class="bt-fill" id="bt-fill"></div></div>
+    <div class="bt-status" id="bt-status">Cold</div>
+  </div>
+
+  <div id="module-controls" class="panel">
+    <button class="ctrl-btn" id="btn-play" aria-label="Pause">
+      <svg id="icon-play" viewBox="0 0 24 24" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+      <svg id="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+    </button>
+    <button class="ctrl-btn" id="btn-reset" aria-label="Reset">
+      <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </button>
+    <div class="slider-group">
+      <span>Wheel speed</span>
+      <input type="range" id="speed" min="0.15" max="2.5" step="0.05" value="0.85" aria-label="Speed">
+      <span id="rpm-label">~700 rpm</span>
+    </div>
+    <label class="toggle"><input type="checkbox" id="chk-labels" checked> Labels</label>
+    <label class="toggle"><input type="checkbox" id="chk-gas" checked> Fluid</label>
+    <label class="toggle"><input type="checkbox" id="chk-abs"> ABS</label>
+    <label class="toggle"><input type="checkbox" id="chk-fail"> Circuit Fail</label>
+    <label class="toggle"><input type="checkbox" id="chk-air"> Air Bubble</label>
+  </div>
+
+  <div id="pedal-overlay">
+    <div id="pedal-readout"><span id="pedal-pct">0%</span></div>
+    <div id="pedal-track" role="slider" tabindex="0"
+         aria-label="Brake pedal — press to brake"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div id="pedal-fill-mask">
+        <div id="pedal-fill"></div>
+      </div>
+      <div id="pedal-pad">
+        <svg viewBox="0 0 70 44" aria-hidden="true">
+          <rect class="pp-plate" x="4" y="4" width="62" height="36" rx="9"/>
+          <rect class="pp-grip" x="12" y="12" width="46" height="4" rx="2"/>
+          <rect class="pp-grip" x="12" y="20" width="46" height="4" rx="2"/>
+          <rect class="pp-grip" x="12" y="28" width="46" height="4" rx="2"/>
+        </svg>
+      </div>
+    </div>
+    <div id="pedal-control-label">Press &amp; hold · <span id="pedal-pct-label">0%</span></div>
+  </div>
+
+  <div id="hint">Drag to orbit · Press pedal or Spacebar to brake</div>
+  <div id="labels-root"></div>
+
+  <script type="importmap">
+  { "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  } }
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+  import * as Base from './module-base.js';
+
+  /* ═══════════════════════════════════════════════════════════
+     SHELL DETECTION + ADAPTIVE QUALITY
+     ═══════════════════════════════════════════════════════════ */
+  const IS_EMBEDDED = window.parent && window.parent !== window;
+  if (IS_EMBEDDED) document.body.classList.add('embedded');
+
+  const isCoarse = matchMedia('(pointer: coarse)').matches;
+  const cores    = navigator.hardwareConcurrency || 4;
+  const mem      = navigator.deviceMemory || 4;
+  const isLowEnd = cores <= 4 || mem <= 2;
+  const isMidEnd = !isLowEnd && (cores <= 6 || isCoarse);
+
+  const CYL_SEGS = isLowEnd ? 20 : 32;
+  const TORUS_SEGS = isLowEnd ? 6 : 10;
+  const FLUID_COUNT = isLowEnd ? 40 : isMidEnd ? 70 : 100;
+  const AIR_COUNT   = isLowEnd ? 20 : isMidEnd ? 32 : 44;
+  const SHIMMER_N   = isLowEnd ? 12 : isMidEnd ? 20 : 30;
+
+  const { scene, camera, renderer, controls, wrap } = Base.buildScene({
+    fov: 44,
+    camPos: isCoarse ? [3.0, 2.0, 4.0] : [3.4, 2.2, 4.6],
+    target: [-0.3, 0.05, 0],
+    floorY: -2.15
+  });
+  Base.attachResize(camera, renderer, wrap, 44);
+  const particleTex = Base.createParticleTexture();
+  const labels = Base.createLabelSystem();
+  const state = Base.createUIState();
+  state.abs = false;
+  state.circuitFail = false;
+  state.airBubble = false;
+
+  /* ═══════════════════════════════════════════════════════════
+     MATERIALS
+     ═══════════════════════════════════════════════════════════ */
+  const M = {
+    steel:     new THREE.MeshStandardMaterial({ color:0x9aa3b0, metalness:0.88, roughness:0.28 }),
+    steelDark: new THREE.MeshStandardMaterial({ color:0x4b5563, metalness:0.80, roughness:0.38 }),
+    alum:      new THREE.MeshStandardMaterial({ color:0xc5ccd6, metalness:0.82, roughness:0.28 }),
+    brass:     new THREE.MeshStandardMaterial({ color:0xd4a34a, metalness:0.88, roughness:0.28, transparent:true, opacity:0.55 }),
+    fluidGlass: new THREE.MeshPhysicalMaterial({
+      color:0x60a5fa, metalness:0.10, roughness:0.20,
+      transmission:0.55, transparent:true, opacity:0.55,
+      depthWrite:false, side:THREE.DoubleSide
+    }),
+    fluid:     new THREE.MeshStandardMaterial({
+      color:0x3b82f6, emissive:0x60a5fa, emissiveIntensity:0.35,
+      transparent:true, opacity:0.75, roughness:0.20, metalness:0.10
+    }),
+    pad:       new THREE.MeshStandardMaterial({ color:0x4a3520, metalness:0.20, roughness:0.85 }),
+    shoe:      new THREE.MeshStandardMaterial({ color:0x5a3a20, metalness:0.15, roughness:0.92 }),
+    rotor:     new THREE.MeshStandardMaterial({
+      color:0x8a94a4, metalness:0.90, roughness:0.30,
+      emissive:0xff4000, emissiveIntensity:0
+    }),
+    drum:      new THREE.MeshStandardMaterial({
+      color:0x8a94a4, metalness:0.85, roughness:0.35,
+      emissive:0xff4000, emissiveIntensity:0,
+      transparent:true, opacity:0.55, side:THREE.DoubleSide
+    }),
+    tire:      new THREE.MeshStandardMaterial({ color:0x181c22, metalness:0.10, roughness:0.92 }),
+    hub:       new THREE.MeshStandardMaterial({ color:0xb8c1d2, metalness:0.92, roughness:0.18 }),
+    accent:    new THREE.MeshBasicMaterial({ color:0x38bdf8 }),
+    red:       new THREE.MeshStandardMaterial({ color:0xdc2626, metalness:0.30, roughness:0.40 }),
+    /* Circuit line colours */
+    lineBlue:  new THREE.MeshStandardMaterial({ color:0x38bdf8, metalness:0.5, roughness:0.35, emissive:0x0c4a6e, emissiveIntensity:0.35 }),
+    lineRed:   new THREE.MeshStandardMaterial({ color:0xef4444, metalness:0.5, roughness:0.35, emissive:0x7f1d1d, emissiveIntensity:0.35 }),
+    /* Vacuum booster */
+    booster:   new THREE.MeshStandardMaterial({ color:0x2a2f38, metalness:0.55, roughness:0.42 }),
+    vacuum:    new THREE.MeshStandardMaterial({ color:0x1a1f28, metalness:0.30, roughness:0.65 }),
+    /* Air bubble */
+    airBubble: new THREE.MeshBasicMaterial({ color:0xf8fafc, transparent:true, opacity:0.85 })
+  };
+
+  const system = new THREE.Group();
+  scene.add(system);
+
+  /* ═══════════════════════════════════════════════════════════
+     SUPPLEMENTAL LIGHTING — brightens the mechanism itself
+     (rotor / caliper / drum / shoes were reading too dark)
+     ═══════════════════════════════════════════════════════════ */
+  const fillAmbient = new THREE.AmbientLight(0xaebbd0, 0.55);
+  scene.add(fillAmbient);
+
+  const hemiFill = new THREE.HemisphereLight(0xdce8ff, 0x0b0e14, 0.45);
+  scene.add(hemiFill);
+
+  // Broad key light from front-above so both wheel assemblies read clearly
+  const mechKey = new THREE.DirectionalLight(0xffffff, 1.1);
+  mechKey.position.set(2.6, 3.4, 2.2);
+  mechKey.target.position.set(1.10, -0.1, 0);
+  scene.add(mechKey);
+  scene.add(mechKey.target);
+
+  // Soft rim/fill from the opposite side to lift shadowed detail
+  const mechRim = new THREE.DirectionalLight(0x9fc4ff, 0.5);
+  mechRim.position.set(-1.5, 1.8, -3.0);
+  scene.add(mechRim);
+
+  // Focused point lights right at each brake unit so the disc and
+  // drum mechanisms are individually well-lit, not just the wheel
+  const discSpot = new THREE.PointLight(0xffffff, 1.4, 5.5, 2);
+  discSpot.position.set(1.10 + 0.7, 0.9, 1.00 + 0.6);
+  scene.add(discSpot);
+
+  const drumSpot = new THREE.PointLight(0xffffff, 1.3, 5.5, 2);
+  drumSpot.position.set(1.10 + 0.7, 0.9, -1.00 - 0.6);
+  scene.add(drumSpot);
+
+  /* ═══════════════════════════════════════════════════════════
+     GROUND GRID
+     ═══════════════════════════════════════════════════════════ */
+  const grid = new THREE.GridHelper(9, 18, 0x1e293b, 0x151a24);
+  grid.position.y = -2.14;
+  system.add(grid);
+
+  /* ═══════════════════════════════════════════════════════════
+     BRAKE PEDAL
+     ═══════════════════════════════════════════════════════════ */
+  const pedalPivotX = -2.45;
+  const pedalPivotY = 0.30;
+  const pedalPivotZ = 0;
+
+  const pedalGroup = new THREE.Group();
+  pedalGroup.position.set(pedalPivotX, pedalPivotY, pedalPivotZ);
+  system.add(pedalGroup);
+
+  const pedalArm = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.85, 0.10), M.steelDark);
+  pedalArm.position.set(0, -0.42, 0);
+  pedalArm.castShadow = true;
+  pedalGroup.add(pedalArm);
+
+  const pedalPad = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.10, 0.42), M.pad);
+  pedalPad.position.set(0.06, -0.86, 0);
+  pedalPad.castShadow = true;
+  pedalGroup.add(pedalPad);
+
+  const pedalPivot = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 12), M.steel);
+  pedalPivot.rotation.x = Math.PI / 2;
+  pedalGroup.add(pedalPivot);
+
+  const pushrod = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.38, 10), M.steel);
+  pushrod.rotation.z = Math.PI / 2;
+  pushrod.position.set(0.24, -0.60, 0);
+  pushrod.castShadow = true;
+  pedalGroup.add(pushrod);
+
+  /* ═══════════════════════════════════════════════════════════
+     VACUUM BRAKE BOOSTER  (between pedal and MC)
+     ═══════════════════════════════════════════════════════════ */
+  const boosterX = -1.95, boosterY = -0.30;
+
+  const boosterGroup = new THREE.Group();
+  boosterGroup.position.set(boosterX, boosterY, 0);
+  system.add(boosterGroup);
+
+  /* Booster shell (big flat cylinder along x) */
+  const boosterShell = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.26, 0.26, 0.30, isLowEnd ? 24 : 40, 1, true),
+    M.booster
+  );
+  boosterShell.rotation.z = Math.PI / 2;
+  boosterShell.castShadow = true;
+  boosterGroup.add(boosterShell);
+
+  const boosterFront = new THREE.Mesh(new THREE.RingGeometry(0.14, 0.26, 24), M.steel);
+  boosterFront.rotation.y = -Math.PI / 2;
+  boosterFront.position.x = -0.15;
+  boosterGroup.add(boosterFront);
+
+  const boosterBack = new THREE.Mesh(new THREE.RingGeometry(0.14, 0.26, 24), M.steel);
+  boosterBack.rotation.y = Math.PI / 2;
+  boosterBack.position.x = 0.15;
+  boosterGroup.add(boosterBack);
+
+  /* Central hub of the booster */
+  const boosterHub = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.14, 0.14, 0.34, 20),
+    M.steelDark
+  );
+  boosterHub.rotation.z = Math.PI / 2;
+  boosterGroup.add(boosterHub);
+
+  /* Vacuum port + hose going up to "intake manifold" */
+  const vacPort = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.06, 10), M.steel);
+  vacPort.position.set(-0.05, 0.28, 0.10);
+  boosterGroup.add(vacPort);
+
+  const vacHose = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.020, 0.020, 0.95, 8),
+    M.vacuum
+  );
+  vacHose.position.set(-0.05, 0.72, 0.10);
+  vacHose.rotation.z = 0.08;
+  system.add(vacHose);
+
+  /* Small label plate for vacuum port */
+  const vacCap = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 12), M.brass);
+  vacCap.position.set(-0.05, 1.18, 0.10);
+  system.add(vacCap);
+
+  /* Link rod from pedal to booster */
+  const linkRod = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.45, 8), M.steel);
+  linkRod.rotation.z = Math.PI / 2;
+  linkRod.position.set(-2.20, -0.30, 0);
+  system.add(linkRod);
+
+  /* ═══════════════════════════════════════════════════════════
+     MASTER CYLINDER (dual circuit — two pistons, two outlets)
+     ═══════════════════════════════════════════════════════════ */
+  const mcX = -1.20, mcY = -0.30;
+
+  const mcGroup = new THREE.Group();
+  mcGroup.position.set(mcX, mcY, 0);
+  system.add(mcGroup);
+
+  /* Transparent body so you can see the two pistons */
+  const mcBody = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.13, 0.13, 0.72, CYL_SEGS, 1, true),
+    M.fluidGlass
+  );
+  mcBody.rotation.z = Math.PI / 2;
+  mcGroup.add(mcBody);
+
+  const mcCapL = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.05, CYL_SEGS), M.alum);
+  mcCapL.rotation.z = Math.PI / 2;
+  mcCapL.position.x = -0.38;
+  mcGroup.add(mcCapL);
+
+  const mcCapR = mcCapL.clone();
+  mcCapR.position.x = 0.38;
+  mcGroup.add(mcCapR);
+
+  /* Two pistons — front circuit (right) and rear circuit (left) */
+  const pistonF = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.09, CYL_SEGS), M.steel);
+  pistonF.rotation.z = Math.PI / 2;
+  pistonF.position.x = -0.20;
+  mcGroup.add(pistonF);
+
+  const pistonR = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.09, CYL_SEGS), M.steel);
+  pistonR.rotation.z = Math.PI / 2;
+  pistonR.position.x = 0.14;
+  mcGroup.add(pistonR);
+
+  /* Fluid volumes (front circuit = behind piston F, rear circuit = between F and R) */
+  const mcFluid = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.60, CYL_SEGS), M.fluid);
+  mcFluid.rotation.z = Math.PI / 2;
+  mcFluid.position.x = 0.16;
+  mcGroup.add(mcFluid);
+
+  /* Reservoir on top with two fluid halves */
+  const reservoir = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.28, CYL_SEGS), M.fluidGlass);
+  reservoir.position.set(-0.02, 0.22, 0);
+  mcGroup.add(reservoir);
+
+  const reservoirFluid = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.18, CYL_SEGS), M.fluid);
+  reservoirFluid.position.set(-0.02, 0.18, 0);
+  mcGroup.add(reservoirFluid);
+
+  const reservoirCap = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.04, CYL_SEGS), M.steel);
+  reservoirCap.position.set(-0.02, 0.38, 0);
+  mcGroup.add(reservoirCap);
+
+  /* Outlet ports — front circuit goes UP, rear circuit goes DOWN */
+  const outletFront = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.08, 10), M.brass);
+  outletFront.position.set(0.30, 0.14, 0);
+  mcGroup.add(outletFront);
+
+  const outletRear = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.08, 10), M.brass);
+  outletRear.position.set(0.30, -0.14, 0);
+  mcGroup.add(outletRear);
+
+  /* ═══════════════════════════════════════════════════════════
+     DUAL-CIRCUIT BRAKE LINES
+     Front (blue) goes up-and-over to the disc brake
+     Rear  (red)  goes down-and-around to the drum brake
+     ═══════════════════════════════════════════════════════════ */
+  const discZ =  1.00;
+  const drumZ = -1.00;
+  const brakeX = 1.10;
+
+  function makeLineCurve(points, colour, thickness) {
+    const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
+    const tubeGeo = new THREE.TubeGeometry(curve, 48, thickness, 8, false);
+    const mesh = new THREE.Mesh(tubeGeo, colour);
+    mesh.castShadow = true;
+    system.add(mesh);
+    return { curve, mesh };
+  }
+
+  const frontLine = makeLineCurve([
+    [-0.90, -0.16, 0],
+    [-0.60,  0.10, 0.05],
+    [-0.10,  0.32, 0.20],
+    [ 0.45,  0.32, 0.42],
+    [ 0.85,  0.16, 0.58],
+    [ 1.00, -0.05, discZ]
+  ], M.lineBlue, 0.028);
+
+  const rearLine = makeLineCurve([
+    [-0.90, -0.44, 0],
+    [-0.55, -0.68, -0.05],
+    [-0.05, -0.88, -0.20],
+    [ 0.50, -0.88, -0.42],
+    [ 0.90, -0.70, -0.58],
+    [ 1.00, -0.45, drumZ]
+  ], M.lineRed, 0.028);
+
+  /* Fluid flow particles along the front circuit */
+  const fluidGeo = new THREE.BufferGeometry();
+  const fluidPositions = new Float32Array(FLUID_COUNT * 3);
+  const fluidColors    = new Float32Array(FLUID_COUNT * 3);
+  fluidGeo.setAttribute('position', new THREE.BufferAttribute(fluidPositions, 3));
+  fluidGeo.setAttribute('color',    new THREE.BufferAttribute(fluidColors, 3));
+  const fluidMat = new THREE.PointsMaterial({
+    map: particleTex,
+    size: 0.10,
+    sizeAttenuation: true,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.95,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const fluidPoints = new THREE.Points(fluidGeo, fluidMat);
+  system.add(fluidPoints);
+
+  const fluidData = [];
+  for (let i = 0; i < FLUID_COUNT; i++) {
+    fluidData.push({
+      t: Math.random(),
+      speed: 0.7 + Math.random() * 0.6,
+      line: Math.random() < 0.5 ? 'front' : 'rear'
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     AIR BUBBLES (visible only when Air Bubble toggle is on)
+     ═══════════════════════════════════════════════════════════ */
+  const airGeo = new THREE.BufferGeometry();
+  const airPos = new Float32Array(AIR_COUNT * 3);
+  airGeo.setAttribute('position', new THREE.BufferAttribute(airPos, 3));
+  const airMat = new THREE.PointsMaterial({
+    map: particleTex,
+    size: 0.12,
+    sizeAttenuation: true,
+    color: 0xf8fafc,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const airPoints = new THREE.Points(airGeo, airMat);
+  system.add(airPoints);
+
+  const airData = [];
+  for (let i = 0; i < AIR_COUNT; i++) {
+    airData.push({
+      t: Math.random(),
+      wobble: Math.random() * Math.PI * 2,
+      speed: 0.3 + Math.random() * 0.5,
+      line: Math.random() < 0.5 ? 'front' : 'rear'
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     FRONT DISC BRAKE (rotor + caliper + pads) — right/near side
+     ═══════════════════════════════════════════════════════════ */
+  const ROTOR_R = 0.48;
+  const ROTOR_T = 0.055;
+
+  const brakeGroup = new THREE.Group();
+  brakeGroup.position.set(brakeX, -0.05, discZ);
+  system.add(brakeGroup);
+
+  const rotor = new THREE.Mesh(
+    new THREE.CylinderGeometry(ROTOR_R, ROTOR_R, ROTOR_T, isLowEnd ? 24 : 48),
+    M.rotor.clone()
+  );
+  rotor.rotation.z = Math.PI / 2;
+  rotor.castShadow = true;
+  brakeGroup.add(rotor);
+
+  /* Cross-drilled holes */
+  const holeMat = new THREE.MeshStandardMaterial({ color:0x14181f, metalness:0.4, roughness:0.7 });
+  const holeGeo = new THREE.CylinderGeometry(0.018, 0.018, ROTOR_T + 0.004, 8);
+  const holeCount = isLowEnd ? 16 : 24;
+  for (let i = 0; i < holeCount; i++) {
+    const a = (i / holeCount) * Math.PI * 2;
+    const hole = new THREE.Mesh(holeGeo, holeMat);
+    hole.rotation.z = Math.PI / 2;
+    hole.position.set(0, Math.cos(a) * ROTOR_R * 0.65, Math.sin(a) * ROTOR_R * 0.65);
+    brakeGroup.add(hole);
+  }
+
+  /* Slot grooves for extra detail */
+  const slotMat = new THREE.MeshStandardMaterial({ color:0x5a6472, metalness:0.9, roughness:0.5 });
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.28, 0.012), slotMat);
+    slot.position.set(0, Math.cos(a) * ROTOR_R * 0.42, Math.sin(a) * ROTOR_R * 0.42);
+    slot.rotation.x = a;
+    brakeGroup.add(slot);
+  }
+
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.14, CYL_SEGS), M.hub);
+  hub.rotation.z = Math.PI / 2;
+  brakeGroup.add(hub);
+
+  const caliperGroup = new THREE.Group();
+  brakeGroup.add(caliperGroup);
+
+  const caliperBack = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.72, 0.18), M.steelDark);
+  caliperBack.position.set(0.05, 0, 0);
+  caliperBack.castShadow = true;
+  caliperGroup.add(caliperBack);
+
+  const caliperTop = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.18), M.steelDark);
+  caliperTop.position.set(-0.05, 0.31, 0);
+  caliperGroup.add(caliperTop);
+
+  const caliperBot = caliperTop.clone();
+  caliperBot.position.y = -0.31;
+  caliperGroup.add(caliperBot);
+
+  const calPiston1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.10, CYL_SEGS), M.alum);
+  calPiston1.rotation.z = Math.PI / 2;
+  calPiston1.position.set(-0.05, 0.12, 0);
+  caliperGroup.add(calPiston1);
+
+  const calPiston2 = calPiston1.clone();
+  calPiston2.position.y = -0.12;
+  caliperGroup.add(calPiston2);
+
+  const padMat = M.pad.clone();
+  padMat.emissive = new THREE.Color(0xff4000);
+  padMat.emissiveIntensity = 0;
+
+  const padFront = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.44, 0.24), padMat);
+  padFront.position.set(-0.10, 0, 0);
+  padFront.castShadow = true;
+  caliperGroup.add(padFront);
+
+  const padBack = padFront.clone();
+  padBack.position.x = 0.10;
+  caliperGroup.add(padBack);
+
+  /* Wheel */
+  const wheelR = 0.72;
+  const wheel = new THREE.Mesh(
+    new THREE.CylinderGeometry(wheelR, wheelR, 0.28, isLowEnd ? 24 : 40, 1, true),
+    M.tire
+  );
+  wheel.rotation.z = Math.PI / 2;
+  wheel.position.x = 0.02;
+  wheel.castShadow = true;
+  brakeGroup.add(wheel);
+
+  /* Rim ring + spokes */
+  const rimRing = new THREE.Mesh(
+    new THREE.TorusGeometry(wheelR * 0.62, 0.028, 8, isLowEnd ? 28 : 40),
+    M.hub
+  );
+  rimRing.rotation.y = Math.PI / 2;
+  rimRing.position.x = -0.10;
+  brakeGroup.add(rimRing);
+
+  for (let i = 0; i < 5; i++) {
+    const angle = (i / 5) * Math.PI * 2;
+    const spoke = new THREE.Mesh(
+      new THREE.BoxGeometry(0.035, wheelR * 0.7, 0.07),
+      M.steelDark
+    );
+    spoke.position.set(-0.10, Math.cos(angle) * (wheelR * 0.32), Math.sin(angle) * (wheelR * 0.32));
+    spoke.rotation.x = angle;
+    brakeGroup.add(spoke);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     REAR DRUM BRAKE (cutaway) — far side
+     ═══════════════════════════════════════════════════════════ */
+  const DRUM_R = 0.42;
+  const DRUM_D = 0.22;
+
+  const drumGroup = new THREE.Group();
+  drumGroup.position.set(brakeX, -0.05, drumZ);
+  system.add(drumGroup);
+
+  /* Drum backing plate */
+  const backingPlate = new THREE.Mesh(
+    new THREE.CylinderGeometry(DRUM_R + 0.02, DRUM_R + 0.02, 0.02, isLowEnd ? 24 : 40),
+    M.steelDark
+  );
+  backingPlate.rotation.z = Math.PI / 2;
+  backingPlate.position.x = -DRUM_D / 2;
+  drumGroup.add(backingPlate);
+
+  /* Drum shell — semi-transparent so you can see the shoes inside */
+  const drumShell = new THREE.Mesh(
+    new THREE.CylinderGeometry(DRUM_R, DRUM_R, DRUM_D, isLowEnd ? 24 : 40, 1, true),
+    M.drum.clone()
+  );
+  drumShell.rotation.z = Math.PI / 2;
+  drumShell.position.x = 0;
+  drumGroup.add(drumShell);
+
+  const drumRing = new THREE.Mesh(
+    new THREE.TorusGeometry(DRUM_R, 0.025, 8, isLowEnd ? 28 : 40),
+    M.steel
+  );
+  drumRing.rotation.y = Math.PI / 2;
+  drumRing.position.x = DRUM_D / 2;
+  drumGroup.add(drumRing);
+
+  /* Two curved brake shoes (top and bottom) */
+  const shoeGeo = new THREE.CylinderGeometry(
+    DRUM_R - 0.04, DRUM_R - 0.04,
+    0.10,              // shoe arc width (along x)
+    isLowEnd ? 16 : 24,
+    1, true,
+    0, Math.PI * 0.75
+  );
+  const shoeFwd = new THREE.Mesh(shoeGeo, M.shoe);
+  shoeFwd.rotation.z = Math.PI / 2;
+  shoeFwd.rotation.y = -Math.PI * 0.08;
+  shoeFwd.position.x = -0.02;
+  drumGroup.add(shoeFwd);
+
+  const shoeRear = new THREE.Mesh(shoeGeo, M.shoe);
+  shoeRear.rotation.z = Math.PI / 2;
+  shoeRear.rotation.y = Math.PI - Math.PI * 0.08;
+  shoeRear.position.x = -0.02;
+  drumGroup.add(shoeRear);
+
+  /* Wheel cylinder (small piston between shoes at the top) */
+  const wheelCyl = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.05, 0.14, 12),
+    M.alum
+  );
+  wheelCyl.rotation.z = Math.PI / 2;
+  wheelCyl.position.set(-0.02, DRUM_R * 0.5, 0);
+  drumGroup.add(wheelCyl);
+
+  /* Small push rods from cylinder to shoes */
+  const pushRodL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.04), M.steel);
+  pushRodL.position.set(-0.02, DRUM_R * 0.5, -0.08);
+  drumGroup.add(pushRodL);
+  const pushRodR = pushRodL.clone();
+  pushRodR.position.z = 0.08;
+  drumGroup.add(pushRodR);
+
+  /* Return springs */
+  const springMat = new THREE.MeshStandardMaterial({ color:0x94a3b8, metalness:0.85, roughness:0.30 });
+  const returnSpringA = new THREE.Mesh(
+    new THREE.TorusGeometry(DRUM_R * 0.55, 0.008, 6, 24, Math.PI * 0.7),
+    springMat
+  );
+  returnSpringA.rotation.y = Math.PI / 2;
+  returnSpringA.rotation.x = Math.PI * 0.15;
+  returnSpringA.position.set(0.06, 0, 0);
+  drumGroup.add(returnSpringA);
+
+  const returnSpringB = new THREE.Mesh(
+    new THREE.TorusGeometry(DRUM_R * 0.55, 0.008, 6, 24, Math.PI * 0.7),
+    springMat
+  );
+  returnSpringB.rotation.y = Math.PI / 2;
+  returnSpringB.rotation.x = Math.PI * 0.85;
+  returnSpringB.position.set(0.06, 0, 0);
+  drumGroup.add(returnSpringB);
+
+  /* Hub */
+  const drumHub = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.14, CYL_SEGS), M.hub);
+  drumHub.rotation.z = Math.PI / 2;
+  drumHub.position.x = 0.02;
+  drumGroup.add(drumHub);
+
+  /* Drum wheel (tyre) */
+  const drumWheel = new THREE.Mesh(
+    new THREE.CylinderGeometry(wheelR, wheelR, 0.28, isLowEnd ? 24 : 40, 1, true),
+    M.tire
+  );
+  drumWheel.rotation.z = Math.PI / 2;
+  drumWheel.position.x = 0.02;
+  drumWheel.castShadow = true;
+  drumGroup.add(drumWheel);
+
+  const drumRimRing = new THREE.Mesh(
+    new THREE.TorusGeometry(wheelR * 0.62, 0.028, 8, isLowEnd ? 28 : 40),
+    M.hub
+  );
+  drumRimRing.rotation.y = Math.PI / 2;
+  drumRimRing.position.x = -0.10;
+  drumGroup.add(drumRimRing);
+
+  for (let i = 0; i < 5; i++) {
+    const angle = (i / 5) * Math.PI * 2;
+    const spoke = new THREE.Mesh(
+      new THREE.BoxGeometry(0.035, wheelR * 0.7, 0.07),
+      M.steelDark
+    );
+    spoke.position.set(-0.10, Math.cos(angle) * (wheelR * 0.32), Math.sin(angle) * (wheelR * 0.32));
+    spoke.rotation.x = angle;
+    drumGroup.add(spoke);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     HEAT SHIMMER PARTICLES (rise above hot rotor/drum)
+     ═══════════════════════════════════════════════════════════ */
+  const shimmerGeo = new THREE.BufferGeometry();
+  const shPos = new Float32Array(SHIMMER_N * 3);
+  const shCol = new Float32Array(SHIMMER_N * 3);
+  shimmerGeo.setAttribute('position', new THREE.BufferAttribute(shPos, 3));
+  shimmerGeo.setAttribute('color',    new THREE.BufferAttribute(shCol, 3));
+  const shMat = new THREE.PointsMaterial({
+    map: particleTex,
+    size: 0.20,
+    sizeAttenuation: true,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const shimmerPoints = new THREE.Points(shimmerGeo, shMat);
+  system.add(shimmerPoints);
+
+  const shData = [];
+  for (let i = 0; i < SHIMMER_N; i++) {
+    shData.push({
+      t: Math.random(),
+      src: Math.random() < 0.5 ? 'disc' : 'drum',
+      xOff: (Math.random() - 0.5) * 0.55,
+      zOff: (Math.random() - 0.5) * 0.55
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     LABELS
+     ═══════════════════════════════════════════════════════════ */
+  const labelDefs = [
+    { id:'pedal',   text:'Brake pedal',       pos: new THREE.Vector3(pedalPivotX + 0.10, pedalPivotY - 0.95, 0.30) },
+    { id:'booster', text:'Vacuum booster',    pos: new THREE.Vector3(boosterX, boosterY + 0.45, 0.30) },
+    { id:'vac',     text:'Vacuum hose',       pos: new THREE.Vector3(-2.00,  1.20, 0.10) },
+    { id:'mc',      text:'Master cylinder',   pos: new THREE.Vector3(mcX,     mcY + 0.55, 0) },
+    { id:'res',     text:'Reservoir',         pos: new THREE.Vector3(mcX - 0.02, mcY + 0.85, 0) },
+    { id:'lineF',   text:'Front circuit',     pos: new THREE.Vector3(0.05,    0.55, 0.20) },
+    { id:'lineR',   text:'Rear circuit',      pos: new THREE.Vector3(0.05,   -1.10, -0.20) },
+    { id:'caliper', text:'Caliper',           pos: new THREE.Vector3(brakeX + 0.05, 0.55, discZ + 0.10) },
+    { id:'pad',     text:'Brake pads',        pos: new THREE.Vector3(brakeX - 0.15, -0.35, discZ + 0.20) },
+    { id:'rotor',   text:'Rotor (disc)',      pos: new THREE.Vector3(brakeX, -0.65, discZ) },
+    { id:'wheelF',  text:'Front wheel',       pos: new THREE.Vector3(brakeX + 0.10, wheelR + 0.20, discZ) },
+    { id:'drum',    text:'Drum brake',        pos: new THREE.Vector3(brakeX, 0.55, drumZ - 0.10) },
+    { id:'shoe',    text:'Brake shoes',       pos: new THREE.Vector3(brakeX - 0.15, -0.30, drumZ - 0.15) },
+    { id:'wheelR',  text:'Rear wheel',        pos: new THREE.Vector3(brakeX + 0.10, wheelR + 0.20, drumZ) }
+  ];
+  labelDefs.forEach(d => labels.add(d.id, d.text));
+
+  /* ═══════════════════════════════════════════════════════════
+     STATE
+     ═══════════════════════════════════════════════════════════ */
+  let pedalPos = 0;
+  let effectivePedal = 0;
+  let rotorAngle = 0;
+  let drumAngle = 0;
+  let rotorTemp = 32;
+  let drumTemp = 32;
+  let spaceHeld = false;
+  let frame = 0;
+
+  /* ═══════════════════════════════════════════════════════════
+     PEDAL INPUT
+     ═══════════════════════════════════════════════════════════ */
+  const pedalTrackEl  = document.getElementById('pedal-track');
+  const pedalFillEl   = document.getElementById('pedal-fill');
+  const pedalPadEl    = document.getElementById('pedal-pad');
+  const pedalPctEl    = document.getElementById('pedal-pct');
+  const pedalPctLblEl = document.getElementById('pedal-pct-label');
+
+  let pedalDragging = false;
+  let pedalPointerId = null;
+  let pedalReturnRAF = 0;
+
+  function setPedalPos(v) {
+    pedalPos = Math.max(0, Math.min(1, v));
+    const pct = Math.round(pedalPos * 100);
+    if (pedalFillEl) pedalFillEl.style.height = pct + '%';
+    if (pedalPadEl) pedalPadEl.style.bottom = pct + '%';
+    if (pedalPctEl) pedalPctEl.textContent = pct + '%';
+    if (pedalPctLblEl) pedalPctLblEl.textContent = pct + '%';
+    if (pedalTrackEl) pedalTrackEl.setAttribute('aria-valuenow', String(pct));
+  }
+
+  function percentFromEvent(e) {
+    const r = pedalTrackEl.getBoundingClientRect();
+    return Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
+  }
+
+  function cancelPedalReturn() {
+    if (pedalReturnRAF) { cancelAnimationFrame(pedalReturnRAF); pedalReturnRAF = 0; }
+  }
+
+  function springRelease() {
+    cancelPedalReturn();
+    const step = () => {
+      const next = pedalPos * 0.88;
+      setPedalPos(next < 0.005 ? 0 : next);
+      pedalReturnRAF = pedalPos > 0 ? requestAnimationFrame(step) : 0;
+    };
+    pedalReturnRAF = requestAnimationFrame(step);
+  }
+
+  pedalTrackEl.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    cancelPedalReturn();
+    pedalDragging = true;
+    pedalPointerId = e.pointerId;
+    try { pedalTrackEl.setPointerCapture(e.pointerId); } catch (_) {}
+    pedalTrackEl.classList.add('active');
+    setPedalPos(percentFromEvent(e));
+  });
+  pedalTrackEl.addEventListener('pointermove', e => {
+    if (!pedalDragging || e.pointerId !== pedalPointerId) return;
+    e.preventDefault();
+    setPedalPos(percentFromEvent(e));
+  });
+  function endPedalDrag() {
+    if (!pedalDragging) return;
+    pedalDragging = false;
+    pedalPointerId = null;
+    pedalTrackEl.classList.remove('active');
+    springRelease();
+  }
+  pedalTrackEl.addEventListener('pointerup', endPedalDrag);
+  pedalTrackEl.addEventListener('pointercancel', endPedalDrag);
+  pedalTrackEl.addEventListener('lostpointercapture', endPedalDrag);
+
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space' && !e.repeat) {
+      e.preventDefault();
+      spaceHeld = true;
+      cancelPedalReturn();
+      pedalTrackEl.classList.add('active');
+    }
+  });
+  window.addEventListener('keyup', e => {
+    if (e.code === 'Space') {
+      spaceHeld = false;
+      if (!pedalDragging) {
+        pedalTrackEl.classList.remove('active');
+        springRelease();
+      }
+    }
+  });
+
+  /* ═══════════════════════════════════════════════════════════
+     DOM REFS FOR READOUTS
+     ═══════════════════════════════════════════════════════════ */
+  const btValueEl  = document.getElementById('bt-value');
+  const btFillEl   = document.getElementById('bt-fill');
+  const btStatusEl = document.getElementById('bt-status');
+  const frPedalEl  = document.getElementById('fr-pedal');
+  const frPresEl   = document.getElementById('fr-pres');
+  const frCalEl    = document.getElementById('fr-cal');
+  const frShoeEl   = document.getElementById('fr-shoe');
+  const frTqEl     = document.getElementById('fr-tq');
+  const pcF1El     = document.getElementById('pc-f1');
+  const pcPEl      = document.getElementById('pc-p');
+  const pcF2El     = document.getElementById('pc-f2');
+  const pcMultEl   = document.getElementById('pc-mult');
+  const hintEl     = document.getElementById('hint');
+
+  /* Cached values so the loop doesn't re-query the DOM every frame */
+  let lastAirPressure = 0;
+
+  function updateReadouts() {
+    /* ── Air bubble = spongy pedal effect ──
+       Air compresses, so a fraction of the pedal travel is wasted.
+       Effective pressure is reduced and becomes laggy. */
+    const airPenalty = state.airBubble ? 0.65 : 1.0;
+
+    /* Non-linear pressure build-up (pad clearance) */
+    const padClearance = 0.12;
+    let raw = pedalPos <= padClearance ? 0 : (pedalPos - padClearance) / (1.0 - padClearance);
+
+    /* ABS pulse when heavily braking */
+    const absPulse = (state.abs && raw > 0.8)
+      ? ((Math.sin(frame * 0.8) > 0) ? 1.0 : 0.15)
+      : 1.0;
+
+    /* Fade factor grows as rotor gets hot */
+    const fade = rotorTemp > 400 ? Math.max(0.3, 1 - (rotorTemp - 400) / 300) : 1.0;
+
+    /* Circuit fail kills the front circuit only */
+    const frontCircuit = state.circuitFail ? 0 : 1;
+    const rearCircuit  = 1;
+
+    effectivePedal = raw * airPenalty;
+    lastAirPressure = effectivePedal;
+
+    const PEDAL_LEVER  = 4;              /* pedal / booster ratio */
+    const PEDAL_FORCE  = pedalPos * 250; /* newtons at the pedal */
+    const F1           = PEDAL_FORCE * PEDAL_LEVER;   /* force on MC piston */
+    const A1           = 3.1;            /* cm²  — MC piston area */
+    const A2           = 25.0;           /* cm²  — caliper piston area */
+    const MULT         = A2 / A1;        /* ≈ 8.06 × */
+
+    const linePressure  = effectivePedal * 8000;          /* kPa  (real-world range) */
+    const caliperForce  = effectivePedal * 12000 * fade * absPulse * frontCircuit;
+    const shoeForce     = effectivePedal * 6000  * rearCircuit;
+    const brakeTorque   = effectivePedal * 1200  * fade * frontCircuit;
+
+    if (frPedalEl) frPedalEl.textContent = Math.round(PEDAL_FORCE) + ' N';
+    if (frPresEl)  frPresEl.textContent  = Math.round(linePressure / 100) * 100 + ' kPa';
+    if (frCalEl)   frCalEl.textContent   = Math.round(caliperForce) + ' N';
+    if (frShoeEl)  frShoeEl.textContent  = Math.round(shoeForce) + ' N';
+    if (frTqEl)    frTqEl.textContent    = Math.round(brakeTorque) + ' Nm';
+
+    /* Pascal overlay */
+    if (pcF1El)   pcF1El.textContent   = Math.round(F1) + ' N';
+    if (pcPEl)    pcPEl.textContent    = Math.round(linePressure / 100) * 100 + ' kPa';
+    if (pcF2El)   pcF2El.textContent   = Math.round(caliperForce) + ' N';
+    if (pcMultEl) pcMultEl.textContent = MULT.toFixed(1) + '×';
+
+    /* Brake temperature card — reports the hotter of the two */
+    const t = Math.max(rotorTemp, drumTemp);
+    if (btValueEl) {
+      btValueEl.textContent = Math.round(t) + '°C';
+      let c, status;
+      if (t < 80)       { c = '#38bdf8'; status = 'Cold'; }
+      else if (t < 200) { c = '#22c55e'; status = 'Warm — normal'; }
+      else if (t < 400) { c = '#f59e0b'; status = 'Hot — fade risk'; }
+      else if (t < 600) { c = '#f97316'; status = 'Very hot'; }
+      else              { c = '#ef4444'; status = '⚠ Overheating'; }
+      btValueEl.style.color = c;
+      btFillEl.style.width = Math.min(100, (t / 700) * 100) + '%';
+      btFillEl.style.background = c;
+      btStatusEl.textContent = status;
+    }
+
+    /* Dynamic hint */
+    let hintText = "Drag to orbit · Press pedal or Spacebar to brake";
+    if (state.airBubble) {
+      hintText = "Air in the lines → spongy pedal! Effective pressure is reduced.";
+    } else if (rotorTemp > 500) {
+      hintText = "Warning: Rotor overheating. Brake fade is severely reducing stopping power.";
+    } else if (state.circuitFail && effectivePedal > 0) {
+      hintText = "Front circuit failed — rear drum brake alone is stopping the car (dual-circuit safety).";
+    } else if (state.abs && effectivePedal > 0.8) {
+      hintText = "ABS engaged: rapidly pulsing brake pressure to prevent wheel lockup.";
+    } else if (effectivePedal > 0.5) {
+      hintText = "Heavy braking: kinetic energy converting to heat.";
+    }
+    if (hintEl.textContent !== hintText) {
+      hintEl.textContent = hintText;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     PANEL TOGGLE — embed aware
+     ═══════════════════════════════════════════════════════════ */
+  const eduPanel = document.getElementById('edu-panel');
+  document.getElementById('panel-toggle').onclick = (e) => {
+    e.stopPropagation();
+    if (document.body.classList.contains('embedded')) {
+      eduPanel.classList.toggle('expanded');
+      const expanded = eduPanel.classList.contains('expanded');
+      e.currentTarget.setAttribute('aria-expanded', String(expanded));
+      e.currentTarget.querySelector('svg').style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+    } else {
+      const body = document.getElementById('panel-body');
+      const hidden = body.style.display === 'none';
+      body.style.display = hidden ? 'block' : 'none';
+      e.currentTarget.querySelector('svg').style.transform = hidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+    }
+  };
+  document.getElementById('panel-head').addEventListener('click', (e) => {
+    if (!document.body.classList.contains('embedded')) return;
+    if (e.target.closest('#panel-toggle')) return;
+    eduPanel.classList.toggle('expanded');
+    const expanded = eduPanel.classList.contains('expanded');
+    document.getElementById('panel-toggle').setAttribute('aria-expanded', String(expanded));
+    document.querySelector('#panel-toggle svg').style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+  });
+
+  /* ═══════════════════════════════════════════════════════════
+     UI + BRIDGE
+     ═══════════════════════════════════════════════════════════ */
+  Base.wireCommonUI(state, {
+    onReset: () => {
+      setPedalPos(0);
+      rotorTemp = 32;
+      drumTemp  = 32;
+      cancelPedalReturn();
+    }
+  });
+  Base.wirePanelToggle();
+
+  document.getElementById('chk-abs').addEventListener('change',  e => state.abs = e.target.checked);
+  document.getElementById('chk-fail').addEventListener('change', e => state.circuitFail = e.target.checked);
+  document.getElementById('chk-air').addEventListener('change',  e => state.airBubble = e.target.checked);
+
+  const bridge = Base.createBridge('braking', (d) => {
+    if (d.type !== 'command') return;
+    switch (d.action) {
+      case 'setPlaying': state.playing = !!d.value; break;
+      case 'setSpeed':   state.speedMul = +d.value; break;
+      case 'setLabels':  state.showLabels = !!d.value; break;
+      case 'setGas':     state.showGas = !!d.value; break;
+      case 'reset':      setPedalPos(0); rotorTemp = 32; drumTemp = 32; break;
+    }
+  });
+  bridge.ready();
+
+  setPedalPos(0);
+  updateReadouts();
+
+  /* ═══════════════════════════════════════════════════════════
+     LOOP
+     ═══════════════════════════════════════════════════════════ */
+  const clock = new THREE.Clock();
+  let lastDomUpdate = 0;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    frame++;
+
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const sim = state.playing ? dt * state.speedMul : 0;
+
+    if (spaceHeld) setPedalPos(Math.min(1, pedalPos + 0.15));
+
+    /* ── Pedal-driven 3D animation ── */
+    const pedalAngle = pedalPos * 0.38;
+    pedalGroup.rotation.z = -pedalAngle;
+
+    /* Pushrod pushes the front MC piston */
+    const pushAmount = pedalPos * 0.14;
+    pistonF.position.x = -0.20 + pushAmount;
+    pistonR.position.x =  0.14 + pushAmount * 0.85;
+
+    /* MC fluid column compresses */
+    mcFluid.scale.x = 1 - pedalPos * 0.10;
+
+    /* ── Fluid particles travel along front and rear lines ── */
+    const fluidActive = effectivePedal > 0.02;
+    fluidPoints.visible = fluidActive && state.showGas !== false;
+
+    if (fluidActive) {
+      const posAttr = fluidGeo.attributes.position;
+      const colAttr = fluidGeo.attributes.color;
+      const blueCol = new THREE.Color(0x60a5fa);
+      const redCol  = new THREE.Color(0xf87171);
+      const deadCol = new THREE.Color(0x334155);
+
+      for (let i = 0; i < FLUID_COUNT; i++) {
+        const p = fluidData[i];
+        const isFront = p.line === 'front';
+
+        /* Circuit-fail: front circuit particles freeze */
+        if (state.circuitFail && isFront) {
+          const pt = frontLine.curve.getPoint(p.t);
+          posAttr.setXYZ(i, pt.x, pt.y, pt.z);
+          colAttr.setXYZ(i, deadCol.r * 0.3, deadCol.g * 0.3, deadCol.b * 0.3);
+          continue;
+        }
+
+        p.t += sim * p.speed * (0.5 + effectivePedal * 1.6) * 0.5;
+        if (p.t > 1) p.t -= 1;
+        const curve = isFront ? frontLine.curve : rearLine.curve;
+        const pt = curve.getPoint(p.t);
+        posAttr.setXYZ(i, pt.x, pt.y, pt.z);
+
+        const I = 0.4 + 0.6 * effectivePedal;
+        const c = isFront ? blueCol : redCol;
+        colAttr.setXYZ(i, c.r * I, c.g * I, c.b * I);
+      }
+      posAttr.needsUpdate = true;
+      colAttr.needsUpdate = true;
+    }
+
+    /* ── Air bubbles — visible only when Air Bubble is on ── */
+    airPoints.visible = state.airBubble && state.showGas !== false;
+    if (airPoints.visible) {
+      const posAttr = airGeo.attributes.position;
+      for (let i = 0; i < AIR_COUNT; i++) {
+        const b = airData[i];
+        b.t += sim * b.speed * 0.3;
+        if (b.t > 1) b.t -= 1;
+        const curve = b.line === 'front' ? frontLine.curve : rearLine.curve;
+        const pt = curve.getPoint(b.t);
+        /* Slight lateral wobble so they read as air pockets, not fluid */
+        const wob = Math.sin(performance.now() * 0.008 + b.wobble) * 0.03;
+        posAttr.setXYZ(i, pt.x + wob, pt.y + wob, pt.z + wob);
+      }
+      posAttr.needsUpdate = true;
+    }
+
+    /* ── Caliper pads clamp rotor (front only, killed by circuit fail) ── */
+    const absPulse = (state.abs && effectivePedal > 0.8)
+      ? ((Math.sin(frame * 0.8) > 0) ? 1.0 : 0.15)
+      : 1.0;
+
+    const frontClamp = state.circuitFail ? 0 : effectivePedal * absPulse;
+    const padGap = 0.10;
+    const clampedF = padGap - frontClamp * 0.085;
+    padFront.position.x = -clampedF;
+    padBack.position.x  =  clampedF;
+
+    calPiston1.position.x = -0.05 - frontClamp * 0.045;
+    calPiston2.position.x = -0.05 - frontClamp * 0.045;
+
+    /* ── Rear shoes expand outward against drum (never killed) ── */
+    const rearClamp = effectivePedal;
+    const shoeOffset = rearClamp * 0.025;
+    shoeFwd.position.x  = -0.02 - shoeOffset;
+    shoeRear.position.x = -0.02 - shoeOffset;
+
+    /* ── Rotor and drum spin, slowed by braking ── */
+    const baseOmega = 2.0;
+    const speedFactor = 0.4 + state.speedMul * 0.9;
+
+    const systemFail = state.circuitFail ? 0.4 : 1.0;
+    const dragFront = frontClamp * 0.75 * systemFail;
+    const dragRear  = rearClamp  * 0.55;
+
+    const omegaF = baseOmega * speedFactor * (1 - dragFront);
+    const omegaR = baseOmega * speedFactor * (1 - dragRear);
+
+    rotorAngle += sim * omegaF;
+    rotor.rotation.x = rotorAngle;
+    wheel.rotation.x = rotorAngle;
+    hub.rotation.x   = rotorAngle;
+    rimRing.rotation.z = rotorAngle;
+
+    drumAngle += sim * omegaR;
+    drumShell.rotation.x = drumAngle;
+    drumWheel.rotation.x = drumAngle;
+    drumHub.rotation.x   = drumAngle;
+    drumRimRing.rotation.z = drumAngle;
+
+    /* ── Rotor heating (front disc) ── */
+    const speedNorm = Math.min(2, omegaF / baseOmega);
+    const heatIn  = frontClamp * speedNorm * 300 * systemFail;
+    const heatOut = (rotorTemp - 32) * 0.22;
+    rotorTemp += (heatIn - heatOut) * sim;
+    if (rotorTemp < 32) rotorTemp = 32;
+
+    /* ── Drum heating (rear) ── */
+    const speedNormD = Math.min(2, omegaR / baseOmega);
+    const heatInD  = rearClamp * speedNormD * 180;   /* drum dissipates less → cooler per hit */
+    const heatOutD = (drumTemp - 32) * 0.28;
+    drumTemp += (heatInD - heatOutD) * sim;
+    if (drumTemp < 32) drumTemp = 32;
+
+    /* ── Emissive glow ── */
+    const heatF = Math.max(0, Math.min(1, (rotorTemp - 100) / 500));
+    rotor.material.emissiveIntensity = heatF * 1.4;
+    padFront.material.emissiveIntensity = heatF * 0.6;
+    padBack.material.emissiveIntensity  = heatF * 0.6;
+
+    const heatD = Math.max(0, Math.min(1, (drumTemp - 100) / 500));
+    drumShell.material.emissiveIntensity = heatD * 1.0;
+
+    /* ── Heat shimmer particles above hot surfaces ── */
+    const shPosAttr = shimmerGeo.attributes.position;
+    const shColAttr = shimmerGeo.attributes.color;
+
+    for (let i = 0; i < SHIMMER_N; i++) {
+      const s = shData[i];
+      const srcTemp = s.src === 'disc' ? rotorTemp : drumTemp;
+      const heatSrc = Math.max(0, Math.min(1, (srcTemp - 120) / 400));
+
+      if (heatSrc < 0.05) {
+        shPosAttr.setXYZ(i, 0, -100, 0);
+        shColAttr.setXYZ(i, 0, 0, 0);
+        continue;
+      }
+
+      s.t += sim * (0.5 + heatSrc * 1.5);
+      if (s.t > 1) s.t -= 1;
+
+      const bx = s.src === 'disc' ? brakeX : brakeX;
+      const bz = s.src === 'disc' ? discZ  : drumZ;
+      const by = -0.05;
+
+      const x = bx + s.xOff * (0.6 + s.t * 0.9);
+      const y = by + 0.35 + s.t * 1.15;
+      const z = bz + s.zOff * (0.6 + s.t * 0.9);
+
+      shPosAttr.setXYZ(i, x, y, z);
+
+      const op = (1 - s.t) * heatSrc;
+      const r = 1.0, g = 0.55 - 0.25 * s.t, b = 0.25;
+      shColAttr.setXYZ(i, r * op, g * op, b * op);
+    }
+    shPosAttr.needsUpdate = true;
+    shColAttr.needsUpdate = true;
+
+    /* ── Throttled DOM update (~10 Hz) ── */
+    if (frame - lastDomUpdate > 6) {
+      updateReadouts();
+      lastDomUpdate = frame;
+    }
+
+    /* ── Labels ── */
+    if (state.showLabels && frame % 2 === 0) {
+      labelDefs.forEach(d => labels.project(d.id, d.pos, camera, wrap));
+    } else if (!state.showLabels) {
+      labels.hideAll();
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+  bridge.setStatus('Brakes', '#ef4444');
+  </script>
+</body>
+</html>

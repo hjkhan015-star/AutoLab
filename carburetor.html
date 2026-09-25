@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<title>Carburetor — Auto Lab</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  #stroke-badge{ transition:background .25s, color .25s; }
+  #mix-ratio{
+    font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:11px;font-weight:700;letter-spacing:.02em;
+    margin-left:8px;opacity:.78;
+  }
+  #mixture-readout{
+    display:flex;gap:14px;margin-top:7px;
+    color:#7f8da0;font-size:10.5px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;
+  }
+  #mixture-readout b{ color:#e5e7eb; font-weight:800; }
+  #mixture-note{
+    margin-top:8px;
+    font-size:11.5px;line-height:1.5;
+    color:#9aa7b9;
+    padding-top:8px;
+    border-top:1px solid rgba(255,255,255,.08);
+    transition:color .2s;
+  }
+  #mixture-note strong{ color:#c7d0dd; }
+
+  /* ═══════════════════════════════════════════════════════════
+     ACCELERATOR PEDAL — right side, above shell pill
+     ═══════════════════════════════════════════════════════════ */
+  #accel-overlay{
+    position:fixed;z-index:50;
+    right:calc(16px + var(--safe-r, 0px));
+    bottom:calc(82px + var(--safe-b, 0px));
+    display:flex;flex-direction:column;align-items:center;
+    pointer-events:none;
+  }
+  #accel-readout{
+    margin-bottom:8px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:12px;font-weight:800;letter-spacing:.02em;
+    color:#e5e7eb;
+    background:rgba(10,14,20,.76);
+    padding:3px 11px;border-radius:20px;
+    border:1px solid rgba(255,255,255,.08);
+    backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px);
+  }
+  #accel-track{
+    position:relative;
+    width:54px; height:158px;
+    pointer-events:auto;
+    cursor:pointer;
+    touch-action:none;
+    user-select:none; -webkit-user-select:none;
+  }
+  #accel-fill-mask{
+    position:absolute; inset:0;
+    border-radius:16px; overflow:hidden;
+    background:rgba(10,14,20,.65);
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.03), 0 10px 24px rgba(0,0,0,.55);
+    transition:border-color .2s;
+  }
+  #accel-track.active #accel-fill-mask{ border-color:rgba(56,189,248,.4); }
+  #accel-fill{
+    position:absolute; left:0; right:0; bottom:0;
+    height:0%;
+    background:linear-gradient(180deg, #f97316, #f59e0b);
+    transition:background .3s;
+  }
+  #accel-ticks span{
+    position:absolute; left:7px; right:7px; height:1px;
+    background:rgba(255,255,255,.14);
+  }
+  #accel-ticks span:nth-child(1){ bottom:25%; }
+  #accel-ticks span:nth-child(2){ bottom:50%; }
+  #accel-ticks span:nth-child(3){ bottom:75%; }
+  #accel-pedal{
+    position:absolute; left:-4px; right:-4px;
+    bottom:0%; height:34px;
+    transform:translateY(50%);
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,.6));
+    transition:filter .15s;
+  }
+  #accel-track.active #accel-pedal{ filter:drop-shadow(0 0 10px rgba(56,189,248,.5)) drop-shadow(0 6px 10px rgba(0,0,0,.6)); }
+  #accel-pedal svg{ width:100%; height:100%; display:block; }
+  .pedal-plate{ fill:#242b35; stroke:#a9b4c3; stroke-width:1.4; }
+  .pedal-grip{ fill:#5e6b7d; }
+  #accel-track.active .pedal-plate{ stroke:#38bdf8; }
+  #accel-control-label{
+    margin-top:7px;
+    color:#aab4c3; font-size:10.5px; font-weight:700;
+    letter-spacing:.55px; text-transform:uppercase;
+    background:rgba(10,14,20,.76);
+    padding:5px 11px; border-radius:20px;
+    backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px);
+    border:1px solid rgba(255,255,255,.08);
+    pointer-events:none;
+  }
+  #accel-control-label.active{ color:#38bdf8; border-color:rgba(56,189,248,.38); }
+  #accel-control-pct{ color:#e5e7eb; font-family:ui-monospace,Menlo,Consolas,monospace; }
+
+  @media (min-width: 1600px) {
+    #accel-track{ width:60px; height:174px; }
+    #accel-overlay{
+      right:calc(22px + var(--safe-r, 0px));
+      bottom:calc(88px + var(--safe-b, 0px));
+    }
+  }
+
+  @media (max-width: 600px) {
+    #accel-overlay{
+      right:calc(10px + var(--safe-r, 0px));
+      bottom:calc(70px + var(--safe-b, 0px));
+    }
+    #accel-track{ width:44px; height:128px; }
+    #accel-control-label{ font-size:9px; padding:4px 8px; }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     EMBED MODE — align with the Auto Lab shell
+     ═══════════════════════════════════════════════════════════ */
+  body.embedded {
+    --shell-header-h: calc(64px + env(safe-area-inset-top, 0px));
+    --shell-pill-h: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Info panel — pinned top, collapsed by default in embed */
+  body.embedded #edu-panel {
+    position: absolute !important;
+    top: calc(var(--shell-header-h) + 10px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: 420px !important;
+    border-radius: 14px !important;
+    z-index: 15 !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,.55) !important;
+  }
+  body.embedded #edu-panel #panel-body {
+    display: none;
+    max-height: calc(100dvh - var(--shell-header-h) - var(--shell-pill-h) - 140px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body.embedded #edu-panel.expanded #panel-body { display: block; }
+  body.embedded #panel-head { padding: 12px 14px; }
+  body.embedded #module-title { font-size: 16px; }
+  body.embedded #module-kicker { font-size: 10px; }
+  body.embedded #panel-head::after {
+    content: "Tap for details";
+    font-size: 10px; color: #64748b;
+    margin-left: 10px; flex: 1; font-weight: 500;
+  }
+  body.embedded #edu-panel.expanded #panel-head::after { display: none; }
+
+  @media (min-width: 640px) {
+    body.embedded #edu-panel { right: auto !important; width: 360px !important; }
+    body.embedded #edu-panel #panel-body { display: block; }
+    body.embedded #panel-head::after { display: none; }
+  }
+
+  /* Accelerator pedal — sit above the shell pill, clear of the panel */
+  body.embedded #accel-overlay {
+    position: absolute !important;
+    bottom: calc(var(--shell-pill-h) + 14px) !important;
+    right: 14px !important;
+    z-index: 20 !important;
+  }
+
+  /* Compact live-mixture chip pinned next to the header (top-right) */
+  body.embedded #live-mixture-chip {
+    display: flex;
+  }
+
+  /* Alerts below shell header */
+  body.embedded #status-flash,
+  body.embedded #alert-chip {
+    top: calc(var(--shell-header-h) + 12px) !important;
+  }
+</style>
+</head>
+<body>
+  <div id="canvas-wrap"></div>
+
+  <div id="edu-panel" class="panel">
+    <div id="panel-head">
+      <div>
+        <h1 id="module-kicker">Fuel System · Class IX / X</h1>
+        <div id="module-title">Carburetor Working Principle</div>
+      </div>
+      <button id="panel-toggle" aria-label="Toggle info" aria-expanded="false">
+        <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+      </button>
+    </div>
+    <div id="panel-body">
+      <div id="stroke-badge" style="background:rgba(249,115,22,.18);color:#f97316">
+        <span class="dot" style="background:#f97316"></span>
+        <span id="mix-name">Idle — Rich</span>
+        <span id="mix-ratio">12.4 : 1</span>
+      </div>
+
+      <div id="mixture-readout">
+        <span>Throttle <b id="throttle-pct">0%</b></span>
+        <span>Air : Fuel <b id="afr-value">12.4 : 1</b></span>
+      </div>
+
+      <div id="stroke-desc">
+        <strong>Carburetor.</strong> Air rushes down through the venturi. As the throat narrows, the air speeds up and its pressure drops.
+        Atmospheric pressure in the float chamber pushes fuel up through the main jet into the low-pressure throat, where it
+        atomises and mixes with the airstream. The throttle valve below regulates how much mixture reaches the engine.
+      </div>
+
+      <div id="mixture-note">
+        <strong>Idle circuit.</strong> With the throttle almost closed, only a trickle of air passes, but the idle port still draws enough fuel to keep the engine running smoothly — the mixture runs deliberately rich.
+      </div>
+    </div>
+  </div>
+
+  <!-- Compact live mixture chip (visible only in embed mode) -->
+  <div id="live-mixture-chip" style="display:none;
+       position:absolute;
+       top:calc(64px + env(safe-area-inset-top, 0px) + 10px);
+       right:12px;
+       background:rgba(13,18,27,.88);
+       border:1px solid rgba(255,255,255,.10);
+       border-radius:12px;
+       padding:8px 12px;
+       backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+       box-shadow:0 8px 24px rgba(0,0,0,.45);
+       z-index:16;
+       flex-direction:column;
+       gap:3px;
+       min-width:130px;
+       font-family:ui-monospace,Menlo,Consolas,monospace;
+       pointer-events:none;">
+    <div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#8d9aaa;">Live mixture</div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+      <span style="font-size:10px;color:#94a3b8;">AFR</span>
+      <span id="chip-afr" style="font-size:14px;font-weight:800;color:#e5e7eb;">12.4</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+      <span style="font-size:10px;color:#94a3b8;">Throttle</span>
+      <span id="chip-thr" style="font-size:11px;font-weight:700;color:#38bdf8;">0%</span>
+    </div>
+  </div>
+
+  <div id="module-controls" class="panel">
+    <button class="ctrl-btn" id="btn-play" aria-label="Pause">
+      <svg id="icon-play" viewBox="0 0 24 24" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+      <svg id="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+    </button>
+    <button class="ctrl-btn" id="btn-reset" aria-label="Reset">
+      <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </button>
+    <div class="slider-group">
+      <span>Speed</span>
+      <input type="range" id="speed" min="0.15" max="2.5" step="0.05" value="0.85" aria-label="Speed">
+      <span id="rpm-label">~900 rpm</span>
+    </div>
+    <label class="toggle"><input type="checkbox" id="chk-labels" checked> Labels</label>
+    <label class="toggle"><input type="checkbox" id="chk-gas" checked> Flow</label>
+  </div>
+
+  <div id="accel-overlay">
+    <div id="accel-readout"><span id="accel-pct">0%</span></div>
+
+    <div id="accel-track"
+         role="slider"
+         tabindex="0"
+         aria-label="Accelerator pedal"
+         aria-valuemin="0"
+         aria-valuemax="100"
+         aria-valuenow="0">
+      <div id="accel-fill-mask">
+        <div id="accel-fill"></div>
+        <div id="accel-ticks"><span></span><span></span><span></span></div>
+      </div>
+      <div id="accel-pedal">
+        <svg viewBox="0 0 60 34" aria-hidden="true">
+          <rect class="pedal-plate" x="4" y="4" width="52" height="26" rx="8"/>
+          <rect class="pedal-grip" x="10" y="9" width="40" height="4" rx="2"/>
+          <rect class="pedal-grip" x="10" y="16" width="40" height="4" rx="2"/>
+          <rect class="pedal-grip" x="10" y="23" width="40" height="4" rx="2"/>
+        </svg>
+      </div>
+    </div>
+
+    <div id="accel-control-label">
+      Press &amp; hold · <span id="accel-control-pct">0%</span>
+    </div>
+  </div>
+
+  <div id="hint">Drag to orbit · Pinch to zoom · Press the accelerator to open the throttle</div>
+  <div id="labels-root"></div>
+
+  <script type="importmap">
+  { "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  } }
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+  import * as Base from './module-base.js';
+
+  /* ═══════════════════════════════════════════════════════════
+     SHELL DETECTION + ADAPTIVE QUALITY
+     ═══════════════════════════════════════════════════════════ */
+  const IS_EMBEDDED = window.parent && window.parent !== window;
+  if (IS_EMBEDDED) document.body.classList.add('embedded');
+
+  const isCoarse = matchMedia('(pointer: coarse)').matches;
+  const cores    = navigator.hardwareConcurrency || 4;
+  const mem      = navigator.deviceMemory || 4;
+  const isLowEnd = cores <= 4 || mem <= 2;
+  const isMidEnd = !isLowEnd && (cores <= 6 || isCoarse);
+
+  const { scene, camera, renderer, controls, wrap } = Base.buildScene({
+    fov: 42, camPos: [2.8, 1.2, 3.6], target: [-0.4, 0.4, 0], floorY: -2.15
+  });
+  Base.attachResize(camera, renderer, wrap, 42);
+
+  const particleTex = Base.createParticleTexture();
+  const labels = Base.createLabelSystem();
+  const state = Base.createUIState();
+
+  const carbMats = {
+    barrelGlass: new THREE.MeshStandardMaterial({ color:0xa8bcd4, metalness:0.15, roughness:0.25, transparent:true, opacity:0.20, side:THREE.DoubleSide, depthWrite:false }),
+    chamberGlass: new THREE.MeshStandardMaterial({ color:0xbcc8d8, metalness:0.15, roughness:0.30, transparent:true, opacity:0.18, side:THREE.DoubleSide, depthWrite:false }),
+    body: new THREE.MeshStandardMaterial({ color:0x8a94a5, metalness:0.80, roughness:0.32 }),
+    fuel: new THREE.MeshStandardMaterial({ color:0xf59e0b, metalness:0.40, roughness:0.25, transparent:true, opacity:0.75 }),
+    float: new THREE.MeshStandardMaterial({ color:0xeaeaea, metalness:0.15, roughness:0.50 }),
+    butterfly: new THREE.MeshStandardMaterial({ color:0x5a6373, metalness:0.75, roughness:0.35, side:THREE.DoubleSide }),
+    brass: new THREE.MeshStandardMaterial({ color:0xd4a34a, metalness:0.85, roughness:0.28, transparent:true, opacity:0.55, depthWrite:false }),
+    brassSolid: new THREE.MeshStandardMaterial({ color:0xd4a34a, metalness:0.85, roughness:0.28 })
+  };
+
+  const carburetorGroup = new THREE.Group();
+  scene.add(carburetorGroup);
+
+  /* Venturi barrel */
+  const barrelPts = [
+    new THREE.Vector2(0.42,-0.75), new THREE.Vector2(0.42,-0.20),
+    new THREE.Vector2(0.38, 0.00), new THREE.Vector2(0.30, 0.20),
+    new THREE.Vector2(0.22, 0.35), new THREE.Vector2(0.22, 0.45),
+    new THREE.Vector2(0.30, 0.60), new THREE.Vector2(0.38, 0.80),
+    new THREE.Vector2(0.42, 1.00), new THREE.Vector2(0.42, 1.55)
+  ];
+  carburetorGroup.add(new THREE.Mesh(new THREE.LatheGeometry(barrelPts, 40), carbMats.barrelGlass));
+
+  function ring(y, R, r) {
+    const t = new THREE.Mesh(new THREE.TorusGeometry(R, r, 10, 40), carbMats.body);
+    t.rotation.x = Math.PI/2; t.position.y = y; carburetorGroup.add(t);
+  }
+  ring( 1.55, 0.42, 0.04);
+  ring( 0.40, 0.22, 0.025);
+  ring(-0.75, 0.42, 0.05);
+
+  function makeButterfly(y, angle) {
+    const g = new THREE.Group();
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.40,0.40,0.025,32), carbMats.butterfly);
+    g.add(disc);
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.98,8), carbMats.body);
+    shaft.rotation.z = Math.PI/2; g.add(shaft);
+    g.position.y = y; g.rotation.z = angle;
+    carburetorGroup.add(g);
+    return g;
+  }
+  makeButterfly( 1.25, Math.PI * 0.42);
+  const ACCEL_MIN_ANGLE = Math.PI * 0.05;
+  const ACCEL_MAX_ANGLE = Math.PI * 0.80;
+  const throttleButterfly = makeButterfly(-0.10, ACCEL_MIN_ANGLE);
+
+  /* Float chamber */
+  const CHAMBER_CX = -0.95, CHAMBER_CY = -0.10, CHAMBER_R = 0.38, CHAMBER_H = 0.90;
+  const chamber = new THREE.Mesh(new THREE.CylinderGeometry(CHAMBER_R,CHAMBER_R,CHAMBER_H,32,1,true), carbMats.chamberGlass);
+  chamber.position.set(CHAMBER_CX, CHAMBER_CY, 0);
+  carburetorGroup.add(chamber);
+  const cTop = new THREE.Mesh(new THREE.CylinderGeometry(CHAMBER_R,CHAMBER_R,0.03,32), carbMats.body);
+  cTop.position.set(CHAMBER_CX, CHAMBER_CY+CHAMBER_H/2, 0); carburetorGroup.add(cTop);
+  const cBot = cTop.clone(); cBot.position.set(CHAMBER_CX, CHAMBER_CY-CHAMBER_H/2, 0); carburetorGroup.add(cBot);
+
+  const inletFitting = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.15,12), carbMats.brassSolid);
+  inletFitting.position.set(CHAMBER_CX, CHAMBER_CY+CHAMBER_H/2+0.07, 0); carburetorGroup.add(inletFitting);
+
+  const FUEL_LEVEL_Y = -0.10;
+  const fuelBottomY = CHAMBER_CY - CHAMBER_H/2 + 0.02;
+  const fuelH = FUEL_LEVEL_Y - fuelBottomY;
+  const fuelLiquid = new THREE.Mesh(new THREE.CylinderGeometry(CHAMBER_R-0.02, CHAMBER_R-0.02, fuelH, 32), carbMats.fuel);
+  fuelLiquid.position.set(CHAMBER_CX, fuelBottomY + fuelH/2, 0); carburetorGroup.add(fuelLiquid);
+
+  const floatBall = new THREE.Mesh(new THREE.SphereGeometry(0.22,24,16), carbMats.float);
+  floatBall.position.set(CHAMBER_CX, FUEL_LEVEL_Y+0.12, 0); carburetorGroup.add(floatBall);
+
+  const needle = new THREE.Mesh(new THREE.ConeGeometry(0.05,0.20,12), carbMats.brassSolid);
+  needle.position.set(CHAMBER_CX, 0.30, 0); carburetorGroup.add(needle);
+
+  carburetorGroup.add(Base.tubeBetween(new THREE.Vector3(CHAMBER_CX+CHAMBER_R-0.01,-0.35,0), new THREE.Vector3(-0.20,-0.35,0), 0.05,0.05, carbMats.brass, false));
+  carburetorGroup.add(Base.tubeBetween(new THREE.Vector3(-0.20,-0.35,0), new THREE.Vector3(-0.20,0.40,0), 0.05,0.05, carbMats.brass, false));
+  carburetorGroup.add(Base.tubeBetween(new THREE.Vector3(-0.20,0.40,0), new THREE.Vector3(-0.08,0.40,0), 0.05,0.04, carbMats.brass, false));
+
+  /* Air + fuel particles — particle counts scale with device tier */
+  const CARB_AIR_COUNT = isLowEnd ? 26 : isMidEnd ? 44 : 60;
+  const CARB_FUEL_COUNT = isLowEnd ? 10 : isMidEnd ? 18 : 24;
+
+  const carbAir = (() => {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(CARB_AIR_COUNT*3), 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(new Float32Array(CARB_AIR_COUNT*3), 3));
+    const mat = new THREE.PointsMaterial({ map: particleTex, size: 0.10, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, vertexColors: true });
+    const points = new THREE.Points(geo, mat); carburetorGroup.add(points);
+    const data = [];
+    for (let i = 0; i < CARB_AIR_COUNT; i++) data.push({ t: Math.random(), speed: 0.8+Math.random()*0.5, r: Math.random()*0.28, angle: Math.random()*Math.PI*2 });
+    return { geo, points, data, base: new THREE.Color(0x9ecbff) };
+  })();
+
+  const CARB_FUEL_PATH = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(CHAMBER_CX,-0.30,0), new THREE.Vector3(CHAMBER_CX+0.30,-0.35,0),
+    new THREE.Vector3(-0.20,-0.35,0), new THREE.Vector3(-0.20,0,0),
+    new THREE.Vector3(-0.20,0.40,0), new THREE.Vector3(-0.08,0.40,0),
+    new THREE.Vector3(0,0.35,0), new THREE.Vector3(0,-0.75,0)
+  ]);
+  const carbFuel = (() => {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(CARB_FUEL_COUNT*3), 3));
+    geo.setAttribute('color',    new THREE.BufferAttribute(new Float32Array(CARB_FUEL_COUNT*3), 3));
+    const mat = new THREE.PointsMaterial({ map: particleTex, size: 0.13, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, vertexColors: true });
+    const points = new THREE.Points(geo, mat); carburetorGroup.add(points);
+    const data = [];
+    for (let i = 0; i < CARB_FUEL_COUNT; i++) data.push({ t: Math.random(), speed: 0.7+Math.random()*0.6 });
+    return { geo, points, data };
+  })();
+
+  function carbBarrelRadius(y) {
+    if (y >= 1.00) return 0.42;
+    if (y >= 0.80) return 0.42 - (1.00-y)/0.20*0.04;
+    if (y >= 0.60) return 0.38 - (0.80-y)/0.20*0.08;
+    if (y >= 0.45) return 0.30 - (0.60-y)/0.15*0.08;
+    if (y >= 0.35) return 0.22;
+    if (y >= 0.20) return 0.22 + (0.35-y)/0.15*0.08;
+    if (y >= 0.00) return 0.30 + (0.20-y)/0.20*0.08;
+    if (y >= -0.20) return 0.38 + (0.00-y)/0.20*0.04;
+    return 0.42;
+  }
+  function carbAirSpeed(y) { const d = Math.abs(y - 0.40); return 1.0 + 2.2*Math.exp(-d*d/0.08); }
+
+  /* ═══════════════════════════════════════════════════════════
+     MIXTURE MODEL
+     ═══════════════════════════════════════════════════════════ */
+  const mixturePhases = [
+    { name:'Idle — Rich', color:'#f97316', bg:'rgba(249,115,22,.18)',
+      desc:'<strong>Idle circuit.</strong> With the throttle almost closed, only a trickle of air passes, but the idle port still draws enough fuel to keep the engine running smoothly — the mixture runs deliberately rich.' },
+    { name:'Part Throttle — Lean', color:'#38bdf8', bg:'rgba(56,189,248,.18)',
+      desc:'<strong>Part throttle.</strong> As the disc opens, air rushing through the venturi speeds up faster than the fuel jet can keep pace, leaning the mixture out for better economy while cruising.' },
+    { name:'Main Circuit — Balanced', color:'#22c55e', bg:'rgba(34,197,94,.18)',
+      desc:'<strong>Main circuit.</strong> Further opening lets the main jet catch up with the airflow, bringing the mixture back close to the ideal 14.7 : 1 stoichiometric ratio.' },
+    { name:'Wide Open — Rich', color:'#ef4444', bg:'rgba(239,68,68,.18)',
+      desc:'<strong>Wide open throttle.</strong> Near full throttle a power-enrichment circuit adds extra fuel for maximum power and to keep the engine cool under load — the mixture richens again.' }
+  ];
+
+  const AFR_KEYS = [
+    { t:0.00, r:12.4 }, { t:0.15, r:13.2 },
+    { t:0.40, r:15.4 }, { t:0.70, r:14.6 },
+    { t:1.00, r:12.6 }
+  ];
+  function smoothstep(a, b, x) { const k = Math.max(0, Math.min(1, (x-a)/(b-a))); return k*k*(3-2*k); }
+  function afrRatio(t) {
+    for (let i = 0; i < AFR_KEYS.length - 1; i++) {
+      const k0 = AFR_KEYS[i], k1 = AFR_KEYS[i+1];
+      if (t <= k1.t) { const f = smoothstep(k0.t, k1.t, t); return k0.r + (k1.r - k0.r) * f; }
+    }
+    return AFR_KEYS[AFR_KEYS.length-1].r;
+  }
+  function phaseIndex(t) {
+    if (t < 0.15) return 0;
+    if (t < 0.55) return 1;
+    if (t < 0.85) return 2;
+    return 3;
+  }
+
+  const throttlePctEl = document.getElementById('throttle-pct');
+  const afrValueEl    = document.getElementById('afr-value');
+  const mixNameEl     = document.getElementById('mix-name');
+  const mixRatioEl    = document.getElementById('mix-ratio');
+  const mixBadgeEl    = document.getElementById('stroke-badge');
+  const mixNoteEl     = document.getElementById('mixture-note');
+  const accelFillEl   = document.getElementById('accel-fill');
+  const chipAfrEl     = document.getElementById('chip-afr');
+  const chipThrEl     = document.getElementById('chip-thr');
+
+  let lastPhaseIdx = -1;
+  function setMixtureUI(t, ratio) {
+    const pct = Math.round(t * 100);
+    if (throttlePctEl) throttlePctEl.textContent = pct + '%';
+    if (afrValueEl) afrValueEl.textContent = ratio.toFixed(1) + ' : 1';
+    if (mixRatioEl) mixRatioEl.textContent = ratio.toFixed(1) + ' : 1';
+    if (chipAfrEl)  chipAfrEl.textContent = ratio.toFixed(1);
+    if (chipThrEl)  chipThrEl.textContent = pct + '%';
+
+    const idx = phaseIndex(t);
+    if (idx === lastPhaseIdx) return;
+    lastPhaseIdx = idx;
+    const m = mixturePhases[idx];
+    if (mixNameEl) mixNameEl.textContent = m.name;
+    if (mixNoteEl) mixNoteEl.innerHTML = m.desc;
+    if (mixBadgeEl) {
+      mixBadgeEl.style.background = m.bg;
+      mixBadgeEl.style.color = m.color;
+      const dot = mixBadgeEl.querySelector('.dot');
+      if (dot) dot.style.background = m.color;
+    }
+    if (accelFillEl) accelFillEl.style.background = `linear-gradient(180deg, ${m.color}, ${m.color}99)`;
+  }
+
+  function updateCarb(dt, airFlowMul, fuelFlowMul, ratio) {
+    const vis = state.showGas;
+    carbAir.points.visible = vis;
+    carbFuel.points.visible = vis;
+    if (!vis) return;
+
+    const posAttr = carbAir.geo.attributes.position;
+    const colAttr = carbAir.geo.attributes.color;
+    const c = carbAir.base;
+    for (let i = 0; i < CARB_AIR_COUNT; i++) {
+      const p = carbAir.data[i];
+      const y = 1.55 - p.t * 2.35;
+      p.t += dt * carbAirSpeed(y) * airFlowMul * p.speed * 0.35;
+      if (p.t > 1) p.t -= 1;
+      const yNew = 1.55 - p.t * 2.35;
+      const r = p.r * (carbBarrelRadius(yNew) / 0.42);
+      const swirl = Math.max(0, 1 - Math.abs(yNew-0.40)*3.0);
+      p.angle += dt * (1.2 + swirl * 9) * airFlowMul;
+      posAttr.setXYZ(i, Math.cos(p.angle)*r, yNew, Math.sin(p.angle)*r);
+      let I = 1.0;
+      if (p.t < 0.06) I = p.t/0.06; else if (p.t > 0.92) I = (1-p.t)/0.08;
+      I *= 0.5 + 0.5 * airFlowMul;
+      colAttr.setXYZ(i, c.r*I, c.g*I, c.b*I);
+    }
+    posAttr.needsUpdate = true; colAttr.needsUpdate = true;
+
+    const richCol  = new THREE.Color(0xef4444);
+    const idealCol = new THREE.Color(0xf59e0b);
+    const leanCol  = new THREE.Color(0x93c5fd);
+    let mixTint;
+    if (ratio <= 14.7) {
+      const f = Math.max(0, Math.min(1, (14.7 - ratio) / 2.3));
+      mixTint = idealCol.clone().lerp(richCol, f);
+    } else {
+      const f = Math.max(0, Math.min(1, (ratio - 14.7) / 0.7));
+      mixTint = idealCol.clone().lerp(leanCol, f);
+    }
+
+    const fPos = carbFuel.geo.attributes.position;
+    const fCol = carbFuel.geo.attributes.color;
+    const raw = new THREE.Color(0xf59e0b);
+    for (let i = 0; i < CARB_FUEL_COUNT; i++) {
+      const p = carbFuel.data[i];
+      p.t += dt * p.speed * fuelFlowMul * 0.30; if (p.t > 1) p.t -= 1;
+      const v = CARB_FUEL_PATH.getPoint(p.t);
+      fPos.setXYZ(i, v.x, v.y, v.z);
+      const m = Math.max(0, (p.t - 0.72)/0.28);
+      const cc = raw.clone().lerp(mixTint, m);
+      let I = 1.0;
+      if (p.t < 0.05) I = p.t/0.05; else if (p.t > 0.94) I = (1-p.t)/0.06;
+      I *= 0.45 + 0.55 * Math.min(1.4, fuelFlowMul);
+      fCol.setXYZ(i, cc.r*I, cc.g*I, cc.b*I);
+    }
+    fPos.needsUpdate = true; fCol.needsUpdate = true;
+  }
+
+  /* Labels */
+  const labelDefs = [
+    { id:'air',    text:'Air in',               pos: new THREE.Vector3(0, 1.80, 0) },
+    { id:'venturi',text:'Venturi (low pressure)', pos: new THREE.Vector3(0.65, 0.40, 0) },
+    { id:'float',  text:'Float chamber',         pos: new THREE.Vector3(-0.95, 0.60, 0) },
+    { id:'jet',    text:'Fuel jet',              pos: new THREE.Vector3(-0.20, -0.65, 0) },
+    { id:'thr',    text:'Throttle valve',        pos: new THREE.Vector3(0.65, -0.10, 0) },
+    { id:'out',    text:'Air–fuel mixture out',  pos: new THREE.Vector3(0, -1.00, 0) }
+  ];
+  labelDefs.forEach(d => labels.add(d.id, d.text));
+
+  /* ═══════════════════════════════════════════════════════════
+     ACCELERATOR PEDAL
+     ═══════════════════════════════════════════════════════════ */
+  const accelTrackEl     = document.getElementById('accel-track');
+  const accelPedalEl     = document.getElementById('accel-pedal');
+  const accelPctEl       = document.getElementById('accel-pct');
+  const accelCtrlPctEl   = document.getElementById('accel-control-pct');
+  const accelCtrlLabelEl = document.getElementById('accel-control-label');
+
+  let accelPos = 0;
+  let accelDragging = false;
+  let accelPointerId = null;
+  let accelReturnRAF = null;
+  let accelKeyHeld = false;
+
+  function setAccelPos(v) {
+    accelPos = Math.max(0, Math.min(1, v));
+    const pct = Math.round(accelPos * 100);
+    if (accelFillEl)     accelFillEl.style.height = pct + '%';
+    if (accelPedalEl)    accelPedalEl.style.bottom = pct + '%';
+    if (accelPctEl)      accelPctEl.textContent = pct + '%';
+    if (accelCtrlPctEl)  accelCtrlPctEl.textContent = pct + '%';
+    if (accelTrackEl)    accelTrackEl.setAttribute('aria-valuenow', String(pct));
+  }
+
+  function accelPercentFromEvent(e) {
+    const r = accelTrackEl.getBoundingClientRect();
+    return Math.max(0, Math.min(1, 1 - (e.clientY - r.top) / r.height));
+  }
+
+  function cancelAccelReturn() {
+    if (accelReturnRAF) { cancelAnimationFrame(accelReturnRAF); accelReturnRAF = null; }
+  }
+
+  function springReleaseAccel() {
+    cancelAccelReturn();
+    const step = () => {
+      const next = accelPos * 0.86;
+      setAccelPos(next < 0.004 ? 0 : next);
+      accelReturnRAF = accelPos > 0 ? requestAnimationFrame(step) : null;
+    };
+    accelReturnRAF = requestAnimationFrame(step);
+  }
+
+  accelTrackEl.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    cancelAccelReturn();
+    accelDragging = true;
+    accelPointerId = e.pointerId;
+    try { accelTrackEl.setPointerCapture(e.pointerId); } catch (_) {}
+    accelTrackEl.classList.add('active');
+    if (accelCtrlLabelEl) accelCtrlLabelEl.classList.add('active');
+    setAccelPos(accelPercentFromEvent(e));
+  });
+
+  accelTrackEl.addEventListener('pointermove', e => {
+    if (!accelDragging || e.pointerId !== accelPointerId) return;
+    e.preventDefault();
+    setAccelPos(accelPercentFromEvent(e));
+  });
+
+  function endAccelDrag() {
+    if (!accelDragging) return;
+    accelDragging = false;
+    accelPointerId = null;
+    accelTrackEl.classList.remove('active');
+    if (accelCtrlLabelEl) accelCtrlLabelEl.classList.remove('active');
+    springReleaseAccel();
+  }
+  accelTrackEl.addEventListener('pointerup', endAccelDrag);
+  accelTrackEl.addEventListener('pointercancel', endAccelDrag);
+  accelTrackEl.addEventListener('lostpointercapture', endAccelDrag);
+
+  accelTrackEl.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    cancelAccelReturn();
+    accelKeyHeld = true;
+    setAccelPos(accelPos + (e.key === 'ArrowUp' ? 0.05 : -0.05));
+  });
+  accelTrackEl.addEventListener('keyup', e => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    if (accelKeyHeld) { accelKeyHeld = false; springReleaseAccel(); }
+  });
+
+  function resetAccelerator() {
+    cancelAccelReturn();
+    setAccelPos(0);
+    throttleButterfly.rotation.z = ACCEL_MIN_ANGLE;
+  }
+
+  /* Panel toggle — embed-aware */
+  const eduPanel = document.getElementById('edu-panel');
+  document.getElementById('panel-toggle').onclick = (e) => {
+    e.stopPropagation();
+    if (document.body.classList.contains('embedded')) {
+      eduPanel.classList.toggle('expanded');
+      const expanded = eduPanel.classList.contains('expanded');
+      e.currentTarget.setAttribute('aria-expanded', String(expanded));
+      e.currentTarget.querySelector('svg').style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+    } else {
+      const body = document.getElementById('panel-body');
+      const hidden = body.style.display === 'none';
+      body.style.display = hidden ? 'block' : 'none';
+      e.currentTarget.querySelector('svg').style.transform = hidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+    }
+  };
+  document.getElementById('panel-head').addEventListener('click', (e) => {
+    if (!document.body.classList.contains('embedded')) return;
+    if (e.target.closest('#panel-toggle')) return;
+    eduPanel.classList.toggle('expanded');
+    const expanded = eduPanel.classList.contains('expanded');
+    document.getElementById('panel-toggle').setAttribute('aria-expanded', String(expanded));
+    document.querySelector('#panel-toggle svg').style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+  });
+
+  /* UI + bridge */
+  Base.wireCommonUI(state, { onReset: resetAccelerator });
+  Base.wirePanelToggle();
+  const bridge = Base.createBridge('carburetor', (d) => {
+    if (d.type !== 'command') return;
+    switch (d.action) {
+      case 'setPlaying':     state.playing = !!d.value; break;
+      case 'setSpeed':       state.speedMul = +d.value; break;
+      case 'setLabels':      state.showLabels = !!d.value; break;
+      case 'setGas':         state.showGas = !!d.value; break;
+      case 'setAccelerator': cancelAccelReturn(); setAccelPos(+d.value); break;
+      case 'reset':          resetAccelerator(); break;
+    }
+  });
+  bridge.ready();
+
+  setAccelPos(0);
+  setMixtureUI(0, afrRatio(0));
+
+  const clock = new THREE.Clock();
+  let frame = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    frame++;
+    const dt = Math.min(clock.getDelta(), 0.05);
+
+    const ratio = afrRatio(accelPos);
+    setMixtureUI(accelPos, ratio);
+
+    if (state.playing) {
+      const simDt = dt * state.speedMul;
+      const airFlowMul  = 0.30 + 0.70 * accelPos;
+      const fuelFlowMul = Math.max(0.35, Math.min(2.0, (airFlowMul * 14.7) / ratio));
+
+      updateCarb(simDt, airFlowMul, fuelFlowMul, ratio);
+
+      const targetAngle = ACCEL_MIN_ANGLE + (ACCEL_MAX_ANGLE - ACCEL_MIN_ANGLE) * accelPos;
+      throttleButterfly.rotation.z += (targetAngle - throttleButterfly.rotation.z) * 0.15;
+    }
+
+    /* Labels at 30 Hz for smoother frame pacing */
+    if (state.showLabels && frame % 2 === 0) {
+      labelDefs.forEach(d => labels.project(d.id, d.pos, camera, wrap));
+    } else if (!state.showLabels) {
+      labels.hideAll();
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+  bridge.setStatus('Carburetor', '#f59e0b');
+  </script>
+</body>
+</html>

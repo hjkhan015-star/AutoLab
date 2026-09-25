@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Auto Lab">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#0a0d13"/>
+  <g transform="translate(256 256)" fill="none" stroke="url(#g)" stroke-linecap="round">
+    <circle r="150" stroke-width="36"/>
+    <g stroke-width="36">
+      <line x1="0" y1="-150" x2="0" y2="-188"/>
+      <line x1="0" y1="150"  x2="0" y2="188"/>
+      <line x1="-150" y1="0" x2="-188" y2="0"/>
+      <line x1="150"  y1="0" x2="188"  y2="0"/>
+      <line x1="106"  y1="-106" x2="133" y2="-133"/>
+      <line x1="-106" y1="-106" x2="-133" y2="-133"/>
+      <line x1="106"  y1="106"  x2="133"  y2="133"/>
+      <line x1="-106" y1="106"  x2="-133" y2="133"/>
+    </g>
+    <circle r="58" stroke-width="32"/>
+    <line x1="0" y1="-58" x2="0" y2="58" stroke-width="24" stroke="#0a0d13"/>
+  </g>
+</svg>

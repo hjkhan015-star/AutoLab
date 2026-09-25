@@ -1,0 +1,243 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   embed-fix.css — shell positioning for embedded modules.
+   
+   Loaded by every module (via <link> in the module's <head>). All rules
+   are gated by `body.embedded`, so the module behaves identically when
+   opened standalone (no shell) and when embedded (inside index.html).
+   
+   This is the SINGLE SOURCE OF TRUTH for embedded positioning. Do NOT
+   also inject these rules from index.html's injectEmbedFix() — that
+   causes a paint race where the panel flashes at the wrong position
+   before the injected style lands.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Hide the module's own hint text ─────────────────────────────────
+   NOTE: #module-controls is intentionally NOT hidden here. The shell
+   provides duplicates of play/reset/speed/labels/flow, but two modules
+   (differential, braking) put extra module-specific controls inside
+   the same panel. We hide only the duplicated sub-controls further
+   down, so the extras remain reachable. */
+body.embedded #hint {
+  display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   INFO PANEL — positioned between the floating shell buttons.
+   Collapsed = compact chip. Expanded = full panel.
+   ═══════════════════════════════════════════════════════════════════════ */
+body.embedded #edu-panel {
+  position: absolute !important;
+  top: calc(10px + env(safe-area-inset-top, 0px)) !important;
+  left: calc(58px + env(safe-area-inset-left, 0px)) !important;
+  right: calc(58px + env(safe-area-inset-right, 0px)) !important;
+  width: auto !important;
+  max-width: 340px !important;
+  border-radius: 13px !important;
+  z-index: 15 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  transition:
+    max-width .28s cubic-bezier(.32, .72, 0, 1),
+    padding .28s cubic-bezier(.32, .72, 0, 1),
+    box-shadow .28s ease !important;
+}
+
+body.embedded #edu-panel.expanded {
+  max-width: min(400px,
+                 calc(100vw - 116px
+                      - env(safe-area-inset-left, 0px)
+                      - env(safe-area-inset-right, 0px))) !important;
+  padding: 12px 14px 10px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .55) !important;
+}
+
+/* Panel head — compact row when collapsed */
+body.embedded #edu-panel #panel-head {
+  padding: 10px 12px !important;
+  cursor: pointer !important;
+  gap: 8px !important;
+  align-items: center !important;
+  border-bottom: 0 !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+}
+body.embedded #edu-panel.expanded #panel-head {
+  padding: 0 !important;
+  margin-bottom: 10px !important;
+  align-items: flex-start !important;
+}
+
+/* Kicker line — hidden when collapsed */
+body.embedded #edu-panel #module-kicker {
+  display: none !important;
+}
+body.embedded #edu-panel.expanded #module-kicker {
+  display: block !important;
+  font-size: 10px !important;
+  margin-bottom: 3px !important;
+}
+
+/* Title — single-line, truncated when collapsed */
+body.embedded #edu-panel #module-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  line-height: 1.3 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 220px !important;
+}
+body.embedded #edu-panel.expanded #module-title {
+  font-size: 16px !important;
+  white-space: normal !important;
+  max-width: none !important;
+}
+
+/* Toggle button */
+body.embedded #edu-panel #panel-toggle {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 8px !important;
+  flex: 0 0 auto !important;
+}
+body.embedded #edu-panel.expanded #panel-toggle {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 9px !important;
+}
+
+/* Hide the "Tap for details" hint */
+body.embedded #edu-panel #panel-head::after {
+  display: none !important;
+}
+
+/* Panel body — hidden when collapsed, scrollable when expanded */
+body.embedded #edu-panel #panel-body {
+  display: none !important;
+}
+body.embedded #edu-panel.expanded #panel-body {
+  display: block !important;
+  max-height: calc(100dvh - 20px - 130px
+                   - env(safe-area-inset-top, 0px)
+                   - env(safe-area-inset-bottom, 0px)) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MODULE-SPECIFIC CONTROLS
+   
+   The shell provides its own play/reset/speed/labels/flow controls.
+   Hide ONLY those duplicated sub-controls, so module-specific extras
+   (differential's Traction + Locked, braking's ABS + Circuit Fail +
+   Air Bubble) remain visible and functional.
+   ═══════════════════════════════════════════════════════════════════════ */
+body.embedded #module-controls #btn-play,
+body.embedded #module-controls #btn-reset,
+body.embedded #module-controls .slider-group,
+body.embedded #module-controls #chk-labels,
+body.embedded #module-controls #chk-gas {
+  display: none !important;
+}
+
+/* Reposition #module-controls so the remaining extras sit above the
+   shell's floating pill. Modules with no extras will render an empty
+   bar — the `:not(:has(...))` selector below hides it cleanly. */
+body.embedded #module-controls {
+  position: absolute !important;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px 12px !important;
+  padding: 6px 10px !important;
+  max-width: calc(100vw - 20px
+                  - env(safe-area-inset-left, 0px)
+                  - env(safe-area-inset-right, 0px)) !important;
+  flex-wrap: wrap !important;
+  border-radius: 14px !important;
+  z-index: 20 !important;
+  background: rgba(14, 18, 28, .92) !important;
+  border: 1px solid rgba(148, 163, 184, .18) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35) !important;
+}
+
+/* Hide the empty pill on modules with no extras.
+   `:has()` is supported in all modern browsers (Chrome 105+, Safari 15.4+,
+   Firefox 121+). The fallback for older browsers is a small empty pill,
+   which is harmless. */
+@supports selector(:has(*)) {
+  body.embedded #module-controls:not(:has(.select-group, .toggle)) {
+    display: none !important;
+  }
+}
+
+/* Keep the visible toggles/selects readable on the new pill */
+body.embedded #module-controls .toggle,
+body.embedded #module-controls .select-group {
+  font-size: 11px !important;
+  white-space: nowrap !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   INTERACTIVE OVERLAYS — sit above the shell pill
+   ═══════════════════════════════════════════════════════════════════════ */
+body.embedded #steer-overlay,
+body.embedded #crank-overlay,
+body.embedded #accel-overlay,
+body.embedded #clutch-overlay {
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+body.embedded #status-flash,
+body.embedded #alert-chip {
+  top: calc(74px + env(safe-area-inset-top, 0px)) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE BRANCH
+   
+   On narrow screens the two floating shell buttons (back / more) sit
+   closer to the edges, and reserving 58px on each side would eat the
+   whole panel. Drop to 10px margins and let the panel run the full
+   width between the buttons.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 720px) {
+  body.embedded #edu-panel {
+    top: calc(62px + env(safe-area-inset-top, 0px)) !important;
+    left: calc(10px + env(safe-area-inset-left, 0px)) !important;
+    right: calc(10px + env(safe-area-inset-right, 0px)) !important;
+    max-width: none !important;
+  }
+  body.embedded #edu-panel.expanded {
+    max-width: calc(100vw - 20px
+                    - env(safe-area-inset-left, 0px)
+                    - env(safe-area-inset-right, 0px)) !important;
+  }
+  body.embedded #edu-panel #module-title {
+    max-width: calc(100vw - 100px) !important;
+  }
+  body.embedded #module-controls {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    gap: 6px 8px !important;
+    padding: 5px 8px !important;
+  }
+}
+
+/* Short landscape phones — shrink the collapsed chip further */
+@media (max-height: 500px) and (orientation: landscape) {
+  body.embedded #edu-panel #panel-title,
+  body.embedded #edu-panel #module-title {
+    font-size: 12px !important;
+  }
+  body.embedded #edu-panel.expanded #panel-body {
+    max-height: calc(100dvh - 120px) !important;
+  }
+}
