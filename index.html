@@ -1350,7 +1350,7 @@ function ensureIframe(mod){
   fr.dataset.module = mod.id;
   fr.loading = 'eager';
   fr.setAttribute('allow','autoplay; fullscreen');
-  fr.srcdoc = window.AUTO_MODULE_HTML[mod.id] || '';
+fr.src = mod.file;
   fr.addEventListener('load', () => {
     injectEmbedFix(fr);
     const nudge = () => {
