@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<title>Lubrication System — Auto Lab</title>
+<link rel="stylesheet" href="base.css">
+
+<style>
+  .lube-readout { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .lube-row {
+    display: flex; justify-content: space-between;
+    font-size: 11.5px; color: var(--muted);
+  }
+  .lube-row b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .lube-reset-btn {
+    width: 100%; margin-top: 10px;
+    border: 1px solid var(--border); background: rgba(255,255,255,.03);
+    color: var(--muted); font-size: 11.5px; font-weight: 700;
+    padding: 9px 8px; border-radius: 8px; cursor: pointer;
+    transition: all .15s; font-family: inherit; min-height: 36px;
+  }
+  .lube-reset-btn:hover { color: var(--text); border-color: rgba(255,255,255,.25); }
+  .lube-reset-btn:active { transform: scale(0.98); }
+
+  /* ═══════════════════════════════════════════════════════════
+     OIL-PRESSURE GAUGE OVERLAY
+     ═══════════════════════════════════════════════════════════ */
+  #lube-overlay {
+    position: fixed; z-index: 50;
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none;
+    right: calc(16px + var(--safe-r));
+    bottom: calc(84px + var(--safe-b));
+  }
+  #lube-gauge {
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+    width: clamp(110px, 26vw, 190px);
+    height: clamp(110px, 26vw, 190px);
+  }
+  #lube-needle {
+    transform-origin: 50% 50%;
+    transition: transform 0.08s linear;
+    will-change: transform;
+  }
+  .lg-face  { fill: #12161f; stroke: #2e3745; stroke-width: 3; }
+  .lg-tick  { stroke: #4a5568; stroke-width: 2; }
+  .lg-tick.hi { stroke: #ef4444; }
+  .lg-tick.ok { stroke: #22c55e; }
+  .lg-needle { fill: #f59e0b; }
+  .lg-hub   { fill: #2d3748; stroke: #a0b0c8; stroke-width: 2; }
+  #lube-label {
+    margin-top: 8px; color: #9ca3af; font-size: 12px; font-weight: 500;
+    letter-spacing: 0.5px; text-transform: uppercase;
+    background: rgba(10,14,20,0.7); padding: 4px 12px; border-radius: 20px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.08);
+    pointer-events: none;
+  }
+
+  @media (max-width: 600px) {
+    #lube-overlay { bottom: calc(72px + var(--safe-b)); right: calc(12px + var(--safe-r)); }
+    #lube-gauge { width: 96px; height: 96px; }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     COMPACT LIVE CHIP (embed mode only)
+     ═══════════════════════════════════════════════════════════ */
+  #lube-chip {
+    display: none;
+    position: absolute;
+    top: calc(64px + env(safe-area-inset-top, 0px) + 10px);
+    right: 12px;
+    background: rgba(13,18,27,.90);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 12px;
+    padding: 8px 12px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.45);
+    z-index: 16;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 148px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    pointer-events: none;
+  }
+  #lube-chip .lc-label {
+    font-size: 9px; letter-spacing: .1em;
+    text-transform: uppercase; color: #8d9aaa;
+  }
+  #lube-chip .lc-row {
+    display: flex; justify-content: space-between;
+    align-items: baseline; gap: 12px;
+  }
+  #lube-chip .lc-key { font-size: 10px; color: #94a3b8; }
+  #lube-chip .lc-val {
+    font-size: 12px; font-weight: 800; color: #f59e0b;
+    font-variant-numeric: tabular-nums;
+  }
+  #lube-chip .lc-val.warn { color: #ef4444; }
+
+  /* ═══════════════════════════════════════════════════════════
+     EMBED MODE — align with Auto Lab shell
+     ═══════════════════════════════════════════════════════════ */
+  body.embedded {
+    --shell-header-h: calc(64px + env(safe-area-inset-top, 0px));
+    --shell-pill-h: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.embedded #edu-panel {
+    position: absolute !important;
+    top: calc(var(--shell-header-h) + 10px) !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: 420px !important;
+    border-radius: 14px !important;
+    z-index: 15 !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,.55) !important;
+  }
+  body.embedded #edu-panel #panel-body {
+    display: none;
+    max-height: calc(100dvh - var(--shell-header-h) - var(--shell-pill-h) - 140px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body.embedded #edu-panel.expanded #panel-body { display: block; }
+  body.embedded #panel-head { padding: 12px 14px; }
+  body.embedded #module-title { font-size: 16px; }
+  body.embedded #module-kicker { font-size: 10px; }
+  body.embedded #panel-head::after {
+    content: "Tap for details";
+    font-size: 10px; color: #64748b;
+    margin-left: 10px; flex: 1; font-weight: 500;
+  }
+  body.embedded #edu-panel.expanded #panel-head::after { display: none; }
+
+  @media (min-width: 640px) {
+    body.embedded #edu-panel { right: auto !important; width: 360px !important; }
+    body.embedded #edu-panel #panel-body { display: block; }
+    body.embedded #panel-head::after { display: none; }
+  }
+
+  body.embedded #lube-overlay {
+    position: absolute !important;
+    bottom: calc(var(--shell-pill-h) + 14px) !important;
+    right: 14px !important;
+    z-index: 20 !important;
+  }
+
+  body.embedded #lube-chip { display: flex; }
+
+  @media (max-width: 480px) {
+    body.embedded #lube-gauge { width: 88px; height: 88px; }
+    body.embedded #lube-label { font-size: 10px; padding: 3px 9px; }
+  }
+</style>
+</head>
+<body>
+  <div id="canvas-wrap"></div>
+
+  <div id="edu-panel" class="panel">
+    <div id="panel-head">
+      <div>
+        <h1 id="module-kicker">Lubrication System</h1>
+        <div id="module-title">Wet-Sump Lubrication System</div>
+      </div>
+      <button id="panel-toggle" aria-label="Toggle info" aria-expanded="false">
+        <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+      </button>
+    </div>
+
+    <div id="panel-body">
+      <div id="stroke-badge" style="background:rgba(245,158,11,.18);color:#f59e0b">
+        <span class="dot" style="background:#f59e0b"></span><span>Lubrication</span>
+      </div>
+
+      <div id="module-extra-lube">
+        <div class="extra-label">Live oil values</div>
+        <div class="lube-readout">
+          <div class="lube-row"><span>Oil pressure</span><b id="lube-pressure">0 psi</b></div>
+          <div class="lube-row"><span>Oil temperature</span><b id="lube-temp">20°C</b></div>
+          <div class="lube-row"><span>Pump speed</span><b id="lube-pump-rpm">0 rpm</b></div>
+        </div>
+        <button class="lube-reset-btn" id="lube-reset">Reset run</button>
+      </div>
+
+      <div id="stroke-desc" style="margin-top:12px">
+        <strong>Wet-sump forced-feed lubrication.</strong> Oil collects in the
+        <strong>sump</strong> at the bottom of the engine. A <strong>gear-type oil pump</strong>,
+        driven directly off the crankshaft, draws oil up through a <strong>pickup tube</strong>
+        fitted with a <strong>strainer</strong> that screens out debris. The pump forces oil
+        through the <strong>oil filter</strong>, which traps contaminants — if the filter is
+        cold or clogged, a spring-loaded <strong>bypass valve</strong> lets oil flow around it
+        rather than starve the engine. Filtered oil enters the <strong>main oil gallery</strong>,
+        a drilled passage running the length of the block, which branches to feed the
+        <strong>main bearings</strong> supporting the crankshaft, the <strong>connecting-rod
+        bearings</strong>, and the <strong>camshaft</strong>. A <strong>pressure-relief valve</strong>
+        bleeds off excess pressure at high rpm. Oil thrown from the rotating crank splashes
+        onto the cylinder walls and piston skirts, then drains back to the sump by gravity —
+        completing the loop. Use the speed slider to see pressure and flow scale with engine rpm.
+      </div>
+    </div>
+  </div>
+
+  <!-- Compact live chip (embed mode only) -->
+  <div id="lube-chip" aria-hidden="true">
+    <div class="lc-label">Live oil system</div>
+    <div class="lc-row">
+      <span class="lc-key">Pressure</span>
+      <span class="lc-val" id="lc-pressure">0 psi</span>
+    </div>
+    <div class="lc-row">
+      <span class="lc-key">Temp</span>
+      <span class="lc-val" id="lc-temp">20°C</span>
+    </div>
+    <div class="lc-row">
+      <span class="lc-key">Pump</span>
+      <span class="lc-val" id="lc-pump">0 rpm</span>
+    </div>
+  </div>
+
+  <div id="module-controls" class="panel">
+    <button class="ctrl-btn" id="btn-play" aria-label="Pause">
+      <svg id="icon-play" viewBox="0 0 24 24" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+      <svg id="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+    </button>
+    <button class="ctrl-btn" id="btn-reset" aria-label="Reset">
+      <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </button>
+    <div class="slider-group">
+      <span>Speed</span>
+      <input type="range" id="speed" min="0.15" max="2.5" step="0.05" value="0.85" aria-label="Speed">
+      <span id="rpm-label">~900 rpm</span>
+    </div>
+    <label class="toggle"><input type="checkbox" id="chk-labels" checked> Labels</label>
+    <label class="toggle"><input type="checkbox" id="chk-gas" checked> Flow</label>
+  </div>
+
+  <div id="lube-overlay">
+    <div id="lube-gauge">
+      <svg viewBox="-60 -60 120 120" aria-hidden="true">
+        <circle class="lg-face" cx="0" cy="0" r="52"/>
+        <g id="lube-ticks"></g>
+        <g id="lube-needle">
+          <path class="lg-needle" d="M-3,4 L0,-42 L3,4 Z"/>
+          <circle class="lg-hub" cx="0" cy="0" r="9"/>
+        </g>
+      </svg>
+    </div>
+    <div id="lube-label">Oil pressure</div>
+  </div>
+
+  <div id="hint">Drag scene to orbit · Pinch to zoom · Adjust speed to see oil flow change</div>
+  <div id="labels-root"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+  import * as Base from './module-base.js';
+
+  const DEG = Math.PI / 180;
+
+  /* ═══════════════════════════════════════════════════════════
+     SHELL DETECTION + ADAPTIVE QUALITY
+     ═══════════════════════════════════════════════════════════ */
+  const IS_EMBEDDED = window.parent && window.parent !== window;
+  if (IS_EMBEDDED) document.body.classList.add('embedded');
+
+  const isCoarse = matchMedia('(pointer: coarse)').matches;
+  const cores    = navigator.hardwareConcurrency || 4;
+  const mem      = navigator.deviceMemory || 4;
+  const isLowEnd = cores <= 4 || mem <= 2;
+  const isMidEnd = !isLowEnd && (cores <= 6 || isCoarse);
+
+  const TUBE_SEGS  = isLowEnd ? 12 : isMidEnd ? 16 : 20;
+  const RING_SEGS  = isLowEnd ? 20 : isMidEnd ? 28 : 36;
+  const SPH_SEGS   = isLowEnd ? 12 : isMidEnd ? 16 : 22;
+  const PARTICLES  = isLowEnd ? 26 : isMidEnd ? 42 : 60;
+
+  /* ═══════════════════════════════════════════════════════════
+     1. SCENE
+     ═══════════════════════════════════════════════════════════ */
+  const { scene, camera, renderer, controls, wrap } = Base.buildScene({
+    fov:      42,
+    camPos:   isCoarse ? [3.2, 1.6, 4.4] : [3.8, 2.0, 5.2],
+    target:   [0, -0.2, 0],
+    floorY:   -2.0,
+    fogDensity: 0.022
+  });
+  Base.attachResize(camera, renderer, wrap, 42);
+
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.12;
+
+  const keyLight = new THREE.DirectionalLight(0xfff2e0, 2.3);
+  keyLight.position.set(4, 6, 5);
+  scene.add(keyLight);
+
+  const amberLight = new THREE.PointLight(0xf59e0b, 55, 14, 2);
+  amberLight.position.set(-1.8, -0.6, 2.4);
+  scene.add(amberLight);
+
+  const cyanLight = new THREE.PointLight(0x38bdf8, 35, 14, 2);
+  cyanLight.position.set(2.4, 1.6, -2.0);
+  scene.add(cyanLight);
+
+  const hemi = new THREE.HemisphereLight(0x9bb0ff, 0x0a0e14, 0.42);
+  scene.add(hemi);
+
+  const labels = Base.createLabelSystem();
+  const state  = Base.createUIState();
+
+  /* ═══════════════════════════════════════════════════════════
+     2. MATERIALS
+     ═══════════════════════════════════════════════════════════ */
+  const mat = {
+    block:     new THREE.MeshPhysicalMaterial({
+      color:0x8a93a5, metalness:0.15, roughness:0.20,
+      transmission:0.0, transparent:true, opacity:0.14,
+      side:THREE.DoubleSide, depthWrite:false, clearcoat:1.0, clearcoatRoughness:0.15
+    }),
+    iron:      new THREE.MeshStandardMaterial({ color:0x3e4552, metalness:0.70, roughness:0.55 }),
+    steel:     new THREE.MeshStandardMaterial({ color:0xd0d8e6, metalness:0.95, roughness:0.18 }),
+    steelDark: new THREE.MeshStandardMaterial({ color:0x4e5768, metalness:0.85, roughness:0.32 }),
+    steelBright:new THREE.MeshStandardMaterial({ color:0xe8eefc, metalness:1.0, roughness:0.10 }),
+    aluminium: new THREE.MeshStandardMaterial({ color:0xc7ccd6, metalness:0.85, roughness:0.28 }),
+    pan:       new THREE.MeshStandardMaterial({ color:0x2a2f38, metalness:0.60, roughness:0.55, side:THREE.DoubleSide }),
+    oil:       new THREE.MeshPhysicalMaterial({
+      color:0x8a5a12, metalness:0.0, roughness:0.25, transmission:0.35,
+      transparent:true, opacity:0.72, side:THREE.DoubleSide, depthWrite:false
+    }),
+    oilDrop:   new THREE.MeshStandardMaterial({ color:0xf59e0b, emissive:0xf59e0b, emissiveIntensity:1.6, transparent:true, opacity:0.95 }),
+    filterCan: new THREE.MeshStandardMaterial({ color:0xdedede, metalness:0.4, roughness:0.4 }),
+    filterBand:new THREE.MeshStandardMaterial({ color:0x2563eb, metalness:0.3, roughness:0.5 }),
+    rubber:    new THREE.MeshStandardMaterial({ color:0x1e2229, metalness:0.05, roughness:0.98 }),
+    joint:     new THREE.MeshStandardMaterial({ color:0x2a3038, metalness:0.50, roughness:0.65 }),
+    spring:    new THREE.MeshStandardMaterial({ color:0x9aa3b8, metalness:0.9, roughness:0.25 }),
+    markerAmb: new THREE.MeshStandardMaterial({ color:0xf59e0b, emissive:0xf59e0b, emissiveIntensity:1.4 }),
+    markerBlue:new THREE.MeshStandardMaterial({ color:0x38bdf8, emissive:0x38bdf8, emissiveIntensity:1.4 }),
+    markerRed: new THREE.MeshStandardMaterial({ color:0xef4444, emissive:0xef4444, emissiveIntensity:1.4 }),
+    pipe:      new THREE.MeshStandardMaterial({ color:0x6a7383, metalness:0.85, roughness:0.35 })
+  };
+
+  /* ═══════════════════════════════════════════════════════════
+     3. GEOMETRY CONSTANTS
+     ═══════════════════════════════════════════════════════════ */
+  const BLOCK_W = 3.3, BLOCK_H = 2.05, BLOCK_D = 1.35;
+  const BLOCK_Y = 0.05;
+
+  const CRANK_Y  = -0.55;
+  const CAM_Y    =  0.55;
+  const CYL_X    = [-0.75, 0.75];
+  const CRANK_R  = 0.22;
+  const ROD_LEN  = 0.85;
+
+  const SUMP_TOP  = -1.15;
+  const SUMP_BOT  = -1.85;
+  const OIL_LEVEL = -1.35;
+
+  const GALLERY_Y = -0.05;
+  const GALLERY_X0 = -1.55, GALLERY_X1 = 1.55;
+
+  /* ═══════════════════════════════════════════════════════════
+     4. GROUND GLOW
+     ═══════════════════════════════════════════════════════════ */
+  const groundGeo = new THREE.CircleGeometry(9, isLowEnd ? 32 : 64);
+  const groundMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false,
+    uniforms: {
+      uInner: { value: new THREE.Color(0x3a2a10) },
+      uOuter: { value: new THREE.Color(0x000000) }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: `
+      varying vec2 vUv;
+      uniform vec3 uInner;
+      uniform vec3 uOuter;
+      void main() {
+        float d = distance(vUv, vec2(0.5)) * 2.0;
+        float a = smoothstep(1.0, 0.0, d) * 0.5;
+        vec3 col = mix(uOuter, uInner, smoothstep(0.8, 0.0, d));
+        gl_FragColor = vec4(col, a);
+      }`
+  });
+  const groundPlane = new THREE.Mesh(groundGeo, groundMat);
+  groundPlane.rotation.x = -Math.PI / 2;
+  groundPlane.position.y = -1.995;
+  scene.add(groundPlane);
+
+  /* ═══════════════════════════════════════════════════════════
+     5. ENGINE BLOCK (transparent cutaway housing)
+     ═══════════════════════════════════════════════════════════ */
+  const blockMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(BLOCK_W, BLOCK_H, BLOCK_D),
+    mat.block
+  );
+  blockMesh.position.set(0, BLOCK_Y, 0);
+  scene.add(blockMesh);
+
+  const blockEdges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(BLOCK_W, BLOCK_H, BLOCK_D)),
+    new THREE.LineBasicMaterial({ color: 0x64748b, transparent:true, opacity:0.5 })
+  );
+  blockEdges.position.copy(blockMesh.position);
+  scene.add(blockEdges);
+
+  /* ═══════════════════════════════════════════════════════════
+     6. OIL PAN / SUMP
+     ═══════════════════════════════════════════════════════════ */
+  const sumpGroup = new THREE.Group();
+  scene.add(sumpGroup);
+
+  function panWall(w, h, d, x, y, z, rx=0, ry=0, rz=0) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat.pan);
+    m.position.set(x, y, z);
+    m.rotation.set(rx, ry, rz);
+    m.castShadow = true;
+    return m;
+  }
+  const panWallThick = 0.05;
+  const panW = BLOCK_W * 0.86, panD = BLOCK_D * 0.9;
+  sumpGroup.add(panWall(panW, panWallThick, panD, 0, SUMP_BOT, 0));
+  sumpGroup.add(panWall(panWallThick, SUMP_TOP - SUMP_BOT, panD, -panW/2, (SUMP_TOP+SUMP_BOT)/2, 0));
+  sumpGroup.add(panWall(panWallThick, SUMP_TOP - SUMP_BOT, panD,  panW/2, (SUMP_TOP+SUMP_BOT)/2, 0));
+  sumpGroup.add(panWall(panW, SUMP_TOP - SUMP_BOT, panWallThick, 0, (SUMP_TOP+SUMP_BOT)/2, -panD/2));
+
+  const oilPool = new THREE.Mesh(
+    new THREE.BoxGeometry(panW * 0.94, OIL_LEVEL - SUMP_BOT, panD * 0.9),
+    mat.oil
+  );
+  oilPool.position.set(0, (OIL_LEVEL + SUMP_BOT)/2, 0);
+  sumpGroup.add(oilPool);
+
+  const oilSurface = new THREE.Mesh(
+    new THREE.PlaneGeometry(panW * 0.94, panD * 0.9),
+    new THREE.MeshStandardMaterial({ color:0xc98a2e, metalness:0.1, roughness:0.15, transparent:true, opacity:0.55, side:THREE.DoubleSide })
+  );
+  oilSurface.rotation.x = -Math.PI / 2;
+  oilSurface.position.set(0, OIL_LEVEL, 0);
+  sumpGroup.add(oilSurface);
+
+  /* Pickup tube + strainer */
+  const pickupX = -1.05;
+  const pickupTube = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.035, 0.035, (CRANK_Y - 0.15) - SUMP_BOT - 0.15, TUBE_SEGS),
+    mat.steelDark
+  );
+  pickupTube.position.set(pickupX, (SUMP_BOT + 0.15 + CRANK_Y - 0.15) / 2, 0);
+  scene.add(pickupTube);
+
+  const strainer = new THREE.Mesh(
+    new THREE.SphereGeometry(0.075, SPH_SEGS, SPH_SEGS/2),
+    mat.steelDark
+  );
+  strainer.position.set(pickupX, SUMP_BOT + 0.18, 0);
+  scene.add(strainer);
+  const strainerWire = new THREE.Mesh(
+    new THREE.SphereGeometry(0.08, 10, 6),
+    new THREE.MeshBasicMaterial({ color:0x94a3b8, wireframe:true, transparent:true, opacity:0.6 })
+  );
+  strainerWire.position.copy(strainer.position);
+  scene.add(strainerWire);
+
+  /* ═══════════════════════════════════════════════════════════
+     7. OIL PUMP (gear pump) + PRESSURE-RELIEF VALVE
+     ═══════════════════════════════════════════════════════════ */
+  function makeGear(Rp, N, m, width) {
+    const rTip = Rp + m, rRoot = Rp - 1.25 * m;
+    const step = (Math.PI * 2) / N;
+    const pts = [];
+    const push = (r, a) => pts.push(new THREE.Vector2(Math.cos(a)*r, Math.sin(a)*r));
+    for (let i = 0; i < N; i++) {
+      const c = i * step, aB = step*0.30, aT = step*0.17;
+      push(rRoot, c-aB); push(rTip, c-aT); push(rTip, c+aT); push(rRoot, c+aB);
+      const a0=c+aB, a1=c+step-aB;
+      for (let k=1;k<4;k++) push(rRoot, a0+(a1-a0)*k/4);
+    }
+    const shape = new THREE.Shape(pts);
+    const geo = new THREE.ExtrudeGeometry(shape, { depth:width, bevelEnabled:false, curveSegments:1 });
+    geo.translate(0,0,-width/2);
+    return geo;
+  }
+
+  const pumpGroup = new THREE.Group();
+  pumpGroup.position.set(pickupX, CRANK_Y - 0.05, 0.32);
+  scene.add(pumpGroup);
+
+  const pumpHousing = new THREE.Mesh(
+    new THREE.BoxGeometry(0.42, 0.30, 0.22),
+    mat.iron
+  );
+  pumpHousing.castShadow = true;
+  pumpGroup.add(pumpHousing);
+
+  const gearGeo = makeGear(0.09, 10, 0.014, 0.14);
+  const gearA = new THREE.Mesh(gearGeo, mat.steel);
+  gearA.position.set(-0.08, 0, 0);
+  pumpGroup.add(gearA);
+  const gearB = new THREE.Mesh(gearGeo.clone(), mat.steel);
+  gearB.position.set(0.08, 0, 0);
+  gearB.rotation.z = Math.PI / 10;
+  pumpGroup.add(gearB);
+
+  const pumpDriveShaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.03, 0.03, 0.22, TUBE_SEGS),
+    mat.steelDark
+  );
+  pumpDriveShaft.rotation.x = Math.PI/2;
+  pumpDriveShaft.position.set(-0.08, 0, -0.05);
+  pumpGroup.add(pumpDriveShaft);
+
+  /* Pressure relief valve — small housing near the pump */
+  const reliefGroup = new THREE.Group();
+  reliefGroup.position.set(pickupX + 0.42, CRANK_Y - 0.05, 0.32);
+  scene.add(reliefGroup);
+
+  const reliefHousing = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.06, 0.26, TUBE_SEGS),
+    mat.iron
+  );
+  reliefHousing.rotation.z = Math.PI/2;
+  reliefGroup.add(reliefHousing);
+
+  const reliefBall = new THREE.Mesh(new THREE.SphereGeometry(0.032, SPH_SEGS, SPH_SEGS/2), mat.steelBright);
+  reliefGroup.add(reliefBall);
+
+  const reliefSpring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.022, 0.006, 6, RING_SEGS/2),
+    mat.spring
+  );
+  reliefGroup.add(reliefSpring);
+  const reliefCoils = [];
+  for (let i=0;i<5;i++){
+    const c = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.006, 6, 14), mat.spring);
+    c.rotation.y = Math.PI/2;
+    c.position.x = 0.06 + i*0.014;
+    reliefGroup.add(c);
+    reliefCoils.push(c);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     8. OIL FILTER (external canister + bypass valve)
+     ═══════════════════════════════════════════════════════════ */
+  const filterGroup = new THREE.Group();
+  filterGroup.position.set(1.55, CRANK_Y + 0.15, 0.55);
+  filterGroup.rotation.z = Math.PI/2;
+  scene.add(filterGroup);
+
+  const filterCan = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.16, 0.16, 0.42, RING_SEGS),
+    mat.filterCan
+  );
+  filterCan.castShadow = true;
+  filterGroup.add(filterCan);
+
+  const filterBand = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.162, 0.162, 0.06, RING_SEGS),
+    mat.filterBand
+  );
+  filterBand.position.y = 0.14;
+  filterGroup.add(filterBand);
+
+  const filterBase = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.11, 0.11, 0.05, RING_SEGS),
+    mat.steelDark
+  );
+  filterBase.position.y = -0.235;
+  filterGroup.add(filterBase);
+
+  /* internal bypass valve — shown through a translucent strip */
+  const filterInner = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.10, 0.10, 0.34, RING_SEGS, 1, true),
+    new THREE.MeshPhysicalMaterial({ color:0xdedede, transparent:true, opacity:0.18, side:THREE.DoubleSide, depthWrite:false })
+  );
+  filterGroup.add(filterInner);
+  const bypassBall = new THREE.Mesh(new THREE.SphereGeometry(0.028, SPH_SEGS, SPH_SEGS/2), mat.markerRed);
+  bypassBall.position.set(0, -0.05, 0);
+  filterGroup.add(bypassBall);
+
+  /* ═══════════════════════════════════════════════════════════
+     9. MAIN OIL GALLERY + BRANCH PIPES
+     ═══════════════════════════════════════════════════════════ */
+  const gallery = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.05, GALLERY_X1 - GALLERY_X0, TUBE_SEGS),
+    mat.pipe
+  );
+  gallery.rotation.z = Math.PI/2;
+  gallery.position.set((GALLERY_X0+GALLERY_X1)/2, GALLERY_Y, 0.28);
+  scene.add(gallery);
+
+  /* pump -> filter feed pipe */
+  function straightPipe(p0, p1, r=0.032) {
+    const dir = new THREE.Vector3().subVectors(p1, p0);
+    const len = dir.length();
+    const g = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, TUBE_SEGS), mat.pipe);
+    g.position.copy(p0).addScaledVector(dir, 0.5);
+    g.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+    return g;
+  }
+  const pumpOutPos    = new THREE.Vector3(pickupX + 0.21, CRANK_Y - 0.05, 0.32);
+  const filterInPos   = new THREE.Vector3(1.55, CRANK_Y + 0.15 - 0.21, 0.55);
+  const filterOutPos  = new THREE.Vector3(1.55, CRANK_Y + 0.15 + 0.21, 0.55);
+  const galleryStart  = new THREE.Vector3(GALLERY_X0, GALLERY_Y, 0.28);
+  const galleryEnd    = new THREE.Vector3(GALLERY_X1, GALLERY_Y, 0.28);
+
+  scene.add(straightPipe(pumpOutPos, new THREE.Vector3(pumpOutPos.x, pumpOutPos.y, filterInPos.z)));
+  scene.add(straightPipe(new THREE.Vector3(pumpOutPos.x, pumpOutPos.y, filterInPos.z), filterInPos));
+  scene.add(straightPipe(filterOutPos, galleryEnd));
+
+  /* branch stubs up to main bearings + camshaft */
+  const bearingXs = [-1.0, 0, 1.0];
+  bearingXs.forEach(x => {
+    scene.add(straightPipe(
+      new THREE.Vector3(x, GALLERY_Y, 0.28),
+      new THREE.Vector3(x, CRANK_Y, 0.28), 0.028
+    ));
+  });
+  scene.add(straightPipe(
+    new THREE.Vector3(-0.4, GALLERY_Y, 0.28),
+    new THREE.Vector3(-0.4, CAM_Y, 0.28), 0.026
+  ));
+  scene.add(straightPipe(
+    new THREE.Vector3(0.4, GALLERY_Y, 0.28),
+    new THREE.Vector3(0.4, CAM_Y, 0.28), 0.026
+  ));
+
+  /* ═══════════════════════════════════════════════════════════
+     10. CRANKSHAFT + MAIN BEARINGS + RODS + PISTONS
+     ═══════════════════════════════════════════════════════════ */
+  const crankGroup = new THREE.Group();
+  crankGroup.position.set(0, CRANK_Y, 0);
+  scene.add(crankGroup);
+
+  const crankMainShaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.055, 0.055, BLOCK_W * 0.9, TUBE_SEGS),
+    mat.steel
+  );
+  crankMainShaft.rotation.z = Math.PI/2;
+  crankGroup.add(crankMainShaft);
+
+  bearingXs.forEach(x => {
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.09, TUBE_SEGS), mat.steelDark);
+    cap.rotation.z = Math.PI/2;
+    cap.position.set(x, 0, 0);
+    crankGroup.add(cap);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.062, 0.012, 8, RING_SEGS), mat.markerAmb);
+    ring.rotation.y = Math.PI/2;
+    ring.position.set(x, 0, 0);
+    crankGroup.add(ring);
+  });
+
+  const throws = CYL_X.map(x => {
+    const g = new THREE.Group();
+    g.position.set(x, 0, 0);
+    crankGroup.add(g);
+
+    const web1 = new THREE.Mesh(new THREE.BoxGeometry(0.05, CRANK_R*1.6, 0.16), mat.steelDark);
+    const web2 = web1.clone();
+    g.add(web1); g.add(web2);
+
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.16, TUBE_SEGS), mat.steel);
+    pin.rotation.z = Math.PI/2;
+    g.add(pin);
+
+    return { group: g, web1, web2, pin };
+  });
+
+  function makeConRod() {
+    const g = new THREE.Group();
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 1, TUBE_SEGS), mat.aluminium);
+    g.add(rod);
+    const bigEnd = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.14, TUBE_SEGS), mat.joint);
+    bigEnd.rotation.x = Math.PI/2;
+    bigEnd.position.y = -0.5;
+    g.add(bigEnd);
+    const smallEnd = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.12, TUBE_SEGS), mat.joint);
+    smallEnd.rotation.x = Math.PI/2;
+    smallEnd.position.y = 0.5;
+    g.add(smallEnd);
+    return { group: g, rod, bigEnd, smallEnd };
+  }
+
+  function makePiston() {
+    const g = new THREE.Group();
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.18, RING_SEGS), mat.aluminium);
+    g.add(crown);
+    for (let i=0;i<3;i++){
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.006, 6, RING_SEGS), mat.steelBright);
+      ring.rotation.x = Math.PI/2;
+      ring.position.y = 0.05 - i*0.035;
+      g.add(ring);
+    }
+    const pinBoss = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.2, TUBE_SEGS), mat.steelDark);
+    pinBoss.rotation.z = Math.PI/2;
+    pinBoss.position.y = -0.02;
+    g.add(pinBoss);
+    return g;
+  }
+
+  const cylBores = CYL_X.map(x => {
+    const bore = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.185, 0.185, 1.55, RING_SEGS, 1, true),
+      new THREE.MeshPhysicalMaterial({ color:0x8a93a5, transparent:true, opacity:0.10, side:THREE.DoubleSide, depthWrite:false })
+    );
+    bore.position.set(x, 0.35, 0);
+    scene.add(bore);
+    return bore;
+  });
+
+  const conRods = CYL_X.map(() => makeConRod());
+  conRods.forEach(r => scene.add(r.group));
+  const pistons = CYL_X.map(() => makePiston());
+  pistons.forEach(p => scene.add(p));
+
+  /* ═══════════════════════════════════════════════════════════
+     11. CAMSHAFT + ROCKER SPLASH
+     ═══════════════════════════════════════════════════════════ */
+  const camGroup = new THREE.Group();
+  camGroup.position.set(0, CAM_Y, 0);
+  scene.add(camGroup);
+
+  const camShaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.045, 0.045, BLOCK_W * 0.85, TUBE_SEGS),
+    mat.steelDark
+  );
+  camShaft.rotation.z = Math.PI/2;
+  camGroup.add(camShaft);
+
+  const camLobes = CYL_X.map(x => {
+    const lobe = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.085, 0.05), mat.steel);
+    lobe.position.set(x, 0.05, 0);
+    camGroup.add(lobe);
+    return lobe;
+  });
+
+  const rockerSplashPts = CYL_X.map(x => new THREE.Vector3(x, CAM_Y + 0.15, 0));
+
+  /* ═══════════════════════════════════════════════════════════
+     12. OIL-FLOW PARTICLE SYSTEM
+     ═══════════════════════════════════════════════════════════ */
+  const flowPath = [
+    new THREE.Vector3(pickupX, SUMP_BOT + 0.18, 0),
+    new THREE.Vector3(pickupX, CRANK_Y - 0.05, 0.15),
+    new THREE.Vector3(pickupX, CRANK_Y - 0.05, 0.32),
+    pumpOutPos.clone(),
+    new THREE.Vector3(pumpOutPos.x, pumpOutPos.y, filterInPos.z),
+    filterInPos.clone(),
+    filterOutPos.clone(),
+    galleryEnd.clone(),
+    galleryStart.clone(),
+    new THREE.Vector3(-1.0, GALLERY_Y, 0.28),
+    new THREE.Vector3(-1.0, CRANK_Y, 0.28),
+    new THREE.Vector3(-0.4, GALLERY_Y, 0.28),
+    new THREE.Vector3(-0.4, CAM_Y, 0.28),
+    new THREE.Vector3(0.4, CAM_Y, 0.28),
+    new THREE.Vector3(0.4, GALLERY_Y, 0.28),
+    new THREE.Vector3(1.0, GALLERY_Y, 0.28),
+    new THREE.Vector3(1.0, CRANK_Y, 0.28),
+    new THREE.Vector3(0.3, CRANK_Y - 0.5, 0.1),
+    new THREE.Vector3(pickupX + 0.6, SUMP_TOP, 0.05),
+    new THREE.Vector3(pickupX, SUMP_BOT + 0.3, 0)
+  ];
+  const pathLen = flowPath.length;
+
+  const flowGeo = new THREE.SphereGeometry(0.022, 8, 6);
+  const flowMesh = new THREE.InstancedMesh(flowGeo, mat.oilDrop, PARTICLES);
+  scene.add(flowMesh);
+  const flowT = new Float32Array(PARTICLES);
+  for (let i=0;i<PARTICLES;i++) flowT[i] = (i / PARTICLES) * pathLen;
+
+  const _dm = new THREE.Object3D();
+  const _a = new THREE.Vector3(), _b = new THREE.Vector3();
+  function sampleFlowPath(t) {
+    t = ((t % pathLen) + pathLen) % pathLen;
+    const i0 = Math.floor(t) % pathLen;
+    const i1 = (i0 + 1) % pathLen;
+    const f = t - Math.floor(t);
+    _a.copy(flowPath[i0]); _b.copy(flowPath[i1]);
+    return _a.lerp(_b, f);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     13. LABELS
+     ═══════════════════════════════════════════════════════════ */
+  const labelDefs = [
+    { id:'sump',     text:'Oil sump',            pos:new THREE.Vector3(0.0, SUMP_BOT + 0.05, panD/2 + 0.05) },
+    { id:'pickup',   text:'Pickup tube & strainer', pos:new THREE.Vector3(pickupX, SUMP_BOT + 0.3, 0.15) },
+    { id:'pump',     text:'Oil pump',            pos:new THREE.Vector3(pickupX, CRANK_Y - 0.05, 0.5) },
+    { id:'relief',   text:'Pressure-relief valve', pos:new THREE.Vector3(pickupX + 0.6, CRANK_Y - 0.05, 0.5) },
+    { id:'filter',   text:'Oil filter',          pos:new THREE.Vector3(1.75, CRANK_Y + 0.15, 0.55) },
+    { id:'gallery',  text:'Main oil gallery',    pos:new THREE.Vector3(0.0, GALLERY_Y, 0.5) },
+    { id:'mainbrg',  text:'Main bearing',        pos:new THREE.Vector3(1.0, CRANK_Y, 0.2) },
+    { id:'rodbrg',   text:'Connecting-rod bearing', pos:new THREE.Vector3(-0.75, CRANK_Y + 0.15, 0.2) },
+    { id:'piston',   text:'Piston & rings',      pos:new THREE.Vector3(0.75, 0.55, 0.0) },
+    { id:'camshaft', text:'Camshaft',            pos:new THREE.Vector3(0.0, CAM_Y + 0.1, -0.2) }
+  ];
+  labelDefs.forEach(d => labels.add(d.id, d.text));
+
+  /* ═══════════════════════════════════════════════════════════
+     14. UI WIRING
+     ═══════════════════════════════════════════════════════════ */
+  let runClock = 0;
+  Base.wireCommonUI(state, { onReset: () => { runClock = 0; } });
+  Base.wirePanelToggle();
+
+  const eduPanel = document.getElementById('edu-panel');
+  document.getElementById('panel-toggle').onclick = (e) => {
+    e.stopPropagation();
+    if (document.body.classList.contains('embedded')) {
+      eduPanel.classList.toggle('expanded');
+      const expanded = eduPanel.classList.contains('expanded');
+      e.currentTarget.setAttribute('aria-expanded', String(expanded));
+      e.currentTarget.querySelector('svg').style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+    } else {
+      const body = document.getElementById('panel-body');
+      const hidden = body.style.display === 'none';
+      body.style.display = hidden ? 'block' : 'none';
+      e.currentTarget.querySelector('svg').style.transform = hidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+    }
+  };
+  document.getElementById('panel-head').addEventListener('click', (e) => {
+    if (!document.body.classList.contains('embedded')) return;
+    if (e.target.closest('#panel-toggle')) return;
+    eduPanel.classList.toggle('expanded');
+    const expanded = eduPanel.classList.contains('expanded');
+    document.getElementById('panel-toggle').setAttribute('aria-expanded', String(expanded));
+    document.querySelector('#panel-toggle svg').style.transform = expanded ? 'rotate(180deg)' : 'rotate(0deg)';
+  });
+  document.getElementById('lube-reset').addEventListener('click', () => { runClock = 0; });
+
+  /* Gauge tick marks (drawn once) */
+  (function drawTicks(){
+    const g = document.getElementById('lube-ticks');
+    const svgNS = 'http://www.w3.org/2000/svg';
+    for (let i=0;i<=10;i++){
+      const a = (-135 + i*27) * DEG;
+      const r1 = 44, r2 = i % 5 === 0 ? 36 : 40;
+      const x1 = Math.sin(a)*r1, y1 = -Math.cos(a)*r1;
+      const x2 = Math.sin(a)*r2, y2 = -Math.cos(a)*r2;
+      const line = document.createElementNS(svgNS, 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('class', 'lg-tick' + (i<=1 ? ' hi' : i>=3 && i<=7 ? ' ok' : ''));
+      g.appendChild(line);
+    }
+  })();
+
+  /* ═══════════════════════════════════════════════════════════
+     15. BRIDGE
+     ═══════════════════════════════════════════════════════════ */
+  const bridge = Base.createBridge('lubrication', (d) => {
+    if (d.type !== 'command') return;
+    switch (d.action) {
+      case 'setPlaying': state.playing    = !!d.value; break;
+      case 'setSpeed':   state.speedMul   = +d.value;  break;
+      case 'setLabels':  state.showLabels = !!d.value; break;
+      case 'setGas':     state.showGas    = !!d.value; break;
+      case 'reset':      runClock = 0; break;
+    }
+  });
+  bridge.ready();
+  bridge.setStatus('Lubrication', '#f59e0b');
+
+  /* ═══════════════════════════════════════════════════════════
+     16. KINEMATICS + SIMULATION
+     ═══════════════════════════════════════════════════════════ */
+  const pressureEl = document.getElementById('lube-pressure');
+  const tempEl     = document.getElementById('lube-temp');
+  const pumpRpmEl  = document.getElementById('lube-pump-rpm');
+  const lcPressure = document.getElementById('lc-pressure');
+  const lcTemp     = document.getElementById('lc-temp');
+  const lcPump     = document.getElementById('lc-pump');
+  const needleEl   = document.getElementById('lube-needle');
+
+  let crankAngle = 0;
+
+  function updateSim(dt) {
+    const running = state.playing;
+    const speed = state.speedMul;
+
+    if (running) {
+      crankAngle += dt * speed * 6.2;
+      runClock   += dt * speed;
+    }
+
+    crankGroup.rotation.z = crankAngle;
+    camGroup.rotation.z   = crankAngle * 0.5;
+    pumpGroup.children[1] && (gearA.rotation.z = crankAngle * 1.4);
+    gearB.rotation.z = -crankAngle * 1.4 + Math.PI/10;
+
+    CYL_X.forEach((cx, i) => {
+      const thr = throws[i];
+      const a = crankAngle + (i * Math.PI);
+      thr.group.rotation.x = 0; // keep throw geometry static in local space
+      const pinWorld = new THREE.Vector3(cx, Math.sin(a)*CRANK_R, Math.cos(a)*CRANK_R + 0);
+      thr.group.position.set(cx, Math.sin(a)*CRANK_R, Math.cos(a)*CRANK_R);
+
+      const pistonY = CRANK_Y + Math.cos(a)*CRANK_R +
+        Math.sqrt(Math.max(0, ROD_LEN*ROD_LEN - Math.pow(Math.sin(a)*CRANK_R,2)));
+
+      pistons[i].position.set(cx, pistonY, 0);
+
+      const rod = conRods[i];
+      const p0 = new THREE.Vector3(cx, CRANK_Y + Math.sin(a)*CRANK_R, Math.cos(a)*CRANK_R);
+      const p1 = new THREE.Vector3(cx, pistonY - 0.05, 0);
+      const dir = new THREE.Vector3().subVectors(p1, p0);
+      const len = dir.length();
+      rod.group.position.copy(p0).addScaledVector(dir, 0.5);
+      rod.group.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+      rod.rod.scale.set(1, len, 1);
+      rod.bigEnd.position.y = -len/2;
+      rod.smallEnd.position.y = len/2;
+    });
+
+    /* Pressure / temperature model */
+    const pumpRpm = Math.max(0, speed) * 900 * 1.4;
+    const warmup = Math.min(1, runClock / 22);
+    const viscosityFactor = 1.4 - 0.6 * warmup;
+    const targetPressure = running ? (12 + pumpRpm * 0.028 * viscosityFactor) : Math.max(4, 12 - runClock*2);
+    const cappedPressure = Math.min(78, targetPressure);
+    const targetTemp = 20 + 68 * warmup * (running ? 1 : 0.4);
+
+    updateSim._p = updateSim._p ?? 20;
+    updateSim._t = updateSim._t ?? 20;
+    updateSim._p += (cappedPressure - updateSim._p) * Math.min(1, dt*1.6);
+    updateSim._t += (targetTemp - updateSim._t) * Math.min(1, dt*0.4);
+
+    const psi = Math.round(updateSim._p);
+    const tempC = Math.round(updateSim._t);
+    const rpmShown = Math.round(pumpRpm);
+
+    pressureEl.textContent = psi + ' psi';
+    tempEl.textContent     = tempC + '°C';
+    pumpRpmEl.textContent  = rpmShown + ' rpm';
+    lcPressure.textContent = psi + ' psi';
+    lcTemp.textContent     = tempC + '°C';
+    lcPump.textContent     = rpmShown + ' rpm';
+
+    const overHi = psi < 15 || psi > 65;
+    lcPressure.classList.toggle('warn', overHi);
+    pressureEl.parentElement && pressureEl.classList && pressureEl.classList.toggle('warn', overHi);
+
+    /* Needle: -135deg (0 psi) .. +135deg (80 psi) */
+    const needleDeg = -135 + Math.min(1, psi/80) * 270;
+    needleEl.style.transform = 'rotate(' + needleDeg.toFixed(1) + 'deg)';
+
+    /* Relief valve opens above ~62 psi */
+    const reliefOpen = psi > 62;
+    reliefBall.position.x = reliefOpen ? 0.03 : 0;
+    reliefCoils.forEach((c, i) => { c.position.x = (reliefOpen ? 0.075 : 0.06) + i*0.014; });
+
+    /* Bypass ball rises when cold (low warmup) and running */
+    bypassBall.position.y = running ? (-0.05 + (1-warmup)*0.09) : -0.05;
+
+    /* Oil pool level nudges very slightly with pump activity for a "live" feel */
+    oilSurface.position.y = OIL_LEVEL - (running ? 0.01*Math.sin(runClock*2) : 0);
+
+    /* Flow particles */
+    flowMesh.visible = state.showGas;
+    if (state.showGas) {
+      const flowSpeed = running ? speed * 3.2 : 0;
+      for (let i=0;i<PARTICLES;i++){
+        flowT[i] += dt * flowSpeed;
+        const p = sampleFlowPath(flowT[i]);
+        _dm.position.copy(p);
+        const s = 0.6 + 0.4*Math.min(1, speed);
+        _dm.scale.setScalar(s);
+        _dm.updateMatrix();
+        flowMesh.setMatrixAt(i, _dm.matrix);
+      }
+      flowMesh.instanceMatrix.needsUpdate = true;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     17. RENDER LOOP
+     ═══════════════════════════════════════════════════════════ */
+  const clock = new THREE.Clock();
+  let frame = 0;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    frame++;
+    const dt = Math.min(clock.getDelta(), 0.05);
+
+    updateSim(dt);
+
+    if (state.showLabels && frame % 2 === 0) {
+      labelDefs.forEach(d => labels.project(d.id, d.pos, camera, wrap));
+    } else if (!state.showLabels) {
+      labels.hideAll();
+    }
+
+    const t = performance.now() * 0.001;
+    amberLight.intensity = 50 + Math.sin(t*1.3) * 8;
+    cyanLight.intensity  = 32 + Math.sin(t*1.0 + 1.4) * 6;
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  updateSim(0);
+  animate();
+  </script>
+</body>
+</html>
