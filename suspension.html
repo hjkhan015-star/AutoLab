@@ -105,7 +105,7 @@
   #road-info{
     position:fixed;bottom:calc(84px + env(safe-area-inset-bottom, 0px));
     left:50%;transform:translateX(-50%);
-    display:flex;gap:6px;padding:5px 10px;
+    display:flex;gap:8px;padding:5px 10px;
     background:rgba(11,14,20,.72);border:1px solid rgba(255,255,255,.08);
     border-radius:10px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
     font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
@@ -117,6 +117,7 @@
   #road-info .val.pot{color:#f87171}
   #road-info .val.bump{color:#fbbf24}
   #road-info .val.warn{color:#ef4444}
+  #road-info .next{opacity:.65}
 
   body.embedded {
     --shell-header-h: calc(64px + env(safe-area-inset-top, 0px));
@@ -221,6 +222,7 @@
   <div id="road-info">
     <span class="label">Road:</span>
     <span class="val" id="road-val">Flat</span>
+    <span class="label next" id="road-next-label"></span>
   </div>
 
   <div id="hint">Drag to orbit · Scroll to zoom · Tap SUSP button to toggle · Watch leaf springs flex through the mixed terrain</div>
@@ -262,15 +264,14 @@
   const I_ROLL = 0.9;
   const K_SPRING = 30;
   const C_DAMP = 2.8;
-  const K_SPRING_R = 26;  // rear slightly softer
+  const K_SPRING_R = 26;
 
   /* ═══════════════════════════════════════════════════════════
      ROAD — mixed terrain features, periodic 64 units
      ═══════════════════════════════════════════════════════════ */
   const ROAD_LENGTH = 64;
-  const ROAD_HALF_WIDTH = 1.20;  // full width 2.40
+  const ROAD_HALF_WIDTH = 1.20;
 
-  /* Feature list. mode: 'both' | 'left' | 'right' | 'center' */
   const FEATURES = [
     { x:  3.0, w: 0.9, h:  0.10, mode: 'both',  type: 'bump' },
     { x:  6.5, w: 1.4, h:  0.20, mode: 'both',  type: 'bump' },
@@ -323,7 +324,6 @@
     return h;
   }
 
-  /* Return the type of feature nearest to a given x (for HUD) */
   function roadFeatureAt(x) {
     x = ((x % ROAD_LENGTH) + ROAD_LENGTH) % ROAD_LENGTH;
     let best = null, bestD = 2.5;
@@ -335,6 +335,18 @@
       if (d < bestD) { bestD = d; best = f; }
     }
     return best;
+  }
+
+  /* Nearest upcoming feature strictly ahead of the front axle */
+  function nextRoadFeatureAt(x) {
+    x = ((x % ROAD_LENGTH) + ROAD_LENGTH) % ROAD_LENGTH;
+    let best = null, bestD = 1e9;
+    for (const f of FEATURES) {
+      let dx = f.x - x;
+      if (dx < 0) dx += ROAD_LENGTH;
+      if (dx < bestD) { bestD = dx; best = f; }
+    }
+    return { feature: best, distance: bestD };
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -363,7 +375,6 @@
   scene.add(new THREE.Mesh(skyGeo, skyMat));
 
   const matAsphalt  = new THREE.MeshStandardMaterial({ color: 0x24272d, roughness: 0.96, metalness: 0.02 });
-  const matAsphaltDirty = new THREE.MeshStandardMaterial({ color: 0x2c2822, roughness: 0.98, metalness: 0.02 });
   const matEdgeLine = new THREE.MeshStandardMaterial({ color: 0xc7c9cc, roughness: 0.75, metalness: 0.05 });
   const matCenterLine = new THREE.MeshStandardMaterial({ color: 0xd9a13b, roughness: 0.7 });
   const matRubber   = new THREE.MeshStandardMaterial({ color: 0x1b1e23, roughness: 0.92, metalness: 0.05 });
@@ -431,12 +442,11 @@
   roadMesh.receiveShadow = true;
   world.add(roadMesh);
 
-  /* Second copy for seamless wrap-around */
   const roadMesh2 = new THREE.Mesh(roadGeo, matAsphalt);
   roadMesh2.receiveShadow = true;
   world.add(roadMesh2);
 
-  /* Center dashes + edge lines drawn as instanced/boxes on top of road */
+  /* Center dashes */
   const dashesGroup = new THREE.Group();
   world.add(dashesGroup);
   for (let x = 0; x < ROAD_LENGTH; x += 2.0) {
@@ -446,7 +456,61 @@
     dashesGroup.add(dash);
   }
 
-  /* Shoulders — dark strips beside the road */
+  /* ═══════════════════════════════════════════════════════════
+     ROAD FEATURE MARKERS
+     Colored chevrons painted on both shoulders at every feature,
+     so bumps/potholes are visible before impact. Two copies (at
+     x and x + ROAD_LENGTH) for seamless wrap-around scroll.
+     ═══════════════════════════════════════════════════════════ */
+  const markersGroup = new THREE.Group();
+  world.add(markersGroup);
+
+  const MARKER_COLORS = {
+    bump:   0xfbbf24,   // amber — uplift
+    pot:    0xef4444,   // red — depression
+    ripple: 0x94a3b8,   // gray — washboard
+    wave:   0xa78bfa    // soft violet — smooth wave
+  };
+
+  FEATURES.forEach(f => {
+    const color = MARKER_COLORS[f.type] || 0xfbbf24;
+    const mat = new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity: 0.78, side: THREE.DoubleSide
+    });
+
+    [0, ROAD_LENGTH].forEach(offset => {
+      /* Which sides to mark based on feature mode */
+      const sides = f.mode === 'left'  ? [-1] :
+                    f.mode === 'right' ? [ 1] :
+                                         [ 1, -1];
+      sides.forEach(side => {
+        /* Chevron rendered as a small vertical plane facing inward */
+        const chev = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.22), mat);
+        chev.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+        const yEdge = roadHeight(f.x, side * ROAD_HALF_WIDTH) + 0.13;
+        chev.position.set(
+          f.x + offset,
+          yEdge,
+          side * (ROAD_HALF_WIDTH + 0.04)
+        );
+        markersGroup.add(chev);
+      });
+
+      /* A centerline color dot on the feature (helps see the type) */
+      if (f.mode === 'both') {
+        const strip = new THREE.Mesh(
+          new THREE.PlaneGeometry(Math.max(0.35, f.w * 0.55), 0.14),
+          mat
+        );
+        strip.rotation.x = -Math.PI / 2;
+        const yMid = roadHeight(f.x, 0) + 0.02;
+        strip.position.set(f.x + offset, yMid, 0);
+        markersGroup.add(strip);
+      }
+    });
+  });
+
+  /* Shoulders */
   for (let side = -1; side <= 1; side += 2) {
     const sh = new THREE.Mesh(
       new THREE.BoxGeometry(ROAD_LENGTH, 0.05, 1.5),
@@ -518,10 +582,13 @@
     const bedFront = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.35, 1.5), M.matPiston);
     bedFront.position.set(-0.02, 1.85, 0); bodyG.add(bedFront);
 
-    /* Front spring upper mounts */
+    /* Front spring upper mount — plate + arm + ring, one set per side */
     [-0.38, 0.38].forEach(z => {
       const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.30, 0.05, 20), M.matIronDS);
       plate.position.set(XF - 0.15, SPRING_SEAT_Y, z); bodyG.add(plate);
+      /* Arm connects the plate to the chassis rail */
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.14, 0.34), M.matIronDS);
+      arm.position.set(XF - 0.15, 1.42, Math.sign(z) * 0.50); bodyG.add(arm);
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.025, 8, 22), M.matMetal);
       ring.rotation.x = Math.PI / 2; ring.position.set(XF - 0.15, SPRING_SEAT_Y, z);
       bodyG.add(ring);
@@ -774,7 +841,7 @@
 
     vehicle.add(group);
     suspParts.push(group);
-    const state = { group, leavesGroup, eyeF, eyeR, leafData, leafSx: 1, leafSy: 1, z: zPos };
+    const state = { group, leavesGroup, eyeF, eyeR, leafData, leafSx: 1, leafSy: 1, z: zPos, prevSy: 1 };
     leafSprings.push(state);
     return state;
   }
@@ -929,8 +996,8 @@
      ═══════════════════════════════════════════════════════════ */
   const state = Base.createUIState();
   let withSusp = true;
-  let suspBlend = 1;                 // 0 = rigid, 1 = suspended
-  const SUSP_BLEND_RATE = 2.8;        // ~0.35s full transition
+  let suspBlend = 1;
+  const SUSP_BLEND_RATE = 2.8;
 
   let roadScroll = 0;
   let h = 0, phi = 0, theta = 0;
@@ -946,8 +1013,8 @@
   let shakeAmt = 0;
   const shakeOffset = new THREE.Vector3();
   let lastImpactT = 0;
+  let lastBottomOutT = 0;
 
-  /* Shock display state (smoothed) */
   let shockFrontSmooth = 0, shockRearSmooth = 0;
 
   const SLOWMO_MULT = 0.08;
@@ -971,6 +1038,7 @@
   const btnSuspToggle = document.getElementById('btn-susp-toggle');
   const suspBtnLabel = document.getElementById('susp-btn-label');
   const roadValEl = document.getElementById('road-val');
+  const roadNextLabelEl = document.getElementById('road-next-label');
 
   let flashTimeout = 0;
   function flashImpact(power) {
@@ -987,15 +1055,10 @@
   const DESC_WITHOUT = '<strong>Without suspension.</strong> Rigid links connect the axles straight to the chassis. Every bump hits the frame directly — violent jolts, poor road holding, and a bone-shaking ride. High speed on rough ground will trigger a crash.';
 
   /* ═══════════════════════════════════════════════════════════
-     LABELS
+     LABELS — suspension-specific only. Chassis, cabin, bed,
+     axles and wheels are self-evident and would just add clutter.
      ═══════════════════════════════════════════════════════════ */
   const labelDefs = [
-    { id:'chassis', text:'Chassis Frame', pos:()=>new THREE.Vector3(1.75, 1.55 + h + 0.45, 0.55) },
-    { id:'cabin',   text:'Cabin',         pos:()=>new THREE.Vector3(1.35, 2.60 + h, 0.35) },
-    { id:'bed',     text:'Cargo Bed',     pos:()=>new THREE.Vector3(-1.35, 2.05 + h, 0.45) },
-    { id:'faxle',   text:'Front Axle',    pos:()=>new THREE.Vector3(XF + 0.85, axleYf + 0.15, 0.75) },
-    { id:'raxle',   text:'Rear Axle',     pos:()=>new THREE.Vector3(XR - 0.80, axleYr - 0.05, 0.85) },
-    { id:'wheel',   text:'Wheel',         pos:()=>new THREE.Vector3(XF + 0.40, axleYf + 0.05, 1.25) },
     { id:'coil',    text:'Coil Spring', mech:true,
       pos:()=>new THREE.Vector3(XF - 0.85, axleYf + 0.42, 0.70) },
     { id:'damper',  text:'Shock Absorber (Damper)', mech:true,
@@ -1059,6 +1122,7 @@
     impactFlashEl.style.opacity = '0';
     impactWarnEl.classList.remove('on');
     _firstFrame = true;
+    leafSprings.forEach(la => { la.prevSy = 1; });
     dustData.forEach(p => { p.life = 0; });
     sparkData.forEach(s => { s.life = 0; });
   }
@@ -1107,7 +1171,6 @@
     const v = 2.4 * (slowMo ? SLOWMO_MULT : state.speedMul);
     roadScroll += v * dt;
 
-    /* Terrain height at all 4 wheel contact points */
     const lXf = XF + roadScroll;
     const lXr = XR + roadScroll;
     const yfL = roadHeight(lXf, -TRACK_W);
@@ -1115,13 +1178,11 @@
     const yrL = roadHeight(lXr, -TRACK_W);
     const yrR = roadHeight(lXr,  TRACK_W);
 
-    /* Wheel vertical velocities */
     const dvfL = _firstFrame ? 0 : (yfL - prevYfL) / dt;
     const dvfR = _firstFrame ? 0 : (yfR - prevYfR) / dt;
     const dvrL = _firstFrame ? 0 : (yrL - prevYrL) / dt;
     const dvrR = _firstFrame ? 0 : (yrR - prevYrR) / dt;
 
-    /* Rigid target pose (chassis follows average axle heights) */
     const avgAxleF = (yfL + yfR) / 2;
     const avgAxleR = (yrL + yrR) / 2;
     const rigidH = (avgAxleF + avgAxleR) / 2;
@@ -1130,31 +1191,25 @@
     const rigidRollR = -Math.atan2(yrR - yrL, 2 * TRACK_W);
     const rigidTheta = (rigidRollF + rigidRollR) / 2;
 
-    /* Smoothly blend toward the target suspension mode */
     const blendTarget = withSusp ? 1 : 0;
     suspBlend += (blendTarget - suspBlend) * Math.min(1, dt * SUSP_BLEND_RATE);
     if (Math.abs(suspBlend - blendTarget) < 0.005) suspBlend = blendTarget;
 
-    /* ----- Spring mass dynamics ----- */
-    /* Body pose Y at each wheel corner (displacement) */
     const fYFL = h + phi * XF + theta * (-TRACK_W);
     const fYFR = h + phi * XF + theta * ( TRACK_W);
     const fYRL = h + phi * XR + theta * (-TRACK_W);
     const fYRR = h + phi * XR + theta * ( TRACK_W);
 
-    /* Deflections */
     const defFL = yfL - fYFL;
     const defFR = yfR - fYFR;
     const defRL = yrL - fYRL;
     const defRR = yrR - fYRR;
 
-    /* Deflection derivatives (for damper force) */
     const dfFL = _firstFrame ? 0 : (defFL - prevDefFL) / dt;
     const dfFR = _firstFrame ? 0 : (defFR - prevDefFR) / dt;
     const dfRL = _firstFrame ? 0 : (defRL - prevDefRL) / dt;
     const dfRR = _firstFrame ? 0 : (defRR - prevDefRR) / dt;
 
-    /* Spring forces (only applied when suspended) */
     const FFL = (K_SPRING * defFL + C_DAMP * dfFL) * suspBlend;
     const FFR = (K_SPRING * defFR + C_DAMP * dfFR) * suspBlend;
     const FRL = (K_SPRING_R * defRL + C_DAMP * dfRL) * suspBlend;
@@ -1164,7 +1219,6 @@
     const Mpitch = FFL * XF + FFR * XF + FRL * XR + FRR * XR;
     const Mroll  = TRACK_W * (FFL - FFR + FRL - FRR);
 
-    /* Integrate */
     hv += (Fsum / M_BODY) * dt;
     phiv += (Mpitch / I_PITCH) * dt;
     thetav += (Mroll / I_ROLL) * dt;
@@ -1172,12 +1226,10 @@
     phi += phiv * dt;
     theta += thetav * dt;
 
-    /* Clamp */
     phi = clamp(phi, -0.16, 0.16);
     theta = clamp(theta, -0.12, 0.12);
     h = clamp(h, -0.25, 0.30);
 
-    /* Blend output toward rigid target as suspBlend → 0 */
     if (suspBlend < 1) {
       const w = 1 - suspBlend;
       h = h * suspBlend + rigidH * w;
@@ -1188,7 +1240,6 @@
       thetav *= suspBlend;
     }
 
-    /* Rigid mode chatter overlay */
     let chatter = 0;
     if (suspBlend < 0.98) {
       const rigidAmt = 1 - suspBlend;
@@ -1203,7 +1254,6 @@
 
     const hVis = h + chatter;
 
-    /* Axle heights (rigid beams) */
     axleYf = (yfL + yfR) / 2 + RW;
     axleYr = (yrL + yrR) / 2 + RW;
     rollF = rigidRollF;
@@ -1218,7 +1268,6 @@
     bodyG.rotation.z = phi;
     bodyG.rotation.x = theta;
 
-    /* Wheels spin */
     const spin = (v * dt) / RW;
     wheelSpinners.forEach(s => { s.rotation.z -= spin; });
 
@@ -1227,13 +1276,10 @@
     roadMesh.position.x = -scrollMod;
     roadMesh2.position.x = -scrollMod + ROAD_LENGTH;
     dashesGroup.position.x = -scrollMod;
-    /* Second dash group on the tail */
-    dashesGroup.children.forEach(d => {}); // noop
-
-    /* ----- Visual springs ----- */
+    markersGroup.position.x = -scrollMod;
 
     /* Front coil-overs */
-    [coiloverL, coiloverR].forEach((co, i) => {
+    [coiloverL, coiloverR].forEach(co => {
       const zs = co.userData.z;
       const plateY = SPRING_SEAT_Y + hVis + phi * (XF - 0.15) + theta * zs;
       const baseY = axleYf + 0.19 - Math.sin(rollF) * zs;
@@ -1256,8 +1302,8 @@
       d.set(clamp(seatY - baseY, 0.40, 1.05));
     });
 
-    /* Leaf springs */
-    const asmY = axleYr - 0.10;
+    /* Leaf springs + bottom-out detection */
+    const now = performance.now();
     leafSprings.forEach(la => {
       const zs = la.z;
       const bodyY = 0.75 + hVis + phi * (XR - EYE_LOCAL) + theta * zs;
@@ -1265,6 +1311,15 @@
       la.group.position.set(XR, axleAtZ - 0.10, zs);
       la.leafSy = clamp((bodyY - (axleAtZ - 0.10)) / EYE_RISE, 0.35, 1.25);
       la.leafSx = 1 + 0.16 * (1 - la.leafSy);
+
+      /* Bottom-out: leaf fully compressed → small spark at U-bolt */
+      if (la.leafSy <= 0.36 && la.prevSy > 0.36 && now - lastBottomOutT > 90) {
+        lastBottomOutT = now;
+        const zSide = zs > 0 ? 1 : -1;
+        spawnSparks(XR, axleAtZ + 0.05, zs, 5, 0.8);
+      }
+      la.prevSy = la.leafSy;
+
       const eyeX = EYE_LOCAL * la.leafSx;
       const eyeY = EYE_RISE * la.leafSy;
       const P0 = { x: -eyeX, y: eyeY };
@@ -1315,13 +1370,12 @@
     if (suspBlend < 0.5) {
       const rigidAmt = 1 - suspBlend;
       const accel = Math.abs((defFL + defFR + defRL + defRR) / 4) * rigidAmt * 30;
-      const now = performance.now();
-
+      const tnow = performance.now();
       const rumble = clamp(v / 2.4, 0, 1.4) * 0.008 * rigidAmt;
       shakeAmt = Math.max(shakeAmt, rumble);
 
-      if (accel > 3.5 && now - lastImpactT > 110) {
-        lastImpactT = now;
+      if (accel > 3.5 && tnow - lastImpactT > 110) {
+        lastImpactT = tnow;
         const power = clamp(accel / 8, 0.3, 1.6);
         const n = Math.round(6 + state.speedMul * 8 * power);
         spawnSparks(XF, axleYf - 0.15,  0.68, n, power);
@@ -1333,7 +1387,6 @@
       }
     }
 
-    /* Save state for next frame */
     prevDefFL = defFL; prevDefFR = defFR;
     prevDefRL = defRL; prevDefRR = defRR;
     prevYfL = yfL; prevYfR = yfR;
@@ -1345,7 +1398,6 @@
      SHOCK METERS + DANGER
      ═══════════════════════════════════════════════════════════ */
   function updateShockMeters(dt) {
-    /* Front shock = average |vertical acceleration| at front axle */
     const frontImpact = clamp(
       (Math.abs(prevDefFL) + Math.abs(prevDefFR)) / 2 * (withSusp ? 0.12 : 1.1),
       0, 1
@@ -1372,7 +1424,6 @@
       shockRearFillEl.style.background = colR;
     }
 
-    /* Arrow */
     const maxShock = Math.max(shockFrontSmooth, shockRearSmooth);
     arrow.scale.y = 0.25 + 1.55 * maxShock;
     if (maxShock < 0.28) matArrow.color.set(0x22c55e);
@@ -1407,19 +1458,36 @@
     }
   }
 
-  /* Road info HUD */
+  /* Road info HUD — current + next hazard */
   let roadInfoTimer = 0;
   function updateRoadInfo(dt) {
     roadInfoTimer -= dt;
     if (roadInfoTimer > 0) return;
-    roadInfoTimer = 0.15;
+    roadInfoTimer = 0.12;
 
-    const f = roadFeatureAt(XF + roadScroll);
-    if (!f) { roadValEl.textContent = 'Flat'; roadValEl.className = 'val'; return; }
-    const lateralLabel = f.mode === 'left' ? 'L wheel' : f.mode === 'right' ? 'R wheel' : 'Both';
-    const typeLabel = f.type === 'bump' ? 'Bump' : f.type === 'pot' ? 'Pothole' : f.type === 'ripple' ? 'Washboard' : 'Wave';
-    roadValEl.textContent = typeLabel + ' · ' + lateralLabel;
-    roadValEl.className = 'val ' + (f.type === 'pot' ? 'pot' : 'bump');
+    const xNow = XF + roadScroll;
+    const f = roadFeatureAt(xNow);
+    if (!f) {
+      roadValEl.textContent = 'Flat';
+      roadValEl.className = 'val';
+    } else {
+      const lateral = f.mode === 'left' ? 'L wheel' : f.mode === 'right' ? 'R wheel' : 'Both';
+      const type = f.type === 'bump' ? 'Bump' : f.type === 'pot' ? 'Pothole' : f.type === 'ripple' ? 'Washboard' : 'Wave';
+      roadValEl.textContent = type + ' · ' + lateral;
+      roadValEl.className = 'val ' + (f.type === 'pot' ? 'pot' : 'bump');
+    }
+
+    /* Upcoming feature preview */
+    const nx = nextRoadFeatureAt(xNow + 2);
+    if (nx && nx.feature && nx.distance < 8) {
+      const type = nx.feature.type === 'bump' ? 'Bump' :
+                   nx.feature.type === 'pot' ? 'Pothole' :
+                   nx.feature.type === 'ripple' ? 'Washboard' : 'Wave';
+      const lat = nx.feature.mode === 'left' ? 'L' : nx.feature.mode === 'right' ? 'R' : 'Both';
+      roadNextLabelEl.textContent = `→ ${type} (${lat}) in ${nx.distance.toFixed(1)}`;
+    } else {
+      roadNextLabelEl.textContent = '';
+    }
   }
 
   /* ═══════════════════════════════════════════════════════════
