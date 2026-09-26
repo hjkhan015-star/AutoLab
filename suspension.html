@@ -23,72 +23,61 @@
     font-size:11px;font-weight:700;opacity:.8;margin-left:4px;
   }
 
-  #view-mode{display:flex;gap:6px;margin-top:10px}
-  .vm-btn{
-    flex:1;padding:7px 8px;border-radius:9px;
-    border:1px solid rgba(255,255,255,.12);
-    background:rgba(255,255,255,.05);color:#9aa7b9;
-    font-size:11px;font-weight:700;letter-spacing:.03em;
-    cursor:pointer;font-family:inherit;
-    transition:background .2s,color .2s,border-color .2s,box-shadow .2s;
-  }
-  .vm-btn:hover{background:rgba(255,255,255,.10)}
-  .vm-btn.active{
-    background:#38bdf8;color:#0b0e14;border-color:#38bdf8;
-    box-shadow:0 0 12px rgba(56,189,248,.35);
-  }
-  #btn-without.active{
-    background:#ef4444;border-color:#ef4444;
-    box-shadow:0 0 12px rgba(239,68,68,.4);
-  }
-
-  #shock-meter{margin-top:11px}
+  #shock-grid{display:flex;gap:10px;margin-top:11px}
+  .shock-col{flex:1;min-width:0}
   .shock-head{
     display:flex;justify-content:space-between;
-    font-size:10.5px;color:#9aa7b9;font-weight:600;
+    font-size:10.5px;color:#9aa7b9;font-weight:700;
+    letter-spacing:.03em;text-transform:uppercase;
   }
-  #shock-pct{
+  .shock-head b{
     font-family:ui-monospace,Menlo,Consolas,monospace;
     color:#e5e7eb;font-weight:800;
   }
-  #shock-bar{
+  .shock-bar{
     height:8px;border-radius:6px;
     background:rgba(255,255,255,.08);margin-top:5px;overflow:hidden;
   }
-  #shock-fill{
+  .shock-fill{
     height:100%;width:0%;background:#22c55e;border-radius:6px;
     transition:width .12s linear,background .25s;
   }
-  #shock-verdict{font-size:10px;color:#7f8da0;margin-top:4px}
 
-  /* ─── Danger meter ─────────────────────────────────── */
-  #danger-meter{
-    margin-top:11px;
-    opacity:.4;transition:opacity .3s;
-  }
+  #danger-meter{margin-top:11px;opacity:.4;transition:opacity .3s}
   #danger-meter.active{opacity:1}
-  .dm-head{
-    display:flex;justify-content:space-between;
-    font-size:10.5px;color:#9aa7b9;font-weight:600;
-  }
-  #danger-pct{
-    font-family:ui-monospace,Menlo,Consolas,monospace;
-    color:#e5e7eb;font-weight:800;
-  }
-  #danger-bar{
-    height:8px;border-radius:6px;
-    background:rgba(255,255,255,.08);margin-top:5px;overflow:hidden;
-  }
-  #danger-fill{
-    height:100%;width:0%;background:#22c55e;border-radius:6px;
-    transition:width .12s linear,background .25s;
-  }
+  .dm-head{display:flex;justify-content:space-between;font-size:10.5px;color:#9aa7b9;font-weight:600}
+  #danger-pct{font-family:ui-monospace,Menlo,Consolas,monospace;color:#e5e7eb;font-weight:800}
+  #danger-bar{height:8px;border-radius:6px;background:rgba(255,255,255,.08);margin-top:5px;overflow:hidden}
+  #danger-fill{height:100%;width:0%;background:#22c55e;border-radius:6px;transition:width .12s linear,background .25s}
   #danger-verdict{font-size:10px;color:#7f8da0;margin-top:4px}
-  #danger-meter.critical #danger-fill{
-    animation:dpulse .45s ease-in-out infinite alternate;
-  }
+  #danger-meter.critical #danger-fill{animation:dpulse .45s ease-in-out infinite alternate}
   @keyframes dpulse{from{opacity:.55}to{opacity:1}}
   #danger-meter.critical .dm-head{color:#fca5a5}
+
+  #btn-susp-toggle{
+    padding:7px 13px !important;
+    font-size:11px !important;
+    font-weight:800 !important;
+    letter-spacing:.05em !important;
+    text-transform:uppercase !important;
+    border-radius:9px !important;
+    white-space:nowrap;
+    transition:all .2s !important;
+  }
+  #btn-susp-toggle.suspended{
+    background:rgba(56,189,248,.20) !important;
+    color:#38bdf8 !important;
+    border-color:rgba(56,189,248,.45) !important;
+    box-shadow:0 0 10px rgba(56,189,248,.35) !important;
+  }
+  #btn-susp-toggle.rigid{
+    background:rgba(239,68,68,.22) !important;
+    color:#f87171 !important;
+    border-color:rgba(239,68,68,.55) !important;
+    box-shadow:0 0 12px rgba(239,68,68,.45) !important;
+    animation:rigidPulse .8s ease-in-out infinite alternate;
+  }
+  @keyframes rigidPulse{from{box-shadow:0 0 8px rgba(239,68,68,.35)}to{box-shadow:0 0 18px rgba(239,68,68,.7)}}
 
   #btn-slowmo.active{
     background:#f97316;color:#0b0e14;
@@ -98,80 +87,68 @@
 
   #impact-flash{
     position:fixed;inset:0;pointer-events:none;z-index:8;
-    background:radial-gradient(ellipse at center,
-      transparent 35%,
-      rgba(239,68,68,.42) 100%);
-    opacity:0;
-    transition:opacity .12s ease-out;
+    background:radial-gradient(ellipse at center,transparent 35%,rgba(239,68,68,.42) 100%);
+    opacity:0;transition:opacity .12s ease-out;
   }
   #impact-warning{
-    position:fixed;top:18px;left:50%;
-    transform:translateX(-50%);
-    background:rgba(60,10,10,.95);
-    color:#fca5a5;
-    padding:8px 18px;
-    border-radius:10px;
-    font-weight:800;
-    font-size:12px;
-    letter-spacing:.06em;
+    position:fixed;top:18px;left:50%;transform:translateX(-50%);
+    background:rgba(60,10,10,.95);color:#fca5a5;
+    padding:8px 18px;border-radius:10px;
+    font-weight:800;font-size:12px;letter-spacing:.06em;
     border:1px solid rgba(239,68,68,.6);
     box-shadow:0 10px 30px rgba(239,68,68,.35);
-    opacity:0;
-    transition:opacity .18s;
-    z-index:9;
-    pointer-events:none;
-    text-transform:uppercase;
-    white-space:nowrap;
-    max-width:88vw;
+    opacity:0;transition:opacity .18s;z-index:9;pointer-events:none;
+    text-transform:uppercase;white-space:nowrap;max-width:88vw;
   }
   #impact-warning.on{opacity:1}
-  #impact-warning.crash{
-    background:rgba(80,5,5,.98);
-    font-size:14px;
-    padding:11px 22px;
-    animation:crashPulse .55s ease-in-out infinite alternate;
+
+  #road-info{
+    position:fixed;bottom:calc(84px + env(safe-area-inset-bottom, 0px));
+    left:50%;transform:translateX(-50%);
+    display:flex;gap:6px;padding:5px 10px;
+    background:rgba(11,14,20,.72);border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:#94a3b8;z-index:6;pointer-events:none;
+    transition:opacity .3s;
   }
-  @keyframes crashPulse{
-    from{box-shadow:0 10px 30px rgba(239,68,68,.35)}
-    to{box-shadow:0 10px 40px rgba(239,68,68,.85)}
-  }
+  #road-info .label{opacity:.6}
+  #road-info .val{color:#e5e7eb;font-family:ui-monospace,Menlo,Consolas,monospace}
+  #road-info .val.pot{color:#f87171}
+  #road-info .val.bump{color:#fbbf24}
+  #road-info .val.warn{color:#ef4444}
 
   body.embedded {
     --shell-header-h: calc(64px + env(safe-area-inset-top, 0px));
     --shell-pill-h: calc(64px + env(safe-area-inset-bottom, 0px));
   }
-  body.embedded #edu-panel {
-    position: absolute !important;
-    top: calc(var(--shell-header-h) + 10px) !important;
-    left: 12px !important;
-    right: 12px !important;
-    width: auto !important;
-    max-width: 420px !important;
-    border-radius: 14px !important;
-    z-index: 15 !important;
-    box-shadow: 0 12px 40px rgba(0,0,0,.55) !important;
+  body.embedded #edu-panel{
+    position:absolute !important;
+    top:calc(var(--shell-header-h) + 10px) !important;
+    left:12px !important;right:12px !important;width:auto !important;max-width:420px !important;
+    border-radius:14px !important;z-index:15 !important;
+    box-shadow:0 12px 40px rgba(0,0,0,.55) !important;
   }
-  body.embedded #edu-panel #panel-body {
-    display: none;
-    max-height: calc(100dvh - var(--shell-header-h) - var(--shell-pill-h) - 140px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+  body.embedded #edu-panel #panel-body{
+    display:none;
+    max-height:calc(100dvh - var(--shell-header-h) - var(--shell-pill-h) - 140px);
+    overflow-y:auto;overscroll-behavior:contain;
   }
-  body.embedded #edu-panel.expanded #panel-body { display: block; }
-  body.embedded #panel-head { padding: 12px 14px; }
-  body.embedded #module-title { font-size: 16px; }
-  body.embedded #module-kicker { font-size: 10px; }
-  body.embedded #panel-head::after {
-    content: "Tap for details";
-    font-size: 10px; color: #64748b;
-    margin-left: 10px; flex: 1; font-weight: 500;
+  body.embedded #edu-panel.expanded #panel-body{display:block}
+  body.embedded #panel-head{padding:12px 14px}
+  body.embedded #module-title{font-size:16px}
+  body.embedded #module-kicker{font-size:10px}
+  body.embedded #panel-head::after{
+    content:"Tap for details";font-size:10px;color:#64748b;
+    margin-left:10px;flex:1;font-weight:500;
   }
-  body.embedded #edu-panel.expanded #panel-head::after { display: none; }
-  @media (min-width: 640px) {
-    body.embedded #edu-panel { right: auto !important; width: 360px !important; }
-    body.embedded #edu-panel #panel-body { display: block; }
-    body.embedded #panel-head::after { display: none; }
+  body.embedded #edu-panel.expanded #panel-head::after{display:none}
+  @media (min-width: 640px){
+    body.embedded #edu-panel{right:auto !important;width:360px !important}
+    body.embedded #edu-panel #panel-body{display:block}
+    body.embedded #panel-head::after{display:none}
   }
+  body.embedded #road-info{bottom:calc(var(--shell-pill-h) + 16px)}
 </style>
 </head>
 <body>
@@ -181,7 +158,7 @@
     <div id="panel-head">
       <div>
         <h1 id="module-kicker">Suspension Systems</h1>
-        <div id="module-title">Suspension System — Springs &amp; Shock Absorption</div>
+        <div id="module-title">Suspension — Real Uneven Road</div>
       </div>
       <button id="panel-toggle" aria-label="Toggle info" aria-expanded="true">
         <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
@@ -194,41 +171,38 @@
         <span id="speed-kmh">~38 km/h</span>
       </div>
 
-      <div id="view-mode">
-        <button id="btn-with" class="vm-btn active" type="button">With Suspension</button>
-        <button id="btn-without" class="vm-btn" type="button">Without Suspension</button>
-      </div>
-
-      <div id="shock-meter">
-        <div class="shock-head">
-          <span>Shock transmitted to passengers</span>
-          <b id="shock-pct">0%</b>
+      <div id="shock-grid">
+        <div class="shock-col">
+          <div class="shock-head"><span>Front</span><b id="shock-front-pct">0%</b></div>
+          <div class="shock-bar"><div class="shock-fill" id="shock-front-fill"></div></div>
         </div>
-        <div id="shock-bar"><div id="shock-fill"></div></div>
-        <div id="shock-verdict">Smooth ride — springs and dampers absorb the bumps</div>
+        <div class="shock-col">
+          <div class="shock-head"><span>Rear</span><b id="shock-rear-pct">0%</b></div>
+          <div class="shock-bar"><div class="shock-fill" id="shock-rear-fill"></div></div>
+        </div>
       </div>
 
       <div id="danger-meter">
-        <div class="dm-head">
-          <span>⚠ Chassis stress</span>
-          <b id="danger-pct">0%</b>
-        </div>
+        <div class="dm-head"><span>⚠ Chassis stress</span><b id="danger-pct">0%</b></div>
         <div id="danger-bar"><div id="danger-fill"></div></div>
         <div id="danger-verdict">Chassis coping fine</div>
       </div>
 
       <div id="mode-desc">
-        <strong>With suspension.</strong> The coil springs and leaf spring flex as each wheel rises over a bump; the shock absorbers (dampers) dissipate the energy. The chassis stays nearly level — passengers feel only a gentle float.
+        <strong>With suspension.</strong> Coil springs, leaf springs and dampers absorb every bump. The chassis stays nearly level — passengers feel only a gentle float. Watch the leaf spring flatten through potholes and the shackle swing as it stretches.
       </div>
     </div>
   </div>
 
   <div id="module-controls" class="panel">
+    <button class="ctrl-btn" id="btn-susp-toggle" aria-label="Toggle suspension" title="Toggle suspension">
+      <span id="susp-btn-label">SUSP</span>
+    </button>
     <button class="ctrl-btn" id="btn-play" aria-label="Pause">
       <svg id="icon-play" viewBox="0 0 24 24" style="display:none"><path d="M8 5v14l11-7z"/></svg>
       <svg id="icon-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
     </button>
-    <button class="ctrl-btn" id="btn-slowmo" aria-label="Super slow motion" title="Super slow motion — watch the springs flex">
+    <button class="ctrl-btn" id="btn-slowmo" aria-label="Slow motion" title="Super slow motion">
       <svg viewBox="0 0 24 24" fill="currentColor">
         <path d="M6 2h12v6l-4 4 4 4v6H6v-6l4-4-4-4V2zm10 12.5V20H8v-5.5l4-4 4 4zM8 4v3.5l4 4 4-4V4H8z"/>
       </svg>
@@ -242,10 +216,14 @@
       <span id="rpm-label">~38 km/h</span>
     </div>
     <label class="toggle"><input type="checkbox" id="chk-labels" checked> Labels</label>
-    <label class="toggle"><input type="checkbox" id="chk-gas" checked> Dust FX</label>
   </div>
 
-  <div id="hint">Drag to orbit · Scroll to zoom · Toggle With / Without suspension · Watch the leaf spring flatten and the shackle swing</div>
+  <div id="road-info">
+    <span class="label">Road:</span>
+    <span class="val" id="road-val">Flat</span>
+  </div>
+
+  <div id="hint">Drag to orbit · Scroll to zoom · Tap SUSP button to toggle · Watch leaf springs flex through the mixed terrain</div>
   <div id="labels-root"></div>
   <div id="impact-flash"></div>
   <div id="impact-warning">⚠ IMPACT — every bump slams the chassis</div>
@@ -267,38 +245,101 @@
   const IS_EMBEDDED = window.parent && window.parent !== window;
   if (IS_EMBEDDED) document.body.classList.add('embedded');
 
-  /* ============================================================
-     LAYOUT CONSTANTS
-     ============================================================ */
+  /* ═══════════════════════════════════════════════════════════
+     LAYOUT
+     ═══════════════════════════════════════════════════════════ */
   const RW = 0.55;
   const XF = 1.45, XR = -1.45;
-  const ROAD_P = 6.0;
+  const TRACK_W = 0.78;
   const SPRING_SEAT_Y = 1.36;
   const REST_LEN_F = 0.62;
   const EYE_LOCAL = 1.05;
-  const EYE_RISE  = 0.30;
+  const EYE_RISE = 0.30;
   const TRACK_HALF = 0.62;
 
   const M_BODY = 1.0;
-  const I_BODY = 2.2;
+  const I_PITCH = 2.2;
+  const I_ROLL = 0.9;
   const K_SPRING = 30;
   const C_DAMP = 2.8;
+  const K_SPRING_R = 26;  // rear slightly softer
 
-  function bump(u, c, w, hgt) {
-    const d = Math.abs(u - c);
-    if (d > w / 2) return 0;
-    const s = Math.cos(Math.PI * d / w);
-    return hgt * s * s;
-  }
-  function roadProfile(x) {
-    const u = ((x % ROAD_P) + ROAD_P) % ROAD_P;
-    return bump(u, 1.5, 1.0, 0.10)
-         + bump(u, 4.5, 1.6, 0.22);
+  /* ═══════════════════════════════════════════════════════════
+     ROAD — mixed terrain features, periodic 64 units
+     ═══════════════════════════════════════════════════════════ */
+  const ROAD_LENGTH = 64;
+  const ROAD_HALF_WIDTH = 1.20;  // full width 2.40
+
+  /* Feature list. mode: 'both' | 'left' | 'right' | 'center' */
+  const FEATURES = [
+    { x:  3.0, w: 0.9, h:  0.10, mode: 'both',  type: 'bump' },
+    { x:  6.5, w: 1.4, h:  0.20, mode: 'both',  type: 'bump' },
+    { x: 10.0, w: 0.7, h: -0.14, mode: 'both',  type: 'pot'  },
+    { x: 12.5, w: 1.0, h:  0.09, mode: 'left',  type: 'bump' },
+    { x: 14.0, w: 0.9, h:  0.10, mode: 'right', type: 'bump' },
+    { x: 17.0, w: 2.6, h:  0.05, mode: 'both',  type: 'ripple' },
+    { x: 21.0, w: 0.6, h: -0.16, mode: 'left',  type: 'pot'  },
+    { x: 22.8, w: 0.7, h: -0.14, mode: 'right', type: 'pot'  },
+    { x: 25.5, w: 1.3, h:  0.16, mode: 'both',  type: 'bump' },
+    { x: 29.0, w: 3.0, h:  0.06, mode: 'both',  type: 'wave' },
+    { x: 33.5, w: 1.0, h:  0.11, mode: 'left',  type: 'bump' },
+    { x: 35.0, w: 1.0, h:  0.11, mode: 'right', type: 'bump' },
+    { x: 38.0, w: 1.1, h: -0.19, mode: 'both',  type: 'pot'  },
+    { x: 41.0, w: 0.9, h:  0.14, mode: 'both',  type: 'bump' },
+    { x: 44.5, w: 2.2, h:  0.06, mode: 'both',  type: 'ripple' },
+    { x: 48.5, w: 0.8, h: -0.15, mode: 'left',  type: 'pot'  },
+    { x: 50.5, w: 0.9, h:  0.12, mode: 'right', type: 'bump' },
+    { x: 53.5, w: 1.5, h:  0.20, mode: 'both',  type: 'bump' },
+    { x: 57.0, w: 0.6, h: -0.12, mode: 'both',  type: 'pot'  },
+    { x: 59.5, w: 0.8, h:  0.13, mode: 'left',  type: 'bump' },
+    { x: 61.0, w: 0.8, h:  0.13, mode: 'right', type: 'bump' },
+  ];
+
+  function roadHeight(x, z) {
+    x = ((x % ROAD_LENGTH) + ROAD_LENGTH) % ROAD_LENGTH;
+    let h = 0;
+    for (let i = 0; i < FEATURES.length; i++) {
+      const f = FEATURES[i];
+      let dx = x - f.x;
+      if (dx > ROAD_LENGTH / 2) dx -= ROAD_LENGTH;
+      if (dx < -ROAD_LENGTH / 2) dx += ROAD_LENGTH;
+      const dist = Math.abs(dx);
+      if (dist > f.w) continue;
+
+      let zWeight = 1;
+      if (f.mode === 'left')       zWeight = clamp((0.35 - z) / 0.7, 0, 1);
+      else if (f.mode === 'right') zWeight = clamp((0.35 + z) / 0.7, 0, 1);
+      else if (f.mode === 'center')zWeight = clamp((0.6 - Math.abs(z)) / 0.6, 0, 1);
+
+      const t = dist / f.w;
+      let profile;
+      if (f.type === 'bump')        profile = Math.cos(Math.PI * t * 0.5) ** 2;
+      else if (f.type === 'pot')    profile = Math.pow(Math.cos(Math.PI * t * 0.5), 0.55);
+      else if (f.type === 'ripple') profile = Math.cos(Math.PI * t * 4) * (1 - t) * 0.55;
+      else                          profile = (1 - Math.cos(Math.PI * t * 2)) * 0.5;
+
+      h += f.h * profile * zWeight;
+    }
+    return h;
   }
 
-  /* ============================================================
+  /* Return the type of feature nearest to a given x (for HUD) */
+  function roadFeatureAt(x) {
+    x = ((x % ROAD_LENGTH) + ROAD_LENGTH) % ROAD_LENGTH;
+    let best = null, bestD = 2.5;
+    for (const f of FEATURES) {
+      let dx = x - f.x;
+      if (dx > ROAD_LENGTH / 2) dx -= ROAD_LENGTH;
+      if (dx < -ROAD_LENGTH / 2) dx += ROAD_LENGTH;
+      const d = Math.abs(dx);
+      if (d < bestD) { bestD = d; best = f; }
+    }
+    return best;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
      BOOTSTRAP
-     ============================================================ */
+     ═══════════════════════════════════════════════════════════ */
   const { scene, camera, renderer, controls, wrap, isCoarse } = Base.buildScene({
     fov: 42, camPos: [5.8, 4.2, 7.5], target: [-0.1, 1.25, 0], floorY: -0.35
   });
@@ -308,51 +349,28 @@
   const labels = Base.createLabelSystem();
   const particleTex = Base.createParticleTexture();
 
-  /* ─── Sky dome ───────────────────────────────────────────── */
   const skyGeo = new THREE.SphereGeometry(60, 24, 16);
   const skyMat = new THREE.ShaderMaterial({
-    side: THREE.BackSide,
-    depthWrite: false,
+    side: THREE.BackSide, depthWrite: false,
     uniforms: {
       topColor: { value: new THREE.Color(0x1a2a4a) },
       botColor: { value: new THREE.Color(0x0b0e14) }
     },
-    vertexShader: `
-      varying vec3 vPos;
-      void main() {
-        vPos = position;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }`,
-    fragmentShader: `
-      varying vec3 vPos;
-      uniform vec3 topColor;
-      uniform vec3 botColor;
-      void main() {
-        float h = normalize(vPos).y;
-        vec3 col = mix(botColor, topColor, smoothstep(-0.2, 0.85, h));
-        gl_FragColor = vec4(col, 1.0);
-      }`
+    vertexShader: `varying vec3 vPos; void main(){ vPos=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader: `varying vec3 vPos; uniform vec3 topColor; uniform vec3 botColor;
+      void main(){ float h=normalize(vPos).y; gl_FragColor=vec4(mix(botColor,topColor,smoothstep(-0.2,0.85,h)),1.0); }`
   });
-  const sky = new THREE.Mesh(skyGeo, skyMat);
-  scene.add(sky);
+  scene.add(new THREE.Mesh(skyGeo, skyMat));
 
-  /* ─── Materials ─────────────────────────────────────────── */
   const matAsphalt  = new THREE.MeshStandardMaterial({ color: 0x24272d, roughness: 0.96, metalness: 0.02 });
+  const matAsphaltDirty = new THREE.MeshStandardMaterial({ color: 0x2c2822, roughness: 0.98, metalness: 0.02 });
   const matEdgeLine = new THREE.MeshStandardMaterial({ color: 0xc7c9cc, roughness: 0.75, metalness: 0.05 });
   const matCenterLine = new THREE.MeshStandardMaterial({ color: 0xd9a13b, roughness: 0.7 });
   const matRubber   = new THREE.MeshStandardMaterial({ color: 0x1b1e23, roughness: 0.92, metalness: 0.05 });
-  const matStripe   = new THREE.MeshStandardMaterial({ color: 0xd9a13b, roughness: 0.6 });
   const matStrut    = new THREE.MeshStandardMaterial({ color: 0x9c3a32, roughness: 0.42, metalness: 0.4, emissive: 0x3a0503, emissiveIntensity: 0.4 });
   const matArrow    = new THREE.MeshBasicMaterial({ color: 0x22c55e });
-  const matAccent   = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.55, roughness: 0.28, emissive: 0x38bdf8, emissiveIntensity: 0.55 });
-  const matHeadLight = new THREE.MeshStandardMaterial({
-    color: 0xfff6cf, emissive: 0xfff0a8, emissiveIntensity: 2.2,
-    roughness: 0.25, metalness: 0.1
-  });
-  const matBrakeLight = new THREE.MeshStandardMaterial({
-    color: 0xff2a2a, emissive: 0xff1a1a, emissiveIntensity: 2.4,
-    roughness: 0.3, metalness: 0.1
-  });
+  const matHeadLight = new THREE.MeshStandardMaterial({ color: 0xfff6cf, emissive: 0xfff0a8, emissiveIntensity: 2.2, roughness: 0.25, metalness: 0.1 });
+  const matBrakeLight = new THREE.MeshStandardMaterial({ color: 0xff2a2a, emissive: 0xff1a1a, emissiveIntensity: 2.4, roughness: 0.3, metalness: 0.1 });
   const matDisc = new THREE.MeshStandardMaterial({ color: 0x6a7280, metalness: 0.9, roughness: 0.35 });
   const matCaliper = new THREE.MeshStandardMaterial({ color: 0xb91c1c, metalness: 0.5, roughness: 0.35 });
   const matGlassWin = new THREE.MeshPhysicalMaterial({
@@ -366,62 +384,82 @@
   const world = new THREE.Group();
   scene.add(world);
 
-  /* ============================================================
-     ROAD
-     ============================================================ */
-  const roadShape = new THREE.Shape();
-  const SAMPLES = 240;
-  roadShape.moveTo(0, -0.35);
-  for (let i = 0; i <= SAMPLES; i++) {
-    const x = (i / SAMPLES) * ROAD_P * 2;
-    roadShape.lineTo(x, roadProfile(x));
-  }
-  roadShape.lineTo(ROAD_P * 2, -0.35);
-  roadShape.closePath();
+  /* ═══════════════════════════════════════════════════════════
+     ROAD MESH — 3D strip with per-Z height variation
+     ═══════════════════════════════════════════════════════════ */
+  const ROAD_SEGS_X = 256;
+  const ROAD_SEGS_Z = 8;
 
-  const road = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(roadShape, { depth: 2.4, bevelEnabled: false }),
-    matAsphalt
-  );
-  road.position.z = -1.2;
-  road.receiveShadow = true;
-  world.add(road);
+  function buildRoadMesh() {
+    const vertX = ROAD_SEGS_X + 1;
+    const vertZ = ROAD_SEGS_Z + 1;
+    const positions = new Float32Array(vertX * vertZ * 3);
+    const uvs = new Float32Array(vertX * vertZ * 2);
+    const indices = [];
 
-  [1.5, 4.5, 7.5, 10.5].forEach(c => {
-    [-0.28, -0.09, 0.09, 0.28].forEach(off => {
-      const s = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.035, 2.3), matStripe);
-      s.position.set(c + off, roadProfile(c + off) + 0.018, 1.2);
-      road.add(s);
-    });
-  });
-
-  for (let side = -1; side <= 1; side += 2) {
-    for (let seg = 0; seg < 24; seg++) {
-      const x0 = seg * (ROAD_P * 2 / 24);
-      const x1 = x0 + (ROAD_P * 2 / 24) - 0.10;
-      const midX = (x0 + x1) / 2;
-      const line = new THREE.Mesh(
-        new THREE.BoxGeometry(x1 - x0, 0.02, 0.10),
-        matEdgeLine
-      );
-      line.position.set(midX, roadProfile(midX) + 0.012, side * 1.15);
-      road.add(line);
+    for (let i = 0; i < vertX; i++) {
+      const x = (i / ROAD_SEGS_X) * ROAD_LENGTH;
+      for (let j = 0; j < vertZ; j++) {
+        const z = -ROAD_HALF_WIDTH + (j / ROAD_SEGS_Z) * (2 * ROAD_HALF_WIDTH);
+        const y = roadHeight(x, z);
+        const idx = (i * vertZ + j);
+        positions[idx * 3 + 0] = x;
+        positions[idx * 3 + 1] = y;
+        positions[idx * 3 + 2] = z;
+        uvs[idx * 2 + 0] = x * 0.15;
+        uvs[idx * 2 + 1] = z * 0.5;
+      }
     }
+    for (let i = 0; i < ROAD_SEGS_X; i++) {
+      for (let j = 0; j < ROAD_SEGS_Z; j++) {
+        const a = i * vertZ + j;
+        const b = (i + 1) * vertZ + j;
+        indices.push(a, a + 1, b);
+        indices.push(a + 1, b + 1, b);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return geo;
   }
 
+  const roadGeo = buildRoadMesh();
+  const roadMesh = new THREE.Mesh(roadGeo, matAsphalt);
+  roadMesh.receiveShadow = true;
+  world.add(roadMesh);
+
+  /* Second copy for seamless wrap-around */
+  const roadMesh2 = new THREE.Mesh(roadGeo, matAsphalt);
+  roadMesh2.receiveShadow = true;
+  world.add(roadMesh2);
+
+  /* Center dashes + edge lines drawn as instanced/boxes on top of road */
+  const dashesGroup = new THREE.Group();
+  world.add(dashesGroup);
+  for (let x = 0; x < ROAD_LENGTH; x += 2.0) {
+    const y = roadHeight(x, 0) + 0.015;
+    const dash = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.02, 0.10), matCenterLine);
+    dash.position.set(x, y, 0);
+    dashesGroup.add(dash);
+  }
+
+  /* Shoulders — dark strips beside the road */
   for (let side = -1; side <= 1; side += 2) {
-    const shoulder = new THREE.Mesh(
-      new THREE.BoxGeometry(ROAD_P * 2, 0.04, 1.2),
-      new THREE.MeshStandardMaterial({ color: 0x3a2e1f, roughness: 1.0, metalness: 0.0 })
+    const sh = new THREE.Mesh(
+      new THREE.BoxGeometry(ROAD_LENGTH, 0.05, 1.5),
+      new THREE.MeshStandardMaterial({ color: 0x3a2e1f, roughness: 1.0 })
     );
-    shoulder.position.set(ROAD_P, -0.30, side * 1.75);
-    shoulder.receiveShadow = true;
-    world.add(shoulder);
+    sh.position.set(ROAD_LENGTH / 2, -0.32, side * 2.1);
+    sh.receiveShadow = true;
+    world.add(sh);
   }
 
-  /* ============================================================
+  /* ═══════════════════════════════════════════════════════════
      VEHICLE
-     ============================================================ */
+     ═══════════════════════════════════════════════════════════ */
   const vehicle = new THREE.Group();
   world.add(vehicle);
 
@@ -431,7 +469,7 @@
   const axleF = new THREE.Group(); axleF.position.set(XF, RW, 0); vehicle.add(axleF);
   const axleR = new THREE.Group(); axleR.position.set(XR, RW, 0); vehicle.add(axleR);
 
-  /* ─── Chassis rails + cross members ─────────────────────── */
+  /* Chassis */
   {
     [-0.62, 0.62].forEach(z => {
       const rail = new THREE.Mesh(new THREE.BoxGeometry(4.9, 0.16, 0.18), M.matIron);
@@ -454,7 +492,6 @@
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.012, 8, 20), M.matMetalDark);
       ring.rotation.y = Math.PI / 2; ring.position.set(2.52, 1.52, z); bodyG.add(ring);
     });
-
     [-0.52, 0.52].forEach(z => {
       const bl = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.10, 0.24), matBrakeLight);
       bl.position.set(-2.52, 1.55, z); bodyG.add(bl);
@@ -467,16 +504,8 @@
       const win = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.42, 0.02), matGlassWin);
       win.position.set(1.30, 2.18, z); bodyG.add(win);
     });
-
     const ws = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.60, 1.2), matGlassWin);
     ws.position.set(2.12, 2.22, 0); ws.rotation.z = -0.45; bodyG.add(ws);
-
-    [-0.92, 0.92].forEach(z => {
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.04, 0.02), M.matMetalDark);
-      arm.position.set(2.00, 2.10, z * 0.95); bodyG.add(arm);
-      const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.14, 0.10), M.matMetalDark);
-      mirror.position.set(1.98, 2.10, z * 1.05); bodyG.add(mirror);
-    });
 
     const floor = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.10, 1.5), M.matPiston);
     floor.position.set(-1.25, 1.63, 0); floor.castShadow = true; bodyG.add(floor);
@@ -489,59 +518,31 @@
     const bedFront = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.35, 1.5), M.matPiston);
     bedFront.position.set(-0.02, 1.85, 0); bodyG.add(bedFront);
 
+    /* Front spring upper mounts */
     [-0.38, 0.38].forEach(z => {
       const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.30, 0.05, 20), M.matIronDS);
       plate.position.set(XF - 0.15, SPRING_SEAT_Y, z); bodyG.add(plate);
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.14, 0.34), M.matIronDS);
-      arm.position.set(XF - 0.15, 1.42, Math.sign(z) * 0.50); bodyG.add(arm);
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.025, 8, 22), M.matMetal);
       ring.rotation.x = Math.PI / 2; ring.position.set(XF - 0.15, SPRING_SEAT_Y, z);
       bodyG.add(ring);
     });
 
-    [-0.38, 0.38].forEach(z => {
-      const stem = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.30, 0.05), M.matIronDS);
-      stem.position.set(XF, 1.27, z); bodyG.add(stem);
-      const stop = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.07, 0.12, 10), M.matInsulator);
-      stop.position.set(XF, 1.10, z); bodyG.add(stop);
-    });
-
-    [-0.30, 0.30].forEach(z => {
-      const br = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.10, 0.16), M.matIronDS);
-      br.position.set(XR + 0.45, 1.40, z); bodyG.add(br);
-    });
-
+    /* Rear hangers */
     [-TRACK_HALF, TRACK_HALF].forEach(z => {
       const hanger = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.72, 0.24), M.matIronDS);
       hanger.position.set(XR - EYE_LOCAL - 0.07, 1.06, z);
-      hanger.castShadow = true;
-      bodyG.add(hanger);
-    });
-
-    [-TRACK_HALF, TRACK_HALF].forEach(z => {
+      hanger.castShadow = true; bodyG.add(hanger);
       const shBr = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.36, 0.24), M.matIronDS);
       shBr.position.set(XR + EYE_LOCAL, 1.22, z);
-      shBr.castShadow = true;
-      bodyG.add(shBr);
+      shBr.castShadow = true; bodyG.add(shBr);
     });
 
-    const exhaust = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.055, 0.055, 0.55, 12),
-      M.matMetalDark
-    );
+    const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.55, 12), M.matMetalDark);
     exhaust.rotation.z = Math.PI / 2;
-    exhaust.position.set(-2.60, 0.80, 0.35);
-    bodyG.add(exhaust);
-    const exhaustTip = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.075, 0.065, 0.06, 12),
-      M.matMetal
-    );
-    exhaustTip.rotation.z = Math.PI / 2;
-    exhaustTip.position.set(-2.87, 0.80, 0.35);
-    bodyG.add(exhaustTip);
+    exhaust.position.set(-2.60, 0.80, 0.35); bodyG.add(exhaust);
   }
 
-  /* ─── Axle assembly factory ─────────────────────────────── */
+  /* Axles */
   function makeAxleG(group, withDiff) {
     const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 1.9, 18), M.matIronDS);
     beam.rotation.x = Math.PI / 2; beam.castShadow = true; group.add(beam);
@@ -552,65 +553,50 @@
     if (withDiff) {
       const diff = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), M.matIron);
       diff.position.set(0.25, 0, 0); group.add(diff);
-      const tie = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.5, 8), M.matMetalDark);
-      tie.rotation.x = Math.PI / 2; tie.position.set(0.1, -0.18, 0); group.add(tie);
     }
   }
   makeAxleG(axleF, true);
   makeAxleG(axleR, false);
 
-  [-0.38, 0.38].forEach(z => {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.08, 0.30), M.matMetalDark);
-    s.position.set(-0.15, 0.15, z); axleF.add(s);
-  });
-
-  /* ─── Wheel — tire + rim + spinner (disc mounted on axle, not spinner) ─── */
+  /* Wheels */
   const wheelSpinners = [];
   function makeWheel() {
     const w = new THREE.Group();
     const spinner = new THREE.Group();
     w.add(spinner);
     wheelSpinners.push(spinner);
-
     const tire = new THREE.Mesh(new THREE.CylinderGeometry(RW, RW, 0.34, 28), matRubber);
     tire.rotation.x = Math.PI / 2; tire.castShadow = true; spinner.add(tire);
-
     for (let k = 0; k < 18; k++) {
       const a = (k / 18) * TAU;
       const t = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.055, 0.345), matRubber);
       t.position.set(Math.cos(a) * (RW - 0.005), Math.sin(a) * (RW - 0.005), 0);
       t.rotation.z = a; spinner.add(t);
     }
-
     const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.355, 24), M.matAlu);
     rim.rotation.x = Math.PI / 2; spinner.add(rim);
-
-    return { w, spinner };
+    return w;
   }
 
   const wheels = [];
-  [[axleF], [axleR]].forEach(([ax]) => {
-    [-0.78, 0.78].forEach(z => {
-      const { w } = makeWheel();
+  [axleF, axleR].forEach(ax => {
+    [-TRACK_W, TRACK_W].forEach(z => {
+      const w = makeWheel();
       w.position.set(0, 0, z);
       ax.add(w);
       wheels.push(w);
 
-      /* Brake disc + caliper — mounted on the axle (doesn't spin with wheel) */
       const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.02, 24), matDisc);
       disc.rotation.x = Math.PI / 2;
       disc.position.set(0, 0, z * 0.94);
       ax.add(disc);
-
       const caliper = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.14), matCaliper);
       caliper.position.set(0, 0.16, z * 0.94);
       ax.add(caliper);
     });
   });
 
-  /* ============================================================
-     HELICAL COIL SPRING
-     ============================================================ */
+  /* Coil spring */
   function makeCoilSpring(radius, wireR, coils, height, mat) {
     const pts = [];
     const N = Math.max(90, Math.round(coils * 24));
@@ -625,69 +611,34 @@
     return mesh;
   }
 
-  /* ============================================================
-     TELESCOPIC SHOCK ABSORBER
-     Piston head slides inside the outer cylinder.
-     Oil seal ring marks the top of the outer body.
-     Eyelets at each end mount it to frame/axle.
-     ============================================================ */
+  /* Damper */
   function makeDamper() {
     const g = new THREE.Group();
-
-    /* Outer cylinder (body) */
     const bodyC = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.42, 16), matDamperBody);
     bodyC.position.y = 0.21; bodyC.castShadow = true; g.add(bodyC);
-
-    /* Oil seal ring at top of body */
     const seal = new THREE.Mesh(new THREE.TorusGeometry(0.086, 0.014, 8, 20), matDamperSeal);
-    seal.rotation.x = Math.PI / 2;
-    seal.position.y = 0.42;
-    g.add(seal);
-
-    /* Bottom collar (mount) */
+    seal.rotation.x = Math.PI / 2; seal.position.y = 0.42; g.add(seal);
     const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.10, 14), M.matIronDS);
     collar.position.y = 0.06; g.add(collar);
-
-    /* Piston head — travels with the rod, visible through the seal gap when extended */
     const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.078, 0.045, 16), M.matMetalDark);
     g.add(piston);
-
-    /* Rod */
     const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.62, 10), M.matValve);
     g.add(rod);
-
-    /* Boot / bump stop rings along exposed rod */
     const boots = [];
     for (let i = 0; i < 4; i++) {
       const b = new THREE.Mesh(new THREE.TorusGeometry(0.052, 0.014, 8, 18), M.matInsulator);
       b.rotation.x = Math.PI / 2; g.add(b); boots.push(b);
     }
-
-    /* Top cap + eyelet */
     const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.06, 10), M.matMetal);
     g.add(cap);
-    const eyeTop = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.012, 6, 14), M.matMetal);
-    eyeTop.rotation.y = Math.PI / 2;
-    g.add(eyeTop);
-
-    /* Bottom mount */
     const foot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.16), M.matMetalDark);
     foot.position.y = -0.02; g.add(foot);
-
     function set(L) {
-      const rodTop = L - 0.03;
-      const rodCenter = rodTop - 0.31;
-      rod.position.y = rodCenter;
-      cap.position.y = rodTop;
-      eyeTop.position.y = rodTop + 0.055;
-
-      /* Piston sits at the rod's lower end (inside the outer body when compressed) */
-      piston.position.y = rodCenter - 0.28;
-
+      rod.position.y = L - 0.34;
+      cap.position.y = L - 0.03;
+      piston.position.y = L - 0.62;
       const exposed = Math.max(0, L - 0.50);
-      for (let i = 0; i < 4; i++) {
-        boots[i].position.y = 0.46 + ((i + 0.5) / 4) * exposed;
-      }
+      for (let i = 0; i < 4; i++) boots[i].position.y = 0.46 + ((i + 0.5) / 4) * exposed;
     }
     set(0.75);
     return { g, set };
@@ -696,23 +647,18 @@
   const suspParts = [];
   const rigidParts = [];
 
-  /* ─── Front coil-overs ──────────────────────────────────── */
   function makeCoilover(zSide) {
     const g = new THREE.Group();
     g.userData.z = zSide;
-
     const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.30, 0.04, 20), M.matIronDS);
     plate.position.y = -0.02; g.add(plate);
-
     const coil = makeCoilSpring(0.20, 0.05, 5.5, REST_LEN_F, M.matSpring);
     g.add(coil);
     g.userData.spring = coil;
-
     const damper = makeDamper();
     damper.g.position.y = -0.08;
     g.add(damper.g);
     g.userData.damper = damper;
-
     vehicle.add(g);
     suspParts.push(g);
     return g;
@@ -720,7 +666,6 @@
   const coiloverL = makeCoilover(-0.38);
   const coiloverR = makeCoilover( 0.38);
 
-  /* ─── Rear dampers ──────────────────────────────────────── */
   const rearDampers = [];
   [-0.30, 0.30].forEach(z => {
     const d = makeDamper();
@@ -730,30 +675,24 @@
     rearDampers.push(d);
   });
 
-  /* ============================================================
+  /* ═══════════════════════════════════════════════════════════
      DEFORMABLE LEAF SPRING
-     Each leaf is a ribbon of N segments. Per frame we fit a
-     quadratic Bézier through (leftEye, centroid, rightEye) and
-     rewrite the vertex positions to follow the curve. The stack
-     shares the same Bézier, offset vertically per leaf.
-     ============================================================ */
+     ═══════════════════════════════════════════════════════════ */
   const LEAF_N = 18;
-
   function makeDeformableLeafGeo(N, halfWidth, thickness) {
     const vertCount = (N + 1) * 4;
     const positions = new Float32Array(vertCount * 3);
     const indices = [];
     for (let i = 0; i < N; i++) {
       const a = i * 4, b = (i + 1) * 4;
-      indices.push(a+0, a+1, b+1, a+0, b+1, b+0);  // top face
-      indices.push(a+2, b+2, b+3, a+2, b+3, a+3);  // bottom face
-      indices.push(a+0, b+0, b+2, a+0, b+2, a+2);  // front side
-      indices.push(a+1, a+3, b+3, a+1, b+3, b+1);  // back side
+      indices.push(a+0, a+1, b+1, a+0, b+1, b+0);
+      indices.push(a+2, b+2, b+3, a+2, b+3, a+3);
+      indices.push(a+0, b+0, b+2, a+0, b+2, a+2);
+      indices.push(a+1, a+3, b+3, a+1, b+3, b+1);
     }
-    indices.push(0, 2, 1, 0, 3, 1);                        // start cap
+    indices.push(0, 2, 1, 0, 3, 1);
     const L = N * 4;
-    indices.push(L+0, L+1, L+2, L+2, L+1, L+3);            // end cap
-
+    indices.push(L+0, L+1, L+2, L+2, L+1, L+3);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setIndex(indices);
@@ -761,22 +700,16 @@
     return { geo, positions, halfWidth, thickness };
   }
 
-  /* Per-frame: sample the Bézier and rewrite vertex positions */
   function deformLeaf(d, P0, C, P2, stackOffset) {
     const { positions, halfWidth, thickness } = d;
-    const N = LEAF_N;
-    const tS = d.tS, tE = d.tE;
+    const N = LEAF_N, tS = d.tS, tE = d.tE;
     const hw = halfWidth, ht = thickness * 0.5;
-
     for (let i = 0; i <= N; i++) {
       const t = tS + (tE - tS) * (i / N);
       const mt = 1 - t;
       const cx = mt*mt*P0.x + 2*mt*t*C.x + t*t*P2.x;
       const cy = mt*mt*P0.y + 2*mt*t*C.y + t*t*P2.y + stackOffset;
-
-      const yT = cy + ht;
-      const yB = cy - ht;
-
+      const yT = cy + ht, yB = cy - ht;
       const base = i * 12;
       positions[base + 0] = cx; positions[base + 1] = yT; positions[base + 2] = -hw;
       positions[base + 3] = cx; positions[base + 4] = yT; positions[base + 5] = +hw;
@@ -789,15 +722,12 @@
   }
 
   const leafSprings = [];
-
   function makeLeafSpring(zPos) {
     const group = new THREE.Group();
     group.userData.z = zPos;
-
     const leavesGroup = new THREE.Group();
     group.add(leavesGroup);
 
-    /* Leaf stack — main (longest, thickest) to shortest/thinnest */
     const leafSpec = [
       { spanHalf: 0.50, halfW: 0.13, thick: 0.036 },
       { spanHalf: 0.42, halfW: 0.125, thick: 0.032 },
@@ -806,41 +736,31 @@
       { spanHalf: 0.22, halfW: 0.095, thick: 0.026 },
     ];
     const stackGap = 0.038;
-
     const leafData = [];
     leafSpec.forEach((spec, i) => {
       const dGeo = makeDeformableLeafGeo(LEAF_N, spec.halfW, spec.thick);
       const mesh = new THREE.Mesh(dGeo.geo, M.matSpring);
       mesh.castShadow = true;
       leavesGroup.add(mesh);
-
-      const d = {
-        geo: dGeo.geo,
-        positions: dGeo.positions,
-        halfWidth: spec.halfW,
-        thickness: spec.thick,
-        tS: 0.5 - spec.spanHalf,
-        tE: 0.5 + spec.spanHalf,
+      leafData.push({
+        geo: dGeo.geo, positions: dGeo.positions,
+        halfWidth: spec.halfW, thickness: spec.thick,
+        tS: 0.5 - spec.spanHalf, tE: 0.5 + spec.spanHalf,
         stackOffset: -i * stackGap
-      };
-      leafData.push(d);
+      });
     });
 
-    /* Eyes at leaf ends */
     const eyeF = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.26, 12), M.matMetalDark);
     eyeF.rotation.x = Math.PI / 2;
     group.add(eyeF);
-
     const eyeR = eyeF.clone();
     group.add(eyeR);
 
-    /* Center bolt */
     const cb = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.26, 8), M.matMetalDark);
     cb.position.set(0, 0.02, 0); group.add(cb);
     const cbn = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.04, 0.055), M.matMetal);
     cbn.position.set(0, -0.20, 0); group.add(cbn);
 
-    /* U-bolt plates — span the leaf stack */
     [-0.22, 0.22].forEach(x => {
       const topPlate = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.05, 0.55), M.matMetalDark);
       topPlate.position.set(x, 0.06, 0); group.add(topPlate);
@@ -854,19 +774,13 @@
 
     vehicle.add(group);
     suspParts.push(group);
-
-    const state = {
-      group, leavesGroup, eyeF, eyeR, leafData,
-      leafSx: 1, leafSy: 1, z: zPos
-    };
+    const state = { group, leavesGroup, eyeF, eyeR, leafData, leafSx: 1, leafSy: 1, z: zPos };
     leafSprings.push(state);
     return state;
   }
-
   const leafL = makeLeafSpring(-TRACK_HALF);
   const leafR = makeLeafSpring( TRACK_HALF);
 
-  /* ─── Shackles ──────────────────────────────────────────── */
   const shackles = [];
   [-TRACK_HALF, TRACK_HALF].forEach(z => {
     const sh = new THREE.Mesh(
@@ -880,7 +794,6 @@
     shackles.push(sh);
   });
 
-  /* ─── Rigid struts (without-suspension mode) ────────────── */
   function makeRigidStrut(x, z, front) {
     const geo = new THREE.BoxGeometry(0.15, 1, 0.15).translate(0, 0.5, 0);
     const mesh = new THREE.Mesh(geo, matStrut);
@@ -895,9 +808,6 @@
   makeRigidStrut(XR, -0.42, false);
   makeRigidStrut(XR,  0.42, false);
 
-  /* ============================================================
-     IMPACT ARROW
-     ============================================================ */
   const arrow = new THREE.Group();
   {
     const shaft = new THREE.Mesh(
@@ -911,24 +821,19 @@
   arrow.position.set(-0.10, 0.60, 0);
   world.add(arrow);
 
-  /* ============================================================
-     DUST PARTICLES
-     ============================================================ */
+  /* Dust particles */
   const DUST_N = isCoarse ? 70 : 140;
   const dustData = [];
   const dustPos = new Float32Array(DUST_N * 3);
   const dustCol = new Float32Array(DUST_N * 3);
-  for (let i = 0; i < DUST_N; i++) {
-    dustData.push({ x: 0, y: -10, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
-  }
+  for (let i = 0; i < DUST_N; i++) dustData.push({ x: 0, y: -10, z: 0, vx: 0, vy: 0, vz: 0, life: 0 });
   const dustGeo = new THREE.BufferGeometry();
   dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
   dustGeo.setAttribute('color', new THREE.BufferAttribute(dustCol, 3));
-  const dustMat = new THREE.PointsMaterial({
+  const dustPoints = new THREE.Points(dustGeo, new THREE.PointsMaterial({
     map: particleTex, size: 0.20, transparent: true, depthWrite: false,
     blending: THREE.AdditiveBlending, vertexColors: true
-  });
-  const dustPoints = new THREE.Points(dustGeo, dustMat);
+  }));
   world.add(dustPoints);
 
   function spawnDust(x, n, power) {
@@ -952,53 +857,35 @@
       if (p.life > 0) {
         p.life -= dt * 1.8;
         p.vy -= 4 * dt;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.z += p.vz * dt;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
         if (p.y < 0.04) { p.y = 0.04; p.vy *= -0.2; p.vx *= 0.8; }
         const f = Math.max(0, p.life) ** 2 * 0.9;
-        dustPos[i3]     = p.x;
-        dustPos[i3 + 1] = p.y;
-        dustPos[i3 + 2] = p.z;
-        dustCol[i3]     = 0.75 * f;
-        dustCol[i3 + 1] = 0.68 * f;
-        dustCol[i3 + 2] = 0.55 * f;
+        dustPos[i3] = p.x; dustPos[i3+1] = p.y; dustPos[i3+2] = p.z;
+        dustCol[i3] = 0.75*f; dustCol[i3+1] = 0.68*f; dustCol[i3+2] = 0.55*f;
       } else {
-        dustPos[i3]     = 0;
-        dustPos[i3 + 1] = -10;
-        dustPos[i3 + 2] = 0;
-        dustCol[i3]     = 0;
-        dustCol[i3 + 1] = 0;
-        dustCol[i3 + 2] = 0;
+        dustPos[i3+1] = -10;
+        dustCol[i3] = dustCol[i3+1] = dustCol[i3+2] = 0;
       }
     }
     dustGeo.attributes.position.needsUpdate = true;
     dustGeo.attributes.color.needsUpdate = true;
-    dustPoints.visible = state.showGas;
   }
 
-  /* ============================================================
-     SPARK PARTICLES
-     ============================================================ */
+  /* Sparks */
   const SPARK_N = isCoarse ? 100 : 240;
   const sparkData = [];
   const sparkPos = new Float32Array(SPARK_N * 3);
   const sparkCol = new Float32Array(SPARK_N * 3);
   for (let i = 0; i < SPARK_N; i++) {
-    sparkData.push({
-      px: 0, py: -100, pz: 0,
-      vx: 0, vy: 0, vz: 0,
-      life: 0, maxLife: 0
-    });
+    sparkData.push({ px: 0, py: -100, pz: 0, vx: 0, vy: 0, vz: 0, life: 0, maxLife: 0 });
   }
   const sparkGeo = new THREE.BufferGeometry();
   sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
   sparkGeo.setAttribute('color', new THREE.BufferAttribute(sparkCol, 3));
-  const sparkMat = new THREE.PointsMaterial({
+  const sparkPoints = new THREE.Points(sparkGeo, new THREE.PointsMaterial({
     map: particleTex, size: 0.16, transparent: true, depthWrite: false,
     blending: THREE.AdditiveBlending, vertexColors: true
-  });
-  const sparkPoints = new THREE.Points(sparkGeo, sparkMat);
+  }));
   world.add(sparkPoints);
 
   function spawnSparks(x, y, z, n, power) {
@@ -1007,8 +894,7 @@
       const s = sparkData[i];
       if (s.life > 0) continue;
       s.px = x + (Math.random() - 0.5) * 0.4;
-      s.py = y;
-      s.pz = z + (Math.random() - 0.5) * 0.4;
+      s.py = y; s.pz = z + (Math.random() - 0.5) * 0.4;
       s.vx = (Math.random() - 0.5) * 4 * power;
       s.vy = (1.5 + Math.random() * 3) * power;
       s.vz = (Math.random() - 0.5) * 3 * power;
@@ -1024,101 +910,85 @@
       if (s.life > 0) {
         s.life -= dt;
         s.vy -= 14 * dt;
-        s.px += s.vx * dt;
-        s.py += s.vy * dt;
-        s.pz += s.vz * dt;
-        if (s.py < 0.02) {
-          s.py = 0.02; s.vy *= -0.25; s.vx *= 0.6; s.vz *= 0.6;
-        }
+        s.px += s.vx * dt; s.py += s.vy * dt; s.pz += s.vz * dt;
+        if (s.py < 0.02) { s.py = 0.02; s.vy *= -0.25; s.vx *= 0.6; s.vz *= 0.6; }
         const f = Math.max(0, s.life / s.maxLife);
-        sparkPos[i3]     = s.px;
-        sparkPos[i3 + 1] = s.py;
-        sparkPos[i3 + 2] = s.pz;
-        sparkCol[i3]     = 1.0;
-        sparkCol[i3 + 1] = 0.35 + 0.55 * f;
-        sparkCol[i3 + 2] = 0.05 * f;
+        sparkPos[i3] = s.px; sparkPos[i3+1] = s.py; sparkPos[i3+2] = s.pz;
+        sparkCol[i3] = 1.0; sparkCol[i3+1] = 0.35 + 0.55 * f; sparkCol[i3+2] = 0.05 * f;
       } else {
-        sparkPos[i3 + 1] = -100;
-        sparkCol[i3]     = 0;
-        sparkCol[i3 + 1] = 0;
-        sparkCol[i3 + 2] = 0;
+        sparkPos[i3+1] = -100;
+        sparkCol[i3] = sparkCol[i3+1] = sparkCol[i3+2] = 0;
       }
     }
     sparkGeo.attributes.position.needsUpdate = true;
     sparkGeo.attributes.color.needsUpdate = true;
   }
 
-  /* ============================================================
+  /* ═══════════════════════════════════════════════════════════
      STATE + UI
-     ============================================================ */
+     ═══════════════════════════════════════════════════════════ */
   const state = Base.createUIState();
   let withSusp = true;
+  let suspBlend = 1;                 // 0 = rigid, 1 = suspended
+  const SUSP_BLEND_RATE = 2.8;        // ~0.35s full transition
+
   let roadScroll = 0;
-  let h = 0, phi = 0, hv = 0, phiv = 0;
-  let prevCf = 0, prevCr = 0, hPrev1 = 0, hPrev2 = 0;
-  let prevYwf = RW, prevYwr = RW;
-  let prevPrevYwf = RW, prevPrevYwr = RW;
-  let bodyAcc = 0, dispShock = 0;
+  let h = 0, phi = 0, theta = 0;
+  let hv = 0, phiv = 0, thetav = 0;
+  let prevDefFL = 0, prevDefFR = 0, prevDefRL = 0, prevDefRR = 0;
+  let prevYfL = 0, prevYfR = 0, prevYrL = 0, prevYrR = 0;
   let axleYf = RW, axleYr = RW;
+  let rollF = 0, rollR = 0;
   let labelsDirty = false;
   let _firstFrame = true;
 
-  /* Rigid-mode violence state */
-  let rigidChatterPhase = 0;
-  let impactKick = 0;
-  let axleHopF = 0, axleHopR = 0;
-
-  /* Danger */
   let danger = 0;
-  let crashed = false;
-  let crashTime = 0;
-
-  /* Camera shake */
   let shakeAmt = 0;
   const shakeOffset = new THREE.Vector3();
-
   let lastImpactT = 0;
+
+  /* Shock display state (smoothed) */
+  let shockFrontSmooth = 0, shockRearSmooth = 0;
 
   const SLOWMO_MULT = 0.08;
   let slowMo = false;
 
-  const modeBadge     = document.getElementById('mode-badge');
-  const modeNameEl    = document.getElementById('mode-name');
-  const speedKmhEl    = document.getElementById('speed-kmh');
-  const btnWith       = document.getElementById('btn-with');
-  const btnWithout    = document.getElementById('btn-without');
-  const shockPctEl    = document.getElementById('shock-pct');
-  const shockFillEl   = document.getElementById('shock-fill');
-  const shockVerdictEl= document.getElementById('shock-verdict');
+  const modeBadge = document.getElementById('mode-badge');
+  const modeNameEl = document.getElementById('mode-name');
+  const speedKmhEl = document.getElementById('speed-kmh');
+  const shockFrontPctEl = document.getElementById('shock-front-pct');
+  const shockFrontFillEl = document.getElementById('shock-front-fill');
+  const shockRearPctEl = document.getElementById('shock-rear-pct');
+  const shockRearFillEl = document.getElementById('shock-rear-fill');
   const dangerMeterEl = document.getElementById('danger-meter');
-  const dangerPctEl   = document.getElementById('danger-pct');
-  const dangerFillEl  = document.getElementById('danger-fill');
+  const dangerPctEl = document.getElementById('danger-pct');
+  const dangerFillEl = document.getElementById('danger-fill');
   const dangerVerdictEl = document.getElementById('danger-verdict');
-  const modeDescEl    = document.getElementById('mode-desc');
-  const rpmLabelEl    = document.getElementById('rpm-label');
+  const modeDescEl = document.getElementById('mode-desc');
+  const rpmLabelEl = document.getElementById('rpm-label');
   const impactFlashEl = document.getElementById('impact-flash');
-  const impactWarnEl  = document.getElementById('impact-warning');
+  const impactWarnEl = document.getElementById('impact-warning');
+  const btnSuspToggle = document.getElementById('btn-susp-toggle');
+  const suspBtnLabel = document.getElementById('susp-btn-label');
+  const roadValEl = document.getElementById('road-val');
 
   let flashTimeout = 0;
-
-  function flashImpact(power, permanent) {
+  function flashImpact(power) {
     impactFlashEl.style.opacity = String(Math.min(0.85, 0.35 + power * 0.5));
     impactWarnEl.classList.add('on');
     clearTimeout(flashTimeout);
-    if (!permanent) {
-      flashTimeout = setTimeout(() => {
-        impactFlashEl.style.opacity = '0';
-        impactWarnEl.classList.remove('on');
-      }, 160 + power * 120);
-    }
+    flashTimeout = setTimeout(() => {
+      impactFlashEl.style.opacity = '0';
+      impactWarnEl.classList.remove('on');
+    }, 160 + power * 120);
   }
 
-  const DESC_WITH = '<strong>With suspension.</strong> The coil springs and leaf spring flex as each wheel rises over a bump; the shock absorbers (dampers) dissipate the energy. The chassis stays nearly level — passengers feel only a gentle float.';
+  const DESC_WITH = '<strong>With suspension.</strong> Coil springs, leaf springs and dampers absorb every bump. The chassis stays nearly level — passengers feel only a gentle float. Watch the leaf spring flatten through potholes and the shackle swing as it stretches.';
   const DESC_WITHOUT = '<strong>Without suspension.</strong> Rigid links connect the axles straight to the chassis. Every bump hits the frame directly — violent jolts, poor road holding, and a bone-shaking ride. High speed on rough ground will trigger a crash.';
 
-  /* ============================================================
+  /* ═══════════════════════════════════════════════════════════
      LABELS
-     ============================================================ */
+     ═══════════════════════════════════════════════════════════ */
   const labelDefs = [
     { id:'chassis', text:'Chassis Frame', pos:()=>new THREE.Vector3(1.75, 1.55 + h + 0.45, 0.55) },
     { id:'cabin',   text:'Cabin',         pos:()=>new THREE.Vector3(1.35, 2.60 + h, 0.35) },
@@ -1144,10 +1014,8 @@
   labelDefs.forEach(d => labels.add(d.id, d.text));
 
   function applyMode() {
-    suspParts.forEach(m => { m.visible = withSusp; });
+    suspParts.forEach(m => { m.visible = true; });
     rigidParts.forEach(p => { p.mesh.visible = !withSusp; });
-    btnWith.classList.toggle('active', withSusp);
-    btnWithout.classList.toggle('active', !withSusp);
 
     modeBadge.style.background = withSusp ? 'rgba(56,189,248,.18)' : 'rgba(239,68,68,.20)';
     modeBadge.style.color = withSusp ? '#38bdf8' : '#ef4444';
@@ -1155,16 +1023,9 @@
     modeDescEl.innerHTML = withSusp ? DESC_WITH : DESC_WITHOUT;
     labelsDirty = true;
 
-    if (!withSusp) {
-      h = (axleYf + axleYr) / 2 - RW;
-      phi = Math.atan2(axleYf - axleYr, XF - XR) * 0.9;
-    }
-    hv = 0; phiv = 0;
-    prevCf = (axleYf - (h + phi * XF)) - RW;
-    prevCr = (axleYr - (h + phi * XR)) - RW;
-    shakeAmt = 0;
-    impactKick = 0;
-    axleHopF = 0; axleHopR = 0;
+    btnSuspToggle.classList.toggle('suspended', withSusp);
+    btnSuspToggle.classList.toggle('rigid', !withSusp);
+    suspBtnLabel.textContent = withSusp ? 'SUSP' : 'RIGID';
 
     bridge.setStatus(withSusp ? 'With Suspension' : 'Without Suspension',
                      withSusp ? '#38bdf8' : '#ef4444');
@@ -1186,19 +1047,15 @@
 
   function resetSim() {
     roadScroll = 0;
-    h = 0; phi = 0; hv = 0; phiv = 0;
-    prevCf = 0; prevCr = 0; hPrev1 = 0; hPrev2 = 0;
-    prevYwf = RW; prevYwr = RW;
-    prevPrevYwf = RW; prevPrevYwr = RW;
-    bodyAcc = 0; dispShock = 0;
+    h = 0; phi = 0; theta = 0;
+    hv = 0; phiv = 0; thetav = 0;
+    prevDefFL = prevDefFR = prevDefRL = prevDefRR = 0;
+    prevYfL = prevYfR = prevYrL = prevYrR = 0;
+    axleYf = RW; axleYr = RW;
+    rollF = 0; rollR = 0;
     shakeAmt = 0;
-    impactKick = 0;
-    axleHopF = 0; axleHopR = 0;
     danger = 0;
-    crashed = false;
-    crashTime = 0;
-    impactWarnEl.classList.remove('crash');
-    impactWarnEl.textContent = '⚠ IMPACT — every bump slams the chassis';
+    suspBlend = withSusp ? 1 : 0;
     impactFlashEl.style.opacity = '0';
     impactWarnEl.classList.remove('on');
     _firstFrame = true;
@@ -1209,8 +1066,10 @@
   Base.wireCommonUI(state, { onReset: resetSim });
   Base.wirePanelToggle();
 
-  btnWith.addEventListener('click', () => { withSusp = true; applyMode(); });
-  btnWithout.addEventListener('click', () => { withSusp = false; applyMode(); });
+  btnSuspToggle.addEventListener('click', () => {
+    withSusp = !withSusp;
+    applyMode();
+  });
 
   const btnSlow = document.getElementById('btn-slowmo');
   btnSlow.addEventListener('click', () => {
@@ -1240,293 +1099,332 @@
   applyMode();
   updateSpeedLabel();
 
-  /* ============================================================
+  /* ═══════════════════════════════════════════════════════════
      PER-FRAME UPDATE
-     ============================================================ */
+     ═══════════════════════════════════════════════════════════ */
   function updateVehicle(dt) {
     if (dt <= 0) return;
     const v = 2.4 * (slowMo ? SLOWMO_MULT : state.speedMul);
     roadScroll += v * dt;
 
-    const ywf = roadProfile(XF + roadScroll) + RW;
-    const ywr = roadProfile(XR + roadScroll) + RW;
-    const wvF = _firstFrame ? 0 : (ywf - prevYwf) / dt;
-    const wvR = _firstFrame ? 0 : (ywr - prevYwr) / dt;
+    /* Terrain height at all 4 wheel contact points */
+    const lXf = XF + roadScroll;
+    const lXr = XR + roadScroll;
+    const yfL = roadHeight(lXf, -TRACK_W);
+    const yfR = roadHeight(lXf,  TRACK_W);
+    const yrL = roadHeight(lXr, -TRACK_W);
+    const yrR = roadHeight(lXr,  TRACK_W);
 
-    if (withSusp) {
-      const cf = (ywf - (h + phi * XF)) - RW;
-      const cr = (ywr - (h + phi * XR)) - RW;
-      const cfd = _firstFrame ? 0 : (cf - prevCf) / dt;
-      const crd = _firstFrame ? 0 : (cr - prevCr) / dt;
-      const Ff = K_SPRING * cf + C_DAMP * cfd;
-      const Fr = K_SPRING * cr + C_DAMP * crd;
+    /* Wheel vertical velocities */
+    const dvfL = _firstFrame ? 0 : (yfL - prevYfL) / dt;
+    const dvfR = _firstFrame ? 0 : (yfR - prevYfR) / dt;
+    const dvrL = _firstFrame ? 0 : (yrL - prevYrL) / dt;
+    const dvrR = _firstFrame ? 0 : (yrR - prevYrR) / dt;
 
-      hv += (Ff + Fr) / M_BODY * dt;
-      phiv += (Ff * XF + Fr * XR) / I_BODY * dt;
-      h += hv * dt;
-      phi = clamp(phi + phiv * dt, -0.14, 0.14);
+    /* Rigid target pose (chassis follows average axle heights) */
+    const avgAxleF = (yfL + yfR) / 2;
+    const avgAxleR = (yrL + yrR) / 2;
+    const rigidH = (avgAxleF + avgAxleR) / 2;
+    const rigidPhi = Math.atan2(avgAxleF - avgAxleR, XF - XR) * 0.85;
+    const rigidRollF = -Math.atan2(yfR - yfL, 2 * TRACK_W);
+    const rigidRollR = -Math.atan2(yrR - yrL, 2 * TRACK_W);
+    const rigidTheta = (rigidRollF + rigidRollR) / 2;
 
-      bodyAcc = (Ff + Fr) / M_BODY;
-      prevCf = cf; prevCr = cr;
+    /* Smoothly blend toward the target suspension mode */
+    const blendTarget = withSusp ? 1 : 0;
+    suspBlend += (blendTarget - suspBlend) * Math.min(1, dt * SUSP_BLEND_RATE);
+    if (Math.abs(suspBlend - blendTarget) < 0.005) suspBlend = blendTarget;
 
-      /* Decay axle hop to zero when suspension is active */
-      axleHopF *= Math.exp(-8 * dt);
-      axleHopR *= Math.exp(-8 * dt);
-    } else {
-      hPrev2 = hPrev1; hPrev1 = h;
-      h = (ywf + ywr) / 2 - RW;
-      phi = Math.atan2(ywf - ywr, XF - XR) * 0.9;
-      hv = 0; phiv = 0;
-      bodyAcc = _firstFrame ? 0 : (h - 2 * hPrev1 + hPrev2) / (dt * dt);
+    /* ----- Spring mass dynamics ----- */
+    /* Body pose Y at each wheel corner (displacement) */
+    const fYFL = h + phi * XF + theta * (-TRACK_W);
+    const fYFR = h + phi * XF + theta * ( TRACK_W);
+    const fYRL = h + phi * XR + theta * (-TRACK_W);
+    const fYRR = h + phi * XR + theta * ( TRACK_W);
 
-      /* ── Rigid mode: axle hop ──
-         Wheels lag the terrain, then overshoot. Sharp wheel velocity kicks
-         a decaying hop offset that visually shows the wheel leaving the
-         ground. Computed via second-derivative of the wheel path. */
-      if (!_firstFrame) {
-        const wAccF = (ywf - 2 * prevYwf + prevPrevYwf) / (dt * dt);
-        const wAccR = (ywr - 2 * prevYwr + prevPrevYwr) / (dt * dt);
-        if (Math.abs(wAccF) > 15) {
-          axleHopF += -Math.sign(wAccF) * Math.min(0.09, Math.abs(wAccF) * 0.0015);
-        }
-        if (Math.abs(wAccR) > 15) {
-          axleHopR += -Math.sign(wAccR) * Math.min(0.09, Math.abs(wAccR) * 0.0015);
-        }
-      }
-      axleHopF *= Math.exp(-5 * dt);
-      axleHopR *= Math.exp(-5 * dt);
-      axleHopF = clamp(axleHopF, -0.12, 0.12);
-      axleHopR = clamp(axleHopR, -0.12, 0.12);
+    /* Deflections */
+    const defFL = yfL - fYFL;
+    const defFR = yfR - fYFR;
+    const defRL = yrL - fYRL;
+    const defRR = yrR - fYRR;
+
+    /* Deflection derivatives (for damper force) */
+    const dfFL = _firstFrame ? 0 : (defFL - prevDefFL) / dt;
+    const dfFR = _firstFrame ? 0 : (defFR - prevDefFR) / dt;
+    const dfRL = _firstFrame ? 0 : (defRL - prevDefRL) / dt;
+    const dfRR = _firstFrame ? 0 : (defRR - prevDefRR) / dt;
+
+    /* Spring forces (only applied when suspended) */
+    const FFL = (K_SPRING * defFL + C_DAMP * dfFL) * suspBlend;
+    const FFR = (K_SPRING * defFR + C_DAMP * dfFR) * suspBlend;
+    const FRL = (K_SPRING_R * defRL + C_DAMP * dfRL) * suspBlend;
+    const FRR = (K_SPRING_R * defRR + C_DAMP * dfRR) * suspBlend;
+
+    const Fsum = FFL + FFR + FRL + FRR;
+    const Mpitch = FFL * XF + FFR * XF + FRL * XR + FRR * XR;
+    const Mroll  = TRACK_W * (FFL - FFR + FRL - FRR);
+
+    /* Integrate */
+    hv += (Fsum / M_BODY) * dt;
+    phiv += (Mpitch / I_PITCH) * dt;
+    thetav += (Mroll / I_ROLL) * dt;
+    h += hv * dt;
+    phi += phiv * dt;
+    theta += thetav * dt;
+
+    /* Clamp */
+    phi = clamp(phi, -0.16, 0.16);
+    theta = clamp(theta, -0.12, 0.12);
+    h = clamp(h, -0.25, 0.30);
+
+    /* Blend output toward rigid target as suspBlend → 0 */
+    if (suspBlend < 1) {
+      const w = 1 - suspBlend;
+      h = h * suspBlend + rigidH * w;
+      phi = phi * suspBlend + rigidPhi * w;
+      theta = theta * suspBlend + rigidTheta * w;
+      hv *= suspBlend;
+      phiv *= suspBlend;
+      thetav *= suspBlend;
     }
-    prevPrevYwf = prevYwf; prevPrevYwr = prevYwr;
-    prevYwf = ywf; prevYwr = ywr;
-    axleYf = ywf + axleHopF;
-    axleYr = ywr + axleHopR;
-    _firstFrame = false;
 
-    /* Rigid mode chatter — three frequencies (low thud, mid bounce, high rattle) */
+    /* Rigid mode chatter overlay */
     let chatter = 0;
-    if (!withSusp) {
-      rigidChatterPhase += dt * (18 + v * 6);
+    if (suspBlend < 0.98) {
+      const rigidAmt = 1 - suspBlend;
+      const phase = performance.now() * 0.001;
       const speedFactor = clamp(v / 2.4, 0.2, 1.6);
       chatter =
-        0.006 * speedFactor * Math.sin(rigidChatterPhase * 0.35) +   // low thud
-        0.010 * speedFactor * Math.sin(rigidChatterPhase * 1.0)  +   // mid bounce
-        0.006 * speedFactor * Math.sin(rigidChatterPhase * 2.8)  +   // high rattle
-        0.004 * speedFactor * Math.sin(rigidChatterPhase * 7.0);     // tiny jitter
-      chatter += impactKick;
-      impactKick *= Math.exp(-9 * dt);
+        0.006 * speedFactor * Math.sin(phase * 22) +
+        0.009 * speedFactor * Math.sin(phase * 55) +
+        0.005 * speedFactor * Math.sin(phase * 133);
+      chatter *= rigidAmt;
     }
 
     const hVis = h + chatter;
 
-    /* ── Camera shake + impact detection in rigid mode ── */
-    if (!withSusp) {
-      const accel = Math.abs(bodyAcc);
-      const now = performance.now();
-
-      const rumble = clamp(v / 2.4, 0, 1.4) * 0.008;
-      shakeAmt = Math.max(shakeAmt, rumble);
-
-      /* Impact: strong vertical acceleration */
-      if (accel > 3.5 && now - lastImpactT > 110) {
-        lastImpactT = now;
-        const power = clamp(accel / 8, 0.3, 1.6);
-
-        const sparkCount = Math.round(6 + state.speedMul * 8 * power);
-        spawnSparks(XF, axleYf - 0.15, 0.68, sparkCount, power);
-        spawnSparks(XF, axleYf - 0.15, -0.68, sparkCount, power);
-        spawnSparks(XR, axleYr - 0.15, 0.55, Math.round(sparkCount * 0.75), power);
-        spawnSparks(XR, axleYr - 0.15, -0.55, Math.round(sparkCount * 0.75), power);
-
-        shakeAmt = Math.max(shakeAmt, 0.05 + power * 0.06);
-        impactKick = -Math.sign(bodyAcc) * Math.min(0.035, power * 0.02);
-        flashImpact(power, false);
-      }
-    }
+    /* Axle heights (rigid beams) */
+    axleYf = (yfL + yfR) / 2 + RW;
+    axleYr = (yrL + yrR) / 2 + RW;
+    rollF = rigidRollF;
+    rollR = rigidRollR;
 
     axleF.position.y = axleYf;
     axleR.position.y = axleYr;
+    axleF.rotation.x = rollF;
+    axleR.rotation.x = rollR;
+
     bodyG.position.y = hVis;
+    bodyG.rotation.z = phi;
+    bodyG.rotation.x = theta;
 
-    const phiVis = withSusp ? phi : phi * 1.35;
-    bodyG.rotation.z = phiVis;
-
+    /* Wheels spin */
     const spin = (v * dt) / RW;
     wheelSpinners.forEach(s => { s.rotation.z -= spin; });
 
-    road.position.x = -(roadScroll % ROAD_P);
+    /* Road scroll — two copies for seamless wrap */
+    const scrollMod = ((roadScroll % ROAD_LENGTH) + ROAD_LENGTH) % ROAD_LENGTH;
+    roadMesh.position.x = -scrollMod;
+    roadMesh2.position.x = -scrollMod + ROAD_LENGTH;
+    dashesGroup.position.x = -scrollMod;
+    /* Second dash group on the tail */
+    dashesGroup.children.forEach(d => {}); // noop
 
-    /* ── Front coil-overs ── */
-    const seatY = SPRING_SEAT_Y + hVis + phiVis * (XF - 0.15);
-    const baseY = axleYf + 0.19;
-    [coiloverL, coiloverR].forEach(co => {
-      co.position.set(XF - 0.15, baseY, co.userData.z);
-      const L = clamp(seatY - baseY, 0.28, 0.86);
+    /* ----- Visual springs ----- */
+
+    /* Front coil-overs */
+    [coiloverL, coiloverR].forEach((co, i) => {
+      const zs = co.userData.z;
+      const plateY = SPRING_SEAT_Y + hVis + phi * (XF - 0.15) + theta * zs;
+      const baseY = axleYf + 0.19 - Math.sin(rollF) * zs;
+      co.position.set(XF - 0.15, baseY, zs);
+      const L = clamp(plateY - baseY, 0.28, 0.86);
       const scaleY = L / REST_LEN_F;
       co.userData.spring.scale.y = scaleY;
-      /* Poisson bulge: constant volume means radius scales as 1/sqrt(height scale) */
       const bulge = clamp(1 / Math.sqrt(scaleY), 0.92, 1.18);
       co.userData.spring.scale.x = bulge;
       co.userData.spring.scale.z = bulge;
       co.userData.damper.set(L + 0.08);
     });
 
-    /* ── Rear dampers ── */
-    const rSeatY = 1.40 + hVis + phiVis * (XR + 0.45);
+    /* Rear dampers */
     rearDampers.forEach(d => {
-      d.g.position.set(XR + 0.45, axleYr + 0.05, d.g.userData.z);
-      d.set(clamp(rSeatY - (axleYr + 0.05), 0.40, 1.05));
+      const zs = d.g.userData.z;
+      const seatY = 1.40 + hVis + phi * (XR + 0.45) + theta * zs;
+      const baseY = axleYr + 0.05 - Math.sin(rollR) * zs;
+      d.g.position.set(XR + 0.45, baseY, zs);
+      d.set(clamp(seatY - baseY, 0.40, 1.05));
     });
 
-    /* ── Leaf springs — deformable ribbons fit a Bézier each frame ── */
+    /* Leaf springs */
     const asmY = axleYr - 0.10;
-    const eyeBodyY = 0.75 + hVis + phiVis * (XR - EYE_LOCAL);
-
     leafSprings.forEach(la => {
-      la.group.position.set(XR, asmY, la.z);
-      la.leafSy = clamp((eyeBodyY - asmY) / EYE_RISE, 0.35, 1.25);
+      const zs = la.z;
+      const bodyY = 0.75 + hVis + phi * (XR - EYE_LOCAL) + theta * zs;
+      const axleAtZ = axleYr - Math.sin(rollR) * zs;
+      la.group.position.set(XR, axleAtZ - 0.10, zs);
+      la.leafSy = clamp((bodyY - (axleAtZ - 0.10)) / EYE_RISE, 0.35, 1.25);
       la.leafSx = 1 + 0.16 * (1 - la.leafSy);
-
       const eyeX = EYE_LOCAL * la.leafSx;
       const eyeY = EYE_RISE * la.leafSy;
-
-      /* Bézier control points (local): eyes at ±eyeX, eyeY; centroid at (0, 0) */
       const P0 = { x: -eyeX, y: eyeY };
       const P2 = { x:  eyeX, y: eyeY };
       const C  = { x: 0, y: -eyeY };
-
-      /* Rewrite each leaf ribbon */
       la.leafData.forEach(d => deformLeaf(d, P0, C, P2, d.stackOffset));
-
-      /* Eyes track the leaf ribbon's endpoints */
       la.eyeF.position.set(-eyeX, eyeY, 0);
       la.eyeR.position.set( eyeX, eyeY, 0);
     });
 
-    /* ── Shackles ── */
+    /* Shackles */
     shackles.forEach(sh => {
+      const zs = sh.userData.z;
       const shTopX = XR + EYE_LOCAL;
-      const shTopY = 1.04 + hVis + phiVis * (XR + EYE_LOCAL);
-      const la = leafSprings[0];
+      const shTopY = 1.04 + hVis + phi * (XR + EYE_LOCAL) + theta * zs;
+      const la = leafSprings[zs < 0 ? 0 : 1];
       const ex = XR + EYE_LOCAL * la.leafSx;
-      const ey = asmY + EYE_RISE * la.leafSy;
+      const ey = la.group.position.y + EYE_RISE * la.leafSy;
       const dx = ex - shTopX;
       const dy = ey - shTopY;
-
-      sh.position.set(shTopX, shTopY, sh.userData.z);
+      sh.position.set(shTopX, shTopY, zs);
       sh.scale.y = Math.max(0.18, Math.hypot(dx, dy));
       sh.rotation.z = Math.atan2(dx, -dy);
     });
 
-    /* ── Rigid struts ── */
+    /* Rigid struts */
     rigidParts.forEach(p => {
-      const base = p.front ? axleYf + 0.19 : axleYr + 0.04;
+      const zs = p.z;
+      const base = p.front
+        ? axleYf + 0.19 - Math.sin(rollF) * zs
+        : axleYr + 0.04 - Math.sin(rollR) * zs;
       const top = p.front
-        ? SPRING_SEAT_Y + hVis + phiVis * (XF - 0.15)
-        : 1.42 + hVis + phiVis * XR;
-      p.mesh.position.set(p.x, base, p.z);
+        ? SPRING_SEAT_Y + hVis + phi * (XF - 0.15) + theta * zs
+        : 1.42 + hVis + phi * XR + theta * zs;
+      p.mesh.position.set(p.x, base, zs);
       p.mesh.scale.y = clamp(top - base, 0.30, 1.15);
     });
 
-    /* ── Dust spawn ── */
+    /* Dust spawn */
     if (state.showGas && !_firstFrame) {
-      [[XF, wvF], [XR, wvR]].forEach(([x, wv]) => {
-        const mag = Math.abs(wv);
-        const threshold = withSusp ? 0.55 : 0.30;
-        if (mag > threshold) {
-          spawnDust(x, Math.min(14, Math.round(mag * 12 * (withSusp ? 1 : 1.8))),
-                       withSusp ? 0.65 : 1.15);
-        }
-      });
+      const midFr = Math.max(Math.abs(dvfL), Math.abs(dvfR));
+      const midRr = Math.max(Math.abs(dvrL), Math.abs(dvrR));
+      if (midFr > 0.55) spawnDust(XF, Math.min(12, Math.round(midFr * 10)), 0.7);
+      if (midRr > 0.55) spawnDust(XR, Math.min(12, Math.round(midRr * 10)), 0.7);
     }
+
+    /* Impact FX in rigid mode */
+    if (suspBlend < 0.5) {
+      const rigidAmt = 1 - suspBlend;
+      const accel = Math.abs((defFL + defFR + defRL + defRR) / 4) * rigidAmt * 30;
+      const now = performance.now();
+
+      const rumble = clamp(v / 2.4, 0, 1.4) * 0.008 * rigidAmt;
+      shakeAmt = Math.max(shakeAmt, rumble);
+
+      if (accel > 3.5 && now - lastImpactT > 110) {
+        lastImpactT = now;
+        const power = clamp(accel / 8, 0.3, 1.6);
+        const n = Math.round(6 + state.speedMul * 8 * power);
+        spawnSparks(XF, axleYf - 0.15,  0.68, n, power);
+        spawnSparks(XF, axleYf - 0.15, -0.68, n, power);
+        spawnSparks(XR, axleYr - 0.15,  0.55, Math.round(n * 0.75), power);
+        spawnSparks(XR, axleYr - 0.15, -0.55, Math.round(n * 0.75), power);
+        shakeAmt = Math.max(shakeAmt, 0.05 + power * 0.06);
+        flashImpact(power);
+      }
+    }
+
+    /* Save state for next frame */
+    prevDefFL = defFL; prevDefFR = defFR;
+    prevDefRL = defRL; prevDefRR = defRR;
+    prevYfL = yfL; prevYfR = yfR;
+    prevYrL = yrL; prevYrR = yrR;
+    _firstFrame = false;
   }
 
-  /* ============================================================
-     DANGER METER
-     ============================================================ */
-  const DANGER_RATE_UP   = 0.30;
-  const DANGER_RATE_DOWN = 0.55;
+  /* ═══════════════════════════════════════════════════════════
+     SHOCK METERS + DANGER
+     ═══════════════════════════════════════════════════════════ */
+  function updateShockMeters(dt) {
+    /* Front shock = average |vertical acceleration| at front axle */
+    const frontImpact = clamp(
+      (Math.abs(prevDefFL) + Math.abs(prevDefFR)) / 2 * (withSusp ? 0.12 : 1.1),
+      0, 1
+    );
+    const rearImpact = clamp(
+      (Math.abs(prevDefRL) + Math.abs(prevDefRR)) / 2 * (withSusp ? 0.12 : 1.1),
+      0, 1
+    );
 
+    shockFrontSmooth += (frontImpact - shockFrontSmooth) * Math.min(1, dt * 5);
+    shockRearSmooth  += (rearImpact  - shockRearSmooth)  * Math.min(1, dt * 5);
+
+    if (shockFrontPctEl) shockFrontPctEl.textContent = Math.round(shockFrontSmooth * 100) + '%';
+    if (shockRearPctEl)  shockRearPctEl.textContent  = Math.round(shockRearSmooth  * 100) + '%';
+
+    const colF = shockFrontSmooth < 0.28 ? '#22c55e' : shockFrontSmooth < 0.62 ? '#f59e0b' : '#ef4444';
+    const colR = shockRearSmooth  < 0.28 ? '#22c55e' : shockRearSmooth  < 0.62 ? '#f59e0b' : '#ef4444';
+    if (shockFrontFillEl) {
+      shockFrontFillEl.style.width = (shockFrontSmooth * 100).toFixed(0) + '%';
+      shockFrontFillEl.style.background = colF;
+    }
+    if (shockRearFillEl) {
+      shockRearFillEl.style.width = (shockRearSmooth * 100).toFixed(0) + '%';
+      shockRearFillEl.style.background = colR;
+    }
+
+    /* Arrow */
+    const maxShock = Math.max(shockFrontSmooth, shockRearSmooth);
+    arrow.scale.y = 0.25 + 1.55 * maxShock;
+    if (maxShock < 0.28) matArrow.color.set(0x22c55e);
+    else if (maxShock < 0.62) matArrow.color.set(0xf59e0b);
+    else matArrow.color.set(0xef4444);
+  }
+
+  const DANGER_UP = 0.32;
+  const DANGER_DOWN = 0.55;
   function updateDanger(dt) {
-    if (!withSusp && state.playing && !crashed) {
-      const speedFactor = Math.pow(state.speedMul / 2.5, 1.4);
-      danger += DANGER_RATE_UP * speedFactor * dt;
+    if (!withSusp && state.playing) {
+      const sf = Math.pow(state.speedMul / 2.5, 1.4);
+      danger += DANGER_UP * sf * dt;
     } else {
-      danger -= DANGER_RATE_DOWN * dt;
+      danger -= DANGER_DOWN * dt;
     }
     danger = clamp(danger, 0, 1);
-
     const pct = Math.round(danger * 100);
-    dangerPctEl.textContent = pct + '%';
-    dangerFillEl.style.width = pct + '%';
+    if (dangerPctEl) dangerPctEl.textContent = pct + '%';
+    if (dangerFillEl) dangerFillEl.style.width = pct + '%';
 
     let band = '#22c55e';
     let verdict = 'Chassis coping fine';
     if (danger > 0.90) { band = '#dc2626'; verdict = '⚠ ACCIDENT IMMINENT — slow down or re-enable suspension'; }
     else if (danger > 0.70) { band = '#ef4444'; verdict = 'Severe impacts — structural risk'; }
     else if (danger > 0.40) { band = '#f59e0b'; verdict = 'Ride deteriorating — re-enable suspension'; }
-    dangerFillEl.style.background = band;
-    dangerVerdictEl.textContent = verdict;
-    dangerMeterEl.classList.toggle('active', !withSusp);
-    dangerMeterEl.classList.toggle('critical', danger > 0.90);
-
-    if (danger > 0.995 && !crashed && !withSusp) triggerCrash();
-    if (danger < 0.85 && crashed) {
-      crashed = false;
-      impactWarnEl.classList.remove('crash');
-      impactWarnEl.textContent = '⚠ IMPACT — every bump slams the chassis';
+    if (dangerFillEl) dangerFillEl.style.background = band;
+    if (dangerVerdictEl) dangerVerdictEl.textContent = verdict;
+    if (dangerMeterEl) {
+      dangerMeterEl.classList.toggle('active', !withSusp);
+      dangerMeterEl.classList.toggle('critical', danger > 0.90);
     }
   }
 
-  /* ============================================================
-     CRASH EVENT
-     ============================================================ */
-  function triggerCrash() {
-    crashed = true;
-    crashTime = 0;
+  /* Road info HUD */
+  let roadInfoTimer = 0;
+  function updateRoadInfo(dt) {
+    roadInfoTimer -= dt;
+    if (roadInfoTimer > 0) return;
+    roadInfoTimer = 0.15;
 
-    spawnSparks(XF, axleYf - 0.05,  0.75, 55, 2.2);
-    spawnSparks(XF, axleYf - 0.05, -0.75, 55, 2.2);
-    spawnSparks(XR, axleYr - 0.05,  0.75, 55, 2.2);
-    spawnSparks(XR, axleYr - 0.05, -0.75, 55, 2.2);
-
-    spawnDust(XF, 40, 1.6);
-    spawnDust(XR, 40, 1.6);
-
-    flashImpact(2.0, true);
-    impactWarnEl.classList.add('crash');
-    impactWarnEl.textContent = '⚠ CRASHED — Reset or re-enable suspension';
-    shakeAmt = 0.28;
-    impactKick = -0.10;
+    const f = roadFeatureAt(XF + roadScroll);
+    if (!f) { roadValEl.textContent = 'Flat'; roadValEl.className = 'val'; return; }
+    const lateralLabel = f.mode === 'left' ? 'L wheel' : f.mode === 'right' ? 'R wheel' : 'Both';
+    const typeLabel = f.type === 'bump' ? 'Bump' : f.type === 'pot' ? 'Pothole' : f.type === 'ripple' ? 'Washboard' : 'Wave';
+    roadValEl.textContent = typeLabel + ' · ' + lateralLabel;
+    roadValEl.className = 'val ' + (f.type === 'pot' ? 'pot' : 'bump');
   }
 
-  function updateShockReadouts(dt) {
-    const pct = clamp(Math.abs(bodyAcc) / 8, 0, 1);
-    dispShock = Math.max(pct, dispShock - dt * 1.4);
-
-    arrow.scale.y = 0.25 + 1.55 * dispShock;
-    if (dispShock < 0.28)      matArrow.color.set(0x22c55e);
-    else if (dispShock < 0.62) matArrow.color.set(0xf59e0b);
-    else                       matArrow.color.set(0xef4444);
-
-    if (shockPctEl) shockPctEl.textContent = Math.round(dispShock * 100) + '%';
-    if (shockFillEl) {
-      shockFillEl.style.width = (dispShock * 100).toFixed(0) + '%';
-      shockFillEl.style.background =
-        dispShock < 0.28 ? '#22c55e' : dispShock < 0.62 ? '#f59e0b' : '#ef4444';
-    }
-    if (shockVerdictEl) {
-      shockVerdictEl.textContent =
-        dispShock < 0.28 ? 'Smooth ride — springs and dampers absorb the bumps' :
-        dispShock < 0.62 ? 'Harsh — strong jolts reaching the chassis' :
-                           'Severe — every bump hits the frame directly';
-    }
-  }
-
-  /* ============================================================
+  /* ═══════════════════════════════════════════════════════════
      RENDER LOOP
-     ============================================================ */
+     ═══════════════════════════════════════════════════════════ */
   const clock = new THREE.Clock();
   let lastSpeedMul = -1;
 
@@ -1539,19 +1437,11 @@
     if (state.playing && dt > 0) {
       updateVehicle(dt);
     }
-
-    /* Crash aftermath motion */
-    if (crashed) {
-      crashTime += dt;
-      const dive = Math.min(1, crashTime * 2.2) * 0.13;
-      bodyG.rotation.z = -dive;
-      shakeAmt = Math.max(shakeAmt, 0.16);
-    }
-
     updateDust(dt);
     updateSparks(dt);
-    updateShockReadouts(dt);
+    updateShockMeters(dt);
     updateDanger(dt);
+    updateRoadInfo(dt);
 
     if (state.speedMul !== lastSpeedMul) {
       lastSpeedMul = state.speedMul;
@@ -1571,7 +1461,6 @@
 
     controls.update();
 
-    /* Camera shake after controls so damping doesn't fight it */
     if (shakeAmt > 0.0008) {
       shakeOffset.set(
         (Math.random() - 0.5) * shakeAmt,
