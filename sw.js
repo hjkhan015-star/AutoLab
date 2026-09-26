@@ -1,5 +1,5 @@
 /* Auto Lab service worker — caches the app shell + all modules for offline use */
-const VERSION = 'autolab-v5.1';
+const VERSION = 'autolab-v5.2';
 const CORE    = `${VERSION}-core`;
 const RUNTIME = `${VERSION}-runtime`;
 
