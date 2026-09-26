@@ -1670,14 +1670,14 @@
      suspension, shadows and trails so the differential reads alone.
      ═══════════════════════════════════════════════════════════ */
   const isolationHiddenParts = [];
-  vehicleGroup.children.forEach(child => {
-    if (child === differentialGroup) return;
-    isolationHiddenParts.push(child);
-  });
-  isolationHiddenParts.push(wheelL, wheelR);
-  isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
+vehicleGroup.children.forEach(child => {
+  if (child === differentialGroup) return;
+  isolationHiddenParts.push(child);
+});
+isolationHiddenParts.push(wheelL, wheelR);
+/* NOTE: contact shadows are registered later, once they exist. */
 
-  let isolationActive = false;
+let isolationActive = false;
   function setIsolation(on) {
     on = !!on;
     isolationActive = on;
@@ -1759,10 +1759,13 @@
     return m;
   }
   const shadowRL = makeContactShadow(1.15);
-  const shadowRR = makeContactShadow(1.15);
-  const shadowFL = makeContactShadow(1.00);
-  const shadowFR = makeContactShadow(1.00);
-  scene.add(shadowRL, shadowRR, shadowFL, shadowFR);
+const shadowRR = makeContactShadow(1.15);
+const shadowFL = makeContactShadow(1.00);
+const shadowFR = makeContactShadow(1.00);
+scene.add(shadowRL, shadowRR, shadowFL, shadowFR);
+
+/* Register shadows with isolation mode now that they exist */
+isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
 
   /* Ground trails */
   class Trail {
