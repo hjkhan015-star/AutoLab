@@ -38,9 +38,6 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* ═══════════════════════════════════════════════════════════
-     EDU PANEL
-     ═══════════════════════════════════════════════════════════ */
   #edu-panel.panel {
     background: var(--lab-panel) !important;
     border: 1px solid var(--lab-border) !important;
@@ -105,9 +102,6 @@
   }
   #stroke-desc strong { color: var(--lab-text) !important; font-weight: 700 !important; }
 
-  /* ═══════════════════════════════════════════════════════════
-     READOUTS
-     ═══════════════════════════════════════════════════════════ */
   #diff-readout { margin: 6px 0 8px; }
   .diff-row {
     display: flex; align-items: center; gap: 8px;
@@ -170,9 +164,6 @@
   #wheel-speed-extra .warn { color: var(--lab-danger); font-weight: 800; }
   #diff-mode-row .val { color: var(--lab-accent); }
 
-  /* ═══════════════════════════════════════════════════════════
-     SELECT / TOGGLE
-     ═══════════════════════════════════════════════════════════ */
   .select-group {
     display: flex; align-items: center; gap: 8px;
     font-size: 11px; color: var(--lab-text-dim);
@@ -192,9 +183,6 @@
   .select-group select:hover { background: var(--lab-surface-hi); }
   .select-group select option { background: #161b22; color: var(--lab-text); }
 
-  /* ═══════════════════════════════════════════════════════════
-     STEERING WHEEL
-     ═══════════════════════════════════════════════════════════ */
   #steer-overlay {
     position: fixed; bottom: 32px; right: 32px; z-index: 50;
     display: flex; flex-direction: column; align-items: center;
@@ -234,9 +222,6 @@
     pointer-events: none; box-shadow: var(--lab-shadow-sm);
   }
 
-  /* ═══════════════════════════════════════════════════════════
-     CAMERA PRESETS
-     ═══════════════════════════════════════════════════════════ */
   #cam-presets {
     position: fixed; top: 16px; right: 16px; z-index: 40;
     display: flex; gap: 4px; background: var(--lab-panel); padding: 6px;
@@ -257,9 +242,6 @@
     border-color: var(--lab-accent); box-shadow: var(--lab-accent-glow);
   }
 
-  /* ═══════════════════════════════════════════════════════════
-     STATUS FLASH
-     ═══════════════════════════════════════════════════════════ */
   #status-flash {
     position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
@@ -278,9 +260,6 @@
   #status-flash.on { opacity: 1; animation: flashPulse 1s infinite; }
   @keyframes flashPulse { 50% { opacity: 0.55; } }
 
-  /* ═══════════════════════════════════════════════════════════
-     TYRE SPEED CHIPS
-     ═══════════════════════════════════════════════════════════ */
   .tyre-speed-chip {
     position: fixed; z-index: 41;
     display: flex; flex-direction: column; gap: 2px;
@@ -315,9 +294,6 @@
     font-family: var(--lab-mono) !important;
   }
 
-  /* ═══════════════════════════════════════════════════════════
-     EMBED MODE
-     ═══════════════════════════════════════════════════════════ */
   body.embedded {
     --shell-header-h: calc(64px + env(safe-area-inset-top, 0px));
     --shell-pill-h: calc(64px + env(safe-area-inset-bottom, 0px));
@@ -388,11 +364,6 @@
   }
   .toggle input[type=checkbox] { accent-color: var(--lab-accent) !important; }
 
-  /* ═══════════════════════════════════════════════════════════
-     LIGHT THEME — differential-specific overrides
-     (base.css handles the generic palette; these target
-      module-specific components not covered there)
-     ═══════════════════════════════════════════════════════════ */
   html.light-theme #edu-panel.panel,
   html.light-theme #module-controls.panel {
     background: rgba(255, 255, 255, 0.94) !important;
@@ -454,7 +425,6 @@
     color: #334155 !important;
   }
   html.light-theme #steer-wheel { filter: drop-shadow(0 8px 20px rgba(15, 23, 42, 0.18)); }
-  html.light-theme .sw-rim { stroke: url(#sw-rim-grad); }
   html.light-theme .tyre-speed-chip {
     background: rgba(255, 255, 255, 0.94) !important;
     border-color: rgba(15, 23, 42, 0.16) !important;
@@ -470,13 +440,7 @@
   }
   html.light-theme #hint { color: #64748b !important; }
 
-  /* ═══════════════════════════════════════════════════════════
-     MOBILE LAYOUT FIX — resolve bottom-area collisions.
-     Placed last so it wins over all earlier rules.
-     ═══════════════════════════════════════════════════════════ */
   @media (max-width: 720px) {
-
-    /* Module controls — full-width bottom sheet, wraps cleanly */
     body.embedded #module-controls.panel,
     #module-controls.panel {
       position: fixed !important;
@@ -515,7 +479,6 @@
     body.embedded #module-controls .toggle,
     #module-controls .toggle { font-size: 10.5px; padding: 4px 6px; }
 
-    /* Cam presets — top-right on mobile (was colliding with wheel) */
     body.embedded #cam-presets,
     #cam-presets {
       position: fixed !important;
@@ -528,7 +491,6 @@
     }
     .cam-btn { padding: 6px 9px !important; font-size: 10px !important; }
 
-    /* Steer overlay — mid-right edge, clear of everything else */
     body.embedded #steer-overlay,
     #steer-overlay {
       position: fixed !important;
@@ -542,7 +504,6 @@
     #steer-wheel { width: 86px !important; height: 86px !important; }
     #steer-label { display: none !important; }
 
-    /* Tyre chips — tighten and lower z-index so they don't cover controls */
     .tyre-speed-chip {
       padding: 4px 8px !important;
       z-index: 18 !important;
@@ -631,6 +592,9 @@
     <label class="toggle"><input type="checkbox" id="chk-locked"> Locked</label>
     <label class="toggle"><input type="checkbox" id="chk-autodrive" checked> Auto Drive</label>
     <label class="toggle"><input type="checkbox" id="chk-labels" checked> Labels</label>
+    <label class="toggle"><input type="checkbox" id="chk-section"> Section</label>
+    <label class="toggle"><input type="checkbox" id="chk-explode"> Explode</label>
+    <label class="toggle"><input type="checkbox" id="chk-flow" checked> Flow</label>
     <label class="toggle" style="display:none"><input type="checkbox" id="chk-gas" checked> Gas</label>
   </div>
 
@@ -639,6 +603,7 @@
     <button class="cam-btn" data-mode="chase">Chase</button>
     <button class="cam-btn" data-mode="top">Top</button>
     <button class="cam-btn" data-mode="side">Side</button>
+    <button class="cam-btn" data-mode="diff">Diff</button>
   </div>
 
   <div id="steer-overlay">
@@ -707,6 +672,7 @@
   import * as THREE from 'three';
   import * as Base from './module-base.js';
   import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
   window.addEventListener('error', (e) => {
     console.error('[Differential] error:', e.error || e.message);
@@ -815,7 +781,35 @@
     chassis: new THREE.LineBasicMaterial({ color: 0x4a5568, transparent: true, opacity: 0.35 }),
     kingpin: new THREE.MeshStandardMaterial({ color:0x6b7a8f, metalness:0.80, roughness:0.30 }),
     tieRod:  new THREE.MeshStandardMaterial({ color:0x7a8a9e, metalness:0.70, roughness:0.35 }),
+    shockBody: new THREE.MeshStandardMaterial({ color:0x2b3038, metalness:0.65, roughness:0.55 }),
+    shockRod:  new THREE.MeshStandardMaterial({ color:0xc4ccd7, metalness:0.92, roughness:0.18 }),
+    mudFlap:   new THREE.MeshStandardMaterial({ color:0x14161a, metalness:0.05, roughness:0.95 }),
   };
+
+  /* ═══════════════════════════════════════════════════════════
+     CROSS-SECTION CLIP PLANE
+     ═══════════════════════════════════════════════════════════ */
+  const sectionPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  const pumpkinEdgeMat = new THREE.LineBasicMaterial({
+    color: 0x38bdf8, transparent: true, opacity: 0.14
+  });
+
+  const SECTION_MATS = [
+    diffMats.housing,
+    diffMats.carrier,
+    pumpkinEdgeMat,
+  ];
+
+  let sectionActive = false;
+  function applySection(on) {
+    on = !!on;
+    sectionActive = on;
+    SECTION_MATS.forEach(m => {
+      m.clippingPlanes = on ? [sectionPlane] : null;
+      m.clipIntersection = false;
+      m.needsUpdate = true;
+    });
+  }
 
   /* ═══════════════════════════════════════════════════════════
      SCENE
@@ -833,11 +827,21 @@
   const labels = Base.createLabelSystem();
   const state = Base.createUIState();
 
+  renderer.localClippingEnabled = true;
+
+  try {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    scene.environment = envRT.texture;
+    pmrem.dispose();
+  } catch (e) {
+    console.warn('[Differential] env map failed:', e);
+  }
+
   const GROUND_Y = -0.44;
   const BOUNDARY_HALF = 20;
   const CLAMP_HALF    = 17;
 
-  /* ─── Theme detection — now also honours the shell's `light-theme` class ─── */
   function isLightTheme() {
     if (document.documentElement.classList.contains('light-theme')) return true;
     if (document.body.classList.contains('light-theme')) return true;
@@ -935,7 +939,7 @@
   new MutationObserver(applyGroundTheme).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
   /* ═══════════════════════════════════════════════════════════
-     ROAD — oval circuit
+     ROAD
      ═══════════════════════════════════════════════════════════ */
   const ROAD_HALF_WIDTH = 2.3;
   const ROAD_STRAIGHT   = 9;
@@ -1094,6 +1098,26 @@
       groove.position.x = off * width;
       g.add(groove);
     });
+
+    const blockCount = 16;
+    const blockW = 0.045;
+    const blockDepth = 0.010;
+    for (let i = 0; i < blockCount; i++) {
+      const a = (i / blockCount) * Math.PI * 2;
+      [-0.30, 0.30].forEach(off => {
+        const block = new THREE.Mesh(
+          new THREE.BoxGeometry(width * 0.26, blockW, blockDepth),
+          diffMats.tyreGroove
+        );
+        block.position.set(
+          off * width,
+          Math.cos(a) * (radius - 0.002),
+          Math.sin(a) * (radius - 0.002)
+        );
+        block.rotation.x = a;
+        g.add(block);
+      });
+    }
 
     const rimR = radius * rimScale;
     const rim = new THREE.Mesh(
@@ -1283,12 +1307,14 @@
   carrierGroup.add(ringGear);
 
   const ringBoltMat = new THREE.MeshStandardMaterial({ color:0x9aa3b0, metalness:0.80, roughness:0.30 });
+  const ringBolts = [];
   for (let i = 0; i < 10; i++) {
     const a = (i/10)*Math.PI*2;
     const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.06,6), ringBoltMat);
     bolt.rotation.z = Math.PI / 2;
     bolt.position.set(RING_X + 0.08, Math.cos(a)*(RING_R*0.75), Math.sin(a)*(RING_R*0.75));
     carrierGroup.add(bolt);
+    ringBolts.push(bolt);
   }
 
   const sideLGroup = new THREE.Group(); sideLGroup.position.x = -SIDE_X; carrierGroup.add(sideLGroup);
@@ -1302,9 +1328,11 @@
   const crossPin = new THREE.Mesh(
     new THREE.CylinderGeometry(0.045, 0.045, SPIDER_Y*2+0.15, 12), diffMats.carrier);
   carrierGroup.add(crossPin);
+  const crossPinCaps = [];
   [-1,1].forEach(dir => {
     const b = new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.075,0.04,6), diffMats.carrier);
     b.position.y = dir * (SPIDER_Y + 0.08); carrierGroup.add(b);
+    crossPinCaps.push(b);
   });
 
   const SPIDER_MARKER_MAT = new THREE.MeshBasicMaterial({ color:0xff5c8a });
@@ -1401,14 +1429,17 @@
   const PUMPKIN_R = RING_R * 1.05;
 
   const pumpkinGeo = new THREE.SphereGeometry(PUMPKIN_R, 24, 16);
-  housingGroup.add(new THREE.Mesh(pumpkinGeo, diffMats.housing));
+  const pumpkinMesh = new THREE.Mesh(pumpkinGeo, diffMats.housing);
+  housingGroup.add(pumpkinMesh);
 
   const pumpkinEdges = new THREE.LineSegments(
     new THREE.WireframeGeometry(pumpkinGeo),
-    new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.14 })
+    pumpkinEdgeMat
   );
   housingGroup.add(pumpkinEdges);
 
+  const housingAxleTubes = [];
+  const housingTorusCollars = [];
   [-1,1].forEach(dir => {
     const tube = new THREE.Mesh(
       new THREE.CylinderGeometry(0.28, 0.28, 1.8, 20, 1, true),
@@ -1417,11 +1448,13 @@
     tube.rotation.z = Math.PI / 2;
     tube.position.x = dir * 1.2;
     housingGroup.add(tube);
+    housingAxleTubes.push(tube);
 
     const tf = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.05, 8, 20), diffMats.housing);
     tf.rotation.y = Math.PI / 2;
     tf.position.x = dir * 2.1;
     housingGroup.add(tf);
+    housingTorusCollars.push(tf);
   });
 
   const frontCover = new THREE.Mesh(
@@ -1432,6 +1465,232 @@
   frontCover.position.z = -0.3;
   housingGroup.add(frontCover);
 
+  /* ═══════════════════════════════════════════════════════════
+     TORQUE FLOW ARROWS
+     Cones placed along the driveline path. Each pulses with a
+     phase offset so the "flow" visually travels through the diff.
+     ═══════════════════════════════════════════════════════════ */
+  const flowArrows = [];
+  function makeFlowArrow(x, y, z, dir, color, phase) {
+    const geo = new THREE.ConeGeometry(0.055, 0.16, 12);
+    const mat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, y, z);
+
+    /* Orient cone (+Y default) along the requested direction */
+    if (dir === '+X') mesh.rotation.z = -Math.PI / 2;
+    else if (dir === '-X') mesh.rotation.z = Math.PI / 2;
+    else if (dir === '+Z') mesh.rotation.x = Math.PI / 2;
+    else if (dir === '-Z') mesh.rotation.x = -Math.PI / 2;
+    else if (dir === '-Y') mesh.rotation.x = Math.PI;
+
+    mesh.userData.phase = phase;
+    differentialGroup.add(mesh);
+    flowArrows.push(mesh);
+    return mesh;
+  }
+
+  /* Input flow (cyan) — engine → pinion */
+  makeFlowArrow(RING_X, PINION_Y, 0.95, '-Z', 0x38bdf8, 0);
+  makeFlowArrow(RING_X, PINION_Y, 0.55, '-Z', 0x38bdf8, Math.PI * 0.5);
+  /* Pinion → crown wheel (cyan) */
+  makeFlowArrow(RING_X, PINION_Y + 0.30, 0, '+Y', 0x38bdf8, Math.PI);
+  /* Crown → side gears (amber, split) */
+  makeFlowArrow(-SIDE_X - 0.20, 0, 0, '-X', 0xf59e0b, Math.PI * 1.5);
+  makeFlowArrow( SIDE_X + 0.20, 0, 0, '+X', 0xf59e0b, Math.PI * 1.5);
+  /* Side gears → wheels (amber) */
+  makeFlowArrow(-1.05, 0, 0, '-X', 0xf59e0b, Math.PI * 2);
+  makeFlowArrow( 1.05, 0, 0, '+X', 0xf59e0b, Math.PI * 2);
+
+  /* ═══════════════════════════════════════════════════════════
+     EXPLODED VIEW REGISTRATION
+     Each part stores its base position and a direction vector.
+     explodeAmount lerps 0↔1 and offsets all registered parts.
+     ═══════════════════════════════════════════════════════════ */
+  const explodedParts = [];
+  function registerExplode(obj, dx, dy, dz) {
+    obj.userData.explode = {
+      base: obj.position.clone(),
+      dir: new THREE.Vector3(dx, dy, dz)
+    };
+    explodedParts.push(obj);
+  }
+
+  registerExplode(ringGear,         -0.70,  0.00,  0.00);
+  registerExplode(sideLGroup,       -0.55,  0.00,  0.00);
+  registerExplode(sideRGroup,        0.55,  0.00,  0.00);
+  registerExplode(spiderTopGroup,    0.00,  0.90,  0.00);
+  registerExplode(spiderBotGroup,    0.00, -0.90,  0.00);
+  registerExplode(crossPin,          0.00,  0.62,  0.00);
+  registerExplode(crossPinCaps[0],   0.00,  0.62,  0.00);
+  registerExplode(crossPinCaps[1],   0.00,  0.62,  0.00);
+  registerExplode(drum,              0.00,  0.50,  0.00);
+  registerExplode(pinionGroup,       0.00, -0.55,  0.00);
+  registerExplode(axleAssemblyL,    -0.35,  0.00,  0.00);
+  registerExplode(axleAssemblyR,     0.35,  0.00,  0.00);
+  registerExplode(pumpkinMesh,       0.00,  1.10,  0.00);
+  registerExplode(pumpkinEdges,      0.00,  1.10,  0.00);
+  registerExplode(housingAxleTubes[0], -0.50, 0.00, 0.00);
+  registerExplode(housingAxleTubes[1],  0.50, 0.00, 0.00);
+  registerExplode(housingTorusCollars[0], -0.70, 0.00, 0.00);
+  registerExplode(housingTorusCollars[1],  0.70, 0.00, 0.00);
+  registerExplode(frontCover,        0.00,  0.00, -0.55);
+
+  let explodeAmount = 0;
+  let explodeTarget = 0;
+  function updateExplode(dt) {
+    const k = Math.min(1, dt * 3.0);
+    explodeAmount += (explodeTarget - explodeAmount) * k;
+    if (Math.abs(explodeAmount - explodeTarget) < 0.001) explodeAmount = explodeTarget;
+    explodedParts.forEach(obj => {
+      const ex = obj.userData.explode;
+      if (!ex) return;
+      obj.position.copy(ex.base).addScaledVector(ex.dir, explodeAmount);
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     SUSPENSION — leaf springs, shocks, mud flaps
+     ═══════════════════════════════════════════════════════════ */
+  const suspensionParts = [];
+
+  /* Rear leaf springs — 4 stacked leaves each side, sitting under the rail */
+  [-1, 1].forEach(side => {
+    const springX = side * 0.55;
+    const zStart = -1.55;
+    const zEnd = 0.55;
+    const zCenter = (zStart + zEnd) * 0.5;
+    const len = zEnd - zStart;
+    const leafCount = 4;
+    for (let i = 0; i < leafCount; i++) {
+      const t = i / (leafCount - 1);
+      const leafLen = len * (1 - t * 0.35);
+      const leafH = 0.028;
+      const leaf = new THREE.Mesh(
+        new THREE.BoxGeometry(0.11, leafH, leafLen),
+        i === 0 ? diffMats.frame : diffMats.frameDark
+      );
+      leaf.position.set(springX, -0.09 - i * (leafH + 0.008), zCenter);
+      leaf.castShadow = true;
+      vehicleGroup.add(leaf);
+      suspensionParts.push(leaf);
+    }
+
+    /* U-bolt blocks at each end */
+    [zStart + 0.15, zEnd - 0.15].forEach(zPos => {
+      const clamp = new THREE.Mesh(
+        new THREE.BoxGeometry(0.14, 0.10, 0.08),
+        diffMats.frameDark
+      );
+      clamp.position.set(springX, -0.16, zPos);
+      vehicleGroup.add(clamp);
+      suspensionParts.push(clamp);
+    });
+  });
+
+  /* Shock absorbers — one per corner */
+  function makeShockUnit(totalLen) {
+    const g = new THREE.Group();
+    const bodyLen = totalLen * 0.55;
+    const rodLen = totalLen * 0.45;
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.035, bodyLen, 10),
+      diffMats.shockBody
+    );
+    body.position.y = -bodyLen / 2;
+    g.add(body);
+
+    const rod = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.018, 0.018, rodLen, 8),
+      diffMats.shockRod
+    );
+    rod.position.y = rodLen / 2;
+    g.add(rod);
+
+    const boot = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.042, 0.042, bodyLen * 0.35, 10),
+      diffMats.shockBody
+    );
+    boot.position.y = -bodyLen * 0.1;
+    g.add(boot);
+
+    return g;
+  }
+
+  const shockDefs = [
+    /* Rear left, rear right */
+    { from: new THREE.Vector3( 1.02, -0.18,  0.00), to: new THREE.Vector3( 0.62,  0.18, -0.32) },
+    { from: new THREE.Vector3(-1.02, -0.18,  0.00), to: new THREE.Vector3(-0.62,  0.18, -0.32) },
+    /* Front left, front right */
+    { from: new THREE.Vector3( 0.96, -0.16,  2.80), to: new THREE.Vector3( 0.62,  0.18,  2.55) },
+    { from: new THREE.Vector3(-0.96, -0.16,  2.80), to: new THREE.Vector3(-0.62,  0.18,  2.55) },
+  ];
+  shockDefs.forEach(def => {
+    const len = def.from.distanceTo(def.to);
+    const shock = makeShockUnit(len);
+    const dir = def.to.clone().sub(def.from).normalize();
+    shock.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    shock.position.copy(def.from).addScaledVector(dir, len * 0.5);
+    vehicleGroup.add(shock);
+    suspensionParts.push(shock);
+  });
+
+  /* Mud flaps — hanging behind each rear wheel */
+  [-1, 1].forEach(side => {
+    const flapX = side * Math.abs(wheelLX) * 0.92;
+    const flap = new THREE.Mesh(
+      new THREE.BoxGeometry(0.26, 0.34, 0.018),
+      diffMats.mudFlap
+    );
+    flap.position.set(flapX, -0.22, -0.38);
+    flap.rotation.x = 0.16;
+    flap.castShadow = true;
+    vehicleGroup.add(flap);
+    suspensionParts.push(flap);
+
+    /* Small bracket at the top attaching it to the rail */
+    const bracket = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.06, 0.06),
+      diffMats.frameDark
+    );
+    bracket.position.set(flapX, -0.04, -0.36);
+    vehicleGroup.add(bracket);
+    suspensionParts.push(bracket);
+  });
+
+  /* ═══════════════════════════════════════════════════════════
+     ISOLATION MODE
+     When the "Diff" camera preset is active, hide chassis, wheels,
+     suspension, shadows and trails so the differential reads alone.
+     ═══════════════════════════════════════════════════════════ */
+  const isolationHiddenParts = [];
+  vehicleGroup.children.forEach(child => {
+    if (child === differentialGroup) return;
+    isolationHiddenParts.push(child);
+  });
+  isolationHiddenParts.push(wheelL, wheelR);
+  isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
+
+  let isolationActive = false;
+  function setIsolation(on) {
+    on = !!on;
+    isolationActive = on;
+    isolationHiddenParts.forEach(o => { if (o) o.visible = !on; });
+    trailRearL.points.visible  = !on;
+    trailRearR.points.visible  = !on;
+    trailFrontL.points.visible = !on;
+    trailFrontR.points.visible = !on;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     FRONT AXLE
+     ═══════════════════════════════════════════════════════════ */
   const frontAxleGroup = new THREE.Group();
   frontAxleGroup.position.set(0, 0, FRONT_AXLE_Z);
   vehicleGroup.add(frontAxleGroup);
@@ -1466,6 +1725,44 @@
   tieRod.rotation.z = Math.PI / 2;
   tieRod.position.set(0, -0.20, 0.28);
   frontAxleGroup.add(tieRod);
+
+  isolationHiddenParts.push(frontAxleGroup);
+
+  /* ═══════════════════════════════════════════════════════════
+     CONTACT SHADOWS
+     ═══════════════════════════════════════════════════════════ */
+  function makeContactShadowTex() {
+    const size = 128;
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+    grad.addColorStop(0,    'rgba(0,0,0,0.60)');
+    grad.addColorStop(0.55, 'rgba(0,0,0,0.22)');
+    grad.addColorStop(1,    'rgba(0,0,0,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, size, size);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+  const contactShadowMat = new THREE.MeshBasicMaterial({
+    map: makeContactShadowTex(),
+    transparent: true,
+    depthWrite: false,
+    opacity: 0.9
+  });
+  function makeContactShadow(size) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), contactShadowMat);
+    m.rotation.x = -Math.PI / 2;
+    m.renderOrder = 1;
+    return m;
+  }
+  const shadowRL = makeContactShadow(1.15);
+  const shadowRR = makeContactShadow(1.15);
+  const shadowFL = makeContactShadow(1.00);
+  const shadowFR = makeContactShadow(1.00);
+  scene.add(shadowRL, shadowRR, shadowFL, shadowFR);
 
   /* Ground trails */
   class Trail {
@@ -1622,16 +1919,28 @@
   let diffLocked = false;
   let tractionMode = 'none';
   let camMode = 'orbit';
+  let flowOn = true;
 
   const chkLocked = document.getElementById('chk-locked');
   const selTraction = document.getElementById('traction-mode');
+  const chkSection = document.getElementById('chk-section');
+  const chkExplode = document.getElementById('chk-explode');
+  const chkFlow = document.getElementById('chk-flow');
   if (chkLocked) chkLocked.addEventListener('change', () => { diffLocked = chkLocked.checked; });
   if (selTraction) selTraction.addEventListener('change', () => { tractionMode = selTraction.value; });
+  if (chkSection) chkSection.addEventListener('change', () => { applySection(chkSection.checked); });
+  if (chkExplode) chkExplode.addEventListener('change', () => { explodeTarget = chkExplode.checked ? 1 : 0; });
+  if (chkFlow) chkFlow.addEventListener('change', () => {
+    flowOn = chkFlow.checked;
+    flowArrows.forEach(a => { a.visible = flowOn; });
+  });
 
   document.querySelectorAll('.cam-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      const prev = camMode;
       camMode = btn.dataset.mode;
       document.querySelectorAll('.cam-btn').forEach(b => b.classList.toggle('active', b === btn));
+      if ((prev === 'diff') !== (camMode === 'diff')) setIsolation(camMode === 'diff');
     });
   });
 
@@ -1640,10 +1949,17 @@
     autoDrive = true; if (chkAutoDrive) chkAutoDrive.checked = true;
     vehiclePos.set(0, 0, 0); vehicleHeading = 0;
     vehicleGroup.position.copy(vehiclePos);
-    vehicleGroup.rotation.y = 0;
+    vehicleGroup.rotation.set(0, 0, 0);
     trailRearL.clear(); trailRearR.clear();
     trailFrontL.clear(); trailFrontR.clear();
+    if (chkSection) { chkSection.checked = false; applySection(false); }
+    if (chkExplode) { chkExplode.checked = false; explodeTarget = 0; explodeAmount = 0; }
+    if (chkFlow) { chkFlow.checked = true; flowOn = true; flowArrows.forEach(a => a.visible = true); }
     if (controls && controls.target) controls.target.set(0, 0.5, 0.5);
+    bodyRoll = 0; bodyPitch = 0; lastV = 0;
+    camMode = 'orbit';
+    document.querySelectorAll('.cam-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'orbit'));
+    setIsolation(false);
   }
 
   try {
@@ -1699,6 +2015,10 @@
       if (o === groundMesh || o === boundaryRect) return;
       if (o.isPoints || o.isLine || o.isLineSegments) return;
       if (!o.isMesh || !o.material) return;
+      if (o.material === dashMat) return;
+      if (o.parent === dashGroup) return;
+      /* Skip flow arrows and shadows — they're already transparent effects */
+      if (flowArrows.indexOf(o) >= 0) return;
       const mats = Array.isArray(o.material) ? o.material : [o.material];
       mats.forEach(m => {
         if (m.userData._xrOrig === undefined) {
@@ -1710,7 +2030,6 @@
         }
         const orig = m.userData._xrOrig;
         if (on) {
-          /* Leave intentionally-transparent shells alone — they already read as glass */
           if (orig.opacity < 0.20) return;
           m.transparent = true;
           m.opacity = 0.42;
@@ -1752,8 +2071,10 @@
      KINEMATICS
      ═══════════════════════════════════════════════════════════ */
   let phCarrier = 0, phSideL = 0, phSideR = 0, phSpider = 0, phPinion = 0;
-  let phFrontWheels = 0;
+  let phFrontL = 0, phFrontR = 0;
   let trailAccum = 0;
+  let bodyRoll = 0, bodyPitch = 0, lastV = 0;
+  let flowTime = 0;
 
   const statusFlash = document.getElementById('status-flash');
   let flashTimer = 0;
@@ -1774,6 +2095,16 @@
   }
 
   const _l2w_scratch = { x: 0, z: 0 };
+
+  const _sectionN = new THREE.Vector3();
+  const _vehicleQuat = new THREE.Quaternion();
+  function updateSectionPlane() {
+    if (!sectionActive) return;
+    vehicleGroup.getWorldQuaternion(_vehicleQuat);
+    _sectionN.set(0, 0, 1).applyQuaternion(_vehicleQuat).normalize();
+    sectionPlane.normal.copy(_sectionN);
+    sectionPlane.constant = -_sectionN.dot(vehicleGroup.position);
+  }
 
   function updateDiff(dt) {
     if (autoDrive && !steerDragging) {
@@ -1833,14 +2164,22 @@
     vehiclePos.z = clampedZ;
 
     vehicleGroup.position.copy(vehiclePos);
-    vehicleGroup.rotation.y = vehicleHeading;
+
+    const lateralAccel = v * yawRate;
+    const rollTarget   = Math.max(-0.055, Math.min(0.055, lateralAccel * 0.010));
+    const accel        = (v - lastV) / Math.max(dt, 0.001);
+    const pitchTarget  = Math.max(-0.040, Math.min(0.040, -accel * 0.004));
+    lastV = v;
+    const smooth = Math.min(1, dt * 3.5);
+    bodyRoll  += (rollTarget  - bodyRoll)  * smooth;
+    bodyPitch += (pitchTarget - bodyPitch) * smooth;
+    vehicleGroup.rotation.set(bodyPitch, vehicleHeading, bodyRoll);
 
     phCarrier += dt * omega_c;
     phSideL   += dt * (omegaL - omega_c);
     phSideR   += dt * (omegaR - omega_c);
     phSpider  += dt * (omegaR - omegaL) * 0.5;
     phPinion  += dt * omega_c * (RING_TEETH / PINION_TEETH);
-    phFrontWheels += dt * v / FRONT_WHEEL_R;
 
     carrierGroup.rotation.x    =  phCarrier;
     sideLGroup.rotation.x      =  phSideL;
@@ -1865,8 +2204,13 @@
       frontPivotR.rotation.y =  ack.inner;
       frontPivotL.rotation.y =  ack.outer;
     }
-    frontWheelL.rotation.x = phFrontWheels;
-    frontWheelR.rotation.x = phFrontWheels;
+
+    const steerL = frontPivotL.rotation.y;
+    const steerR = frontPivotR.rotation.y;
+    phFrontL += dt * v * Math.cos(steerL) / FRONT_WHEEL_R;
+    phFrontR += dt * v * Math.cos(steerR) / FRONT_WHEEL_R;
+    frontWheelL.rotation.x = phFrontL;
+    frontWheelR.rotation.x = phFrontR;
     tieRod.rotation.z = Math.PI / 2 + roadAngle * 0.4;
 
     const cosH = Math.cos(vehicleHeading), sinH = Math.sin(vehicleHeading);
@@ -1894,6 +2238,24 @@
     trailRearL.commit();  trailRearR.commit();
     trailFrontL.commit(); trailFrontR.commit();
 
+    shadowRL.position.set(rl.x, GROUND_Y + 0.008, rl.z);
+    shadowRR.position.set(rr.x, GROUND_Y + 0.008, rr.z);
+    shadowFL.position.set(fl.x, GROUND_Y + 0.008, fl.z);
+    shadowFR.position.set(fr.x, GROUND_Y + 0.008, fr.z);
+
+    /* ─── Flow arrow pulse ─── */
+    if (flowOn) {
+      flowTime += dt * (2 + state.speedMul * 3);
+      flowArrows.forEach(a => {
+        const phase = a.userData.phase || 0;
+        const pulse = 0.5 + 0.5 * Math.sin(flowTime - phase);
+        a.material.opacity = 0.25 + pulse * 0.65;
+        const s = 0.85 + pulse * 0.35;
+        a.scale.set(s, s, s);
+      });
+    }
+
+    /* ─── Readouts ─── */
     const rL = omegaL / omega_c, rR = omegaR / omega_c;
     const elLeft = document.getElementById('diff-left-val');
     const elRight = document.getElementById('diff-right-val');
@@ -1940,6 +2302,8 @@
   }
 
   const _v = new THREE.Vector3();
+  const _diffCenter = new THREE.Vector3();
+  let diffOrbitAngle = 0;
   function updateCamera(dt) {
     if (!controls) return;
     const targetCenter = _v.set(vehiclePos.x, 0.4, vehiclePos.z);
@@ -1970,6 +2334,17 @@
     } else if (camMode === 'top') {
       desiredPos = vehiclePos.clone().add(new THREE.Vector3(0, 10, 0.01));
       lookAt = targetCenter.clone();
+    } else if (camMode === 'diff') {
+      /* Slow orbiting close-up on the differential */
+      diffOrbitAngle += dt * 0.35;
+      _diffCenter.set(vehiclePos.x, 0.10, vehiclePos.z);
+      const dist = 2.4;
+      desiredPos = _diffCenter.clone().add(new THREE.Vector3(
+        Math.sin(diffOrbitAngle) * dist,
+        0.85,
+        Math.cos(diffOrbitAngle) * dist
+      ));
+      lookAt = _diffCenter.clone();
     } else {
       desiredPos = vehiclePos.clone()
         .add(right.clone().multiplyScalar(7.5))
@@ -2014,7 +2389,11 @@
 
   function placeTyreChip(chip, valEl, line, screenPt, speed) {
     if (!chip) return;
-    if (screenPt.behind) { chip.style.display = 'none'; line.style.display = 'none'; return; }
+    if (screenPt.behind || isolationActive) {
+      chip.style.display = 'none';
+      line.style.display = 'none';
+      return;
+    }
     chip.style.display = 'flex';
     line.style.display = '';
     const chipX = screenPt.x, chipY = screenPt.y - 68;
@@ -2037,25 +2416,28 @@
     frame++;
     const dt = Math.min(clock.getDelta(), 0.05);
     try {
-      if (state.playing) updateDiff(dt);
-      else {
+      if (state.playing) {
+        updateDiff(dt);
+        updateSectionPlane();
+      } else {
         const f = Math.pow(0.982, dt * 60);
         trailRearL.fade(f); trailRearR.fade(f);
         trailFrontL.fade(f); trailFrontR.fade(f);
         trailRearL.commit(); trailRearR.commit();
         trailFrontL.commit(); trailFrontR.commit();
       }
+      updateExplode(dt);
       if (flashTimer > 0) {
         flashTimer -= dt;
         if (flashTimer <= 0 && statusFlash) statusFlash.classList.remove('on');
       }
-      if (state.showLabels && frame % 2 === 0) {
+      if (state.showLabels && frame % 2 === 0 && !isolationActive) {
         labelDefs.forEach(d => {
           const wp = d.pos.clone();
           vehicleGroup.localToWorld(wp);
           labels.project(d.id, wp, camera, wrap);
         });
-      } else if (!state.showLabels) {
+      } else if (!state.showLabels || isolationActive) {
         labels.hideAll();
       }
       updateCamera(dt);
