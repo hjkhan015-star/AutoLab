@@ -689,8 +689,14 @@
   const isLowEnd = cores <= 4 || mem <= 2;
   const isMidEnd = !isLowEnd && (cores <= 6 || isCoarse);
 
-  const RING_TEETH    = isLowEnd ? 24 : 36;
-  const PINION_TEETH  = isLowEnd ? 10 : 14;
+  /* ═══════════════════════════════════════════════════════════
+     GEAR PARAMETERS — Realistic ring & pinion sizes
+     Ratio 3.73:1 → 41 ring teeth / 11 pinion teeth
+     ═══════════════════════════════════════════════════════════ */
+  const RING_TEETH   = 41;
+  const PINION_TEETH = 11;
+  const GEAR_RATIO   = RING_TEETH / PINION_TEETH; // 3.727
+
   const BEVEL_SEGS    = isLowEnd ? 4  : 6;
   const WHEEL_SEGS    = isLowEnd ? 24 : 36;
   const TRAIL_REAR_N  = isLowEnd ? 100 : 180;
@@ -698,6 +704,7 @@
 
   /* ═══════════════════════════════════════════════════════════
      SPIRAL BEVEL GEAR GENERATOR
+     Creates realistic hypoid/spiral bevel gear teeth
      ═══════════════════════════════════════════════════════════ */
   function makeSpiralBevelGear(opts) {
     const {
@@ -748,7 +755,6 @@
       }
     }
     
-    // Fallback if mergeGeometries fails
     let merged = null;
     if (typeof mergeGeometries === 'function') {
       merged = mergeGeometries(toothGeos, false);
@@ -825,7 +831,7 @@
   let built;
   try {
     built = Base.buildScene({
-      fov: 42, camPos: [3.2, 2.0, 4.5], target: [0, 0, 0.5], fogDensity: 0.028, floorY: -2.15
+      fov: 42, camPos: [4.5, 3.0, 6.5], target: [0, 0.5, 0], fogDensity: 0.025, floorY: -2.15
     });
   } catch (e) {
     console.error('[Differential] Base.buildScene failed:', e);
@@ -840,9 +846,8 @@
   Base.attachResize(camera, renderer, wrap, 42);
   const labels = Base.createLabelSystem();
   const state = Base.createUIState();
-  state.playing = true; // Force playing state to ensure animation starts
+  state.playing = true;
 
-  // Fallback for Base.makeCog
   const makeCog = Base.makeCog || function(radius, thickness, teeth, toothH, toothW, mat) {
     const geo = new THREE.CylinderGeometry(radius, radius, thickness, 24);
     return new THREE.Mesh(geo, mat);
@@ -1052,15 +1057,21 @@
   });
 
   /* ═══════════════════════════════════════════════════════════
-     CONSTANTS
+     REALISTIC DIMENSIONS — Based on typical passenger car
+     Ring gear: ~8" dia (0.80 units), Pinion: ~2.5" dia (0.25 units)
      ═══════════════════════════════════════════════════════════ */
-  const RING_R = 0.80, RING_T = 0.14, RING_X = -0.30;
-  const PINION_R = 0.20, PINION_T = 0.16;
-  const PINION_Y = -(RING_R + PINION_R) + 0.02;
-  const SIDE_R = 0.30, SIDE_T = 0.16, SIDE_X = 0.22;
-  const SPIDER_R = 0.16, SPIDER_T = 0.10, SPIDER_Y = 0.32;
-  const CARRIER_W = 0.62;
-  const AXLE_LEN = 1.55;
+  const RING_R = 0.80;          // Ring gear radius
+  const RING_T = 0.18;          // Ring gear thickness
+  const RING_X = -0.35;         // Ring gear X offset from carrier center
+
+  const PINION_R = 0.25;        // Pinion radius (≈1/3 of ring gear)
+  const PINION_T = 0.20;        // Pinion thickness
+  const PINION_Y = -(RING_R + PINION_R) + 0.06; // Vertical offset for hypoid mesh
+
+  const SIDE_R = 0.28, SIDE_T = 0.18, SIDE_X = 0.20;
+  const SPIDER_R = 0.14, SPIDER_T = 0.10, SPIDER_Y = 0.30;
+  const CARRIER_W = 0.70;
+  const AXLE_LEN = 1.45;
   const WHEEL_R = 0.42;
   const WHEEL_WIDTH = 0.26;
 
@@ -1316,9 +1327,12 @@
     carrierGroup.add(plate);
   });
 
+  /* ═══════════════════════════════════════════════════════════
+     RING GEAR — 41 teeth, realistic proportions
+     ═══════════════════════════════════════════════════════════ */
   const ringGear = makeSpiralBevelGear({
     outerR: RING_R, innerR: RING_R * 0.55,
-    toothCount: RING_TEETH, toothHeight: 0.10, toothWidth: 0.075,
+    toothCount: RING_TEETH, toothHeight: 0.11, toothWidth: 0.08,
     spiralAngle: 0.35, thickness: RING_T,
     bodyMat: diffMats.ring, toothMat: diffMats.teeth,
     segments: BEVEL_SEGS, toothTaper: 0.30,
@@ -1403,6 +1417,10 @@
   wheelR.position.x = wheelRX;
   differentialGroup.add(wheelR);
 
+  /* ═══════════════════════════════════════════════════════════
+     PINION — 11 teeth, realistic size relative to ring gear
+     Positioned with hypoid offset (pinion axis below ring gear axis)
+     ═══════════════════════════════════════════════════════════ */
   const pinionGroup = new THREE.Group();
   pinionGroup.position.set(RING_X, PINION_Y, 0);
   differentialGroup.add(pinionGroup);
@@ -1410,7 +1428,7 @@
 
   const pinionCog = makeSpiralBevelGear({
     outerR: PINION_R, innerR: PINION_R * 0.35,
-    toothCount: PINION_TEETH, toothHeight: 0.065, toothWidth: 0.050,
+    toothCount: PINION_TEETH, toothHeight: 0.07, toothWidth: 0.055,
     spiralAngle: 0.70, thickness: PINION_T,
     bodyMat: diffMats.pinion, toothMat: diffMats.pinion,
     segments: BEVEL_SEGS, toothTaper: 0.40,
@@ -1488,8 +1506,6 @@
 
   /* ═══════════════════════════════════════════════════════════
      TORQUE FLOW ARROWS
-     Cones placed along the driveline path. Each pulses with a
-     phase offset so the "flow" visually travels through the diff.
      ═══════════════════════════════════════════════════════════ */
   const flowArrows = [];
   function makeFlowArrow(x, y, z, dir, color, phase) {
@@ -1504,7 +1520,6 @@
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(x, y, z);
 
-    /* Orient cone (+Y default) along the requested direction */
     if (dir === '+X') mesh.rotation.z = -Math.PI / 2;
     else if (dir === '-X') mesh.rotation.z = Math.PI / 2;
     else if (dir === '+Z') mesh.rotation.x = Math.PI / 2;
@@ -1517,22 +1532,16 @@
     return mesh;
   }
 
-  /* Input flow (cyan) — engine → pinion */
   makeFlowArrow(RING_X, PINION_Y, 0.95, '-Z', 0x38bdf8, 0);
   makeFlowArrow(RING_X, PINION_Y, 0.55, '-Z', 0x38bdf8, Math.PI * 0.5);
-  /* Pinion → crown wheel (cyan) */
   makeFlowArrow(RING_X, PINION_Y + 0.30, 0, '+Y', 0x38bdf8, Math.PI);
-  /* Crown → side gears (amber, split) */
   makeFlowArrow(-SIDE_X - 0.20, 0, 0, '-X', 0xf59e0b, Math.PI * 1.5);
   makeFlowArrow( SIDE_X + 0.20, 0, 0, '+X', 0xf59e0b, Math.PI * 1.5);
-  /* Side gears → wheels (amber) */
   makeFlowArrow(-1.05, 0, 0, '-X', 0xf59e0b, Math.PI * 2);
   makeFlowArrow( 1.05, 0, 0, '+X', 0xf59e0b, Math.PI * 2);
 
   /* ═══════════════════════════════════════════════════════════
      EXPLODED VIEW REGISTRATION
-     Each part stores its base position and a direction vector.
-     explodeAmount lerps 0↔1 and offsets all registered parts.
      ═══════════════════════════════════════════════════════════ */
   const explodedParts = [];
   function registerExplode(obj, dx, dy, dz) {
@@ -1577,11 +1586,10 @@
   }
 
   /* ═══════════════════════════════════════════════════════════
-     SUSPENSION — leaf springs, shocks, mud flaps
+     SUSPENSION
      ═══════════════════════════════════════════════════════════ */
   const suspensionParts = [];
 
-  /* Rear leaf springs — 4 stacked leaves each side, sitting under the rail */
   [-1, 1].forEach(side => {
     const springX = side * 0.55;
     const zStart = -1.55;
@@ -1603,7 +1611,6 @@
       suspensionParts.push(leaf);
     }
 
-    /* U-bolt blocks at each end */
     [zStart + 0.15, zEnd - 0.15].forEach(zPos => {
       const clamp = new THREE.Mesh(
         new THREE.BoxGeometry(0.14, 0.10, 0.08),
@@ -1615,7 +1622,6 @@
     });
   });
 
-  /* Shock absorbers — one per corner */
   function makeShockUnit(totalLen) {
     const g = new THREE.Group();
     const bodyLen = totalLen * 0.55;
@@ -1645,10 +1651,8 @@
   }
 
   const shockDefs = [
-    /* Rear left, rear right */
     { from: new THREE.Vector3( 1.02, -0.18,  0.00), to: new THREE.Vector3( 0.62,  0.18, -0.32) },
     { from: new THREE.Vector3(-1.02, -0.18,  0.00), to: new THREE.Vector3(-0.62,  0.18, -0.32) },
-    /* Front left, front right */
     { from: new THREE.Vector3( 0.96, -0.16,  2.80), to: new THREE.Vector3( 0.62,  0.18,  2.55) },
     { from: new THREE.Vector3(-0.96, -0.16,  2.80), to: new THREE.Vector3(-0.62,  0.18,  2.55) },
   ];
@@ -1662,7 +1666,6 @@
     suspensionParts.push(shock);
   });
 
-  /* Mud flaps — hanging behind each rear wheel */
   [-1, 1].forEach(side => {
     const flapX = side * Math.abs(wheelLX) * 0.92;
     const flap = new THREE.Mesh(
@@ -1675,7 +1678,6 @@
     vehicleGroup.add(flap);
     suspensionParts.push(flap);
 
-    /* Small bracket at the top attaching it to the rail */
     const bracket = new THREE.Mesh(
       new THREE.BoxGeometry(0.06, 0.06, 0.06),
       diffMats.frameDark
@@ -1687,8 +1689,6 @@
 
   /* ═══════════════════════════════════════════════════════════
      ISOLATION MODE
-     When the "Diff" camera preset is active, hide chassis, wheels,
-     suspension, shadows and trails so the differential reads alone.
      ═══════════════════════════════════════════════════════════ */
   const isolationHiddenParts = [];
   vehicleGroup.children.forEach(child => {
@@ -1784,7 +1784,6 @@
   const shadowFR = makeContactShadow(1.00);
   scene.add(shadowRL, shadowRR, shadowFL, shadowFR);
 
-  /* Register shadows with isolation mode now that they exist */
   isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
 
   /* Ground trails */
@@ -2040,7 +2039,6 @@
       if (!o.isMesh || !o.material) return;
       if (o.material === dashMat) return;
       if (o.parent === dashGroup) return;
-      /* Skip flow arrows and shadows — they're already transparent effects */
       if (flowArrows.indexOf(o) >= 0) return;
       const mats = Array.isArray(o.material) ? o.material : [o.material];
       mats.forEach(m => {
@@ -2203,7 +2201,7 @@
     phSideL   += dt * (omegaL - omega_c);
     phSideR   += dt * (omegaR - omega_c);
     phSpider  += dt * (omegaR - omegaL) * 0.5;
-    phPinion  += dt * omega_c * (RING_TEETH / PINION_TEETH);
+    phPinion  += dt * omega_c * GEAR_RATIO;
 
     carrierGroup.rotation.x    =  phCarrier;
     sideLGroup.rotation.x      =  phSideL;
@@ -2267,7 +2265,6 @@
     shadowFL.position.set(fl.x, GROUND_Y + 0.008, fl.z);
     shadowFR.position.set(fr.x, GROUND_Y + 0.008, fr.z);
 
-    /* ─── Flow arrow pulse ─── */
     if (flowOn) {
       flowTime += dt * (2 + speedMul * 3);
       flowArrows.forEach(a => {
@@ -2279,7 +2276,6 @@
       });
     }
 
-    /* ─── Readouts ─── */
     const rL = omegaL / omega_c, rR = omegaR / omega_c;
     const elLeft = document.getElementById('diff-left-val');
     const elRight = document.getElementById('diff-right-val');
@@ -2359,13 +2355,12 @@
       desiredPos = vehiclePos.clone().add(new THREE.Vector3(0, 10, 0.01));
       lookAt = targetCenter.clone();
     } else if (camMode === 'diff') {
-      /* Slow orbiting close-up on the differential */
       diffOrbitAngle += dt * 0.35;
       _diffCenter.set(vehiclePos.x, 0.10, vehiclePos.z);
-      const dist = 2.4;
+      const dist = 2.8;
       desiredPos = _diffCenter.clone().add(new THREE.Vector3(
         Math.sin(diffOrbitAngle) * dist,
-        0.85,
+        1.0,
         Math.cos(diffOrbitAngle) * dist
       ));
       lookAt = _diffCenter.clone();
@@ -2440,7 +2435,6 @@
     frame++;
     const dt = Math.min(clock.getDelta(), 0.05);
     try {
-      // Ensure renderer size is correct
       const w = window.innerWidth;
       const h = window.innerHeight;
       if (w > 0 && h > 0 && (renderer.domElement.width !== w || renderer.domElement.height !== h)) {
