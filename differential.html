@@ -1328,8 +1328,8 @@
       omegaL = 0; omegaR = 2 * omega_c; slip = true;
     } else {
       const ratio = halfTrackOverL * tanRoad;
-      omegaL = omega_c * (1 - ratio);
-      omegaR = omega_c * (1 + ratio);
+      omegaL = omega_c * (1 + ratio);
+      omegaR = omega_c * (1 - ratio);
     }
 
     let v = omega_c * WHEEL_R;
