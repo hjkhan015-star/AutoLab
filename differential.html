@@ -747,7 +747,15 @@
         toothGeos.push(box);
       }
     }
-    const merged = mergeGeometries(toothGeos, false);
+    
+    // Fallback if mergeGeometries fails
+    let merged = null;
+    if (typeof mergeGeometries === 'function') {
+      merged = mergeGeometries(toothGeos, false);
+    } else {
+      console.warn('[Differential] mergeGeometries not available, skipping tooth merge');
+    }
+    
     if (merged) group.add(new THREE.Mesh(merged, toothMat));
     return group;
   }
@@ -814,9 +822,15 @@
   /* ═══════════════════════════════════════════════════════════
      SCENE
      ═══════════════════════════════════════════════════════════ */
-  const built = Base.buildScene({
-    fov: 42, camPos: [3.2, 2.0, 4.5], target: [0, 0, 0.5], fogDensity: 0.028, floorY: -2.15
-  });
+  let built;
+  try {
+    built = Base.buildScene({
+      fov: 42, camPos: [3.2, 2.0, 4.5], target: [0, 0, 0.5], fogDensity: 0.028, floorY: -2.15
+    });
+  } catch (e) {
+    console.error('[Differential] Base.buildScene failed:', e);
+    throw e;
+  }
   const scene = built.scene;
   const camera = built.camera;
   const renderer = built.renderer;
@@ -826,6 +840,13 @@
   Base.attachResize(camera, renderer, wrap, 42);
   const labels = Base.createLabelSystem();
   const state = Base.createUIState();
+  state.playing = true; // Force playing state to ensure animation starts
+
+  // Fallback for Base.makeCog
+  const makeCog = Base.makeCog || function(radius, thickness, teeth, toothH, toothW, mat) {
+    const geo = new THREE.CylinderGeometry(radius, radius, thickness, 24);
+    return new THREE.Mesh(geo, mat);
+  };
 
   renderer.localClippingEnabled = true;
 
@@ -1318,11 +1339,11 @@
   }
 
   const sideLGroup = new THREE.Group(); sideLGroup.position.x = -SIDE_X; carrierGroup.add(sideLGroup);
-  { const g = Base.makeCog(SIDE_R, SIDE_T, 20, 0.075, 0.065, diffMats.side);
+  { const g = makeCog(SIDE_R, SIDE_T, 20, 0.075, 0.065, diffMats.side);
     g.rotation.z = Math.PI / 2; sideLGroup.add(g); }
 
   const sideRGroup = new THREE.Group(); sideRGroup.position.x = SIDE_X; carrierGroup.add(sideRGroup);
-  { const g = Base.makeCog(SIDE_R, SIDE_T, 20, 0.075, 0.065, diffMats.side);
+  { const g = makeCog(SIDE_R, SIDE_T, 20, 0.075, 0.065, diffMats.side);
     g.rotation.z = Math.PI / 2; sideRGroup.add(g); }
 
   const crossPin = new THREE.Mesh(
@@ -1337,13 +1358,13 @@
 
   const SPIDER_MARKER_MAT = new THREE.MeshBasicMaterial({ color:0xff5c8a });
   const spiderTopGroup = new THREE.Group(); spiderTopGroup.position.y = SPIDER_Y; carrierGroup.add(spiderTopGroup);
-  const spiderTopCog = Base.makeCog(SPIDER_R, SPIDER_T, 14, 0.055, 0.055, diffMats.spider);
+  const spiderTopCog = makeCog(SPIDER_R, SPIDER_T, 14, 0.055, 0.055, diffMats.spider);
   spiderTopGroup.add(spiderTopCog);
   const spiderTopMarker = new THREE.Mesh(new THREE.BoxGeometry(0.43, 0.05, SPIDER_T*1.10), SPIDER_MARKER_MAT);
   spiderTopGroup.add(spiderTopMarker);
 
   const spiderBotGroup = new THREE.Group(); spiderBotGroup.position.y = -SPIDER_Y; carrierGroup.add(spiderBotGroup);
-  const spiderBotCog = Base.makeCog(SPIDER_R, SPIDER_T, 14, 0.055, 0.055, diffMats.spider);
+  const spiderBotCog = makeCog(SPIDER_R, SPIDER_T, 14, 0.055, 0.055, diffMats.spider);
   spiderBotGroup.add(spiderBotCog);
   const spiderBotMarker = new THREE.Mesh(new THREE.BoxGeometry(0.43, 0.05, SPIDER_T*1.10), SPIDER_MARKER_MAT);
   spiderBotGroup.add(spiderBotMarker);
@@ -1670,14 +1691,13 @@
      suspension, shadows and trails so the differential reads alone.
      ═══════════════════════════════════════════════════════════ */
   const isolationHiddenParts = [];
-vehicleGroup.children.forEach(child => {
-  if (child === differentialGroup) return;
-  isolationHiddenParts.push(child);
-});
-isolationHiddenParts.push(wheelL, wheelR);
-/* NOTE: contact shadows are registered later, once they exist. */
+  vehicleGroup.children.forEach(child => {
+    if (child === differentialGroup) return;
+    isolationHiddenParts.push(child);
+  });
+  isolationHiddenParts.push(wheelL, wheelR);
 
-let isolationActive = false;
+  let isolationActive = false;
   function setIsolation(on) {
     on = !!on;
     isolationActive = on;
@@ -1759,13 +1779,13 @@ let isolationActive = false;
     return m;
   }
   const shadowRL = makeContactShadow(1.15);
-const shadowRR = makeContactShadow(1.15);
-const shadowFL = makeContactShadow(1.00);
-const shadowFR = makeContactShadow(1.00);
-scene.add(shadowRL, shadowRR, shadowFL, shadowFR);
+  const shadowRR = makeContactShadow(1.15);
+  const shadowFL = makeContactShadow(1.00);
+  const shadowFR = makeContactShadow(1.00);
+  scene.add(shadowRL, shadowRR, shadowFL, shadowFR);
 
-/* Register shadows with isolation mode now that they exist */
-isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
+  /* Register shadows with isolation mode now that they exist */
+  isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
 
   /* Ground trails */
   class Trail {
@@ -2059,7 +2079,7 @@ isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
       if (d.type !== 'command') return;
       switch (d.action) {
         case 'setPlaying':   state.playing = !!d.value; break;
-        case 'setSpeed':     state.speedMul = +d.value; break;
+        case 'setSpeed':     state.speedMul = +d.value || 0.85; break;
         case 'setLabels':    state.showLabels = !!d.value; break;
         case 'setTheme':     applyThemeCmd(d.value); break;
         case 'setWireframe': applyWireframe(!!d.value); break;
@@ -2122,7 +2142,8 @@ isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
     steerInput = steerAngle / MAX_STEER_ANGLE;
     steerRotorEl.style.transform = 'rotate(' + (steerAngle / DEG).toFixed(2) + 'deg)';
 
-    const omega_c = 2.2 * state.speedMul;
+    const speedMul = state.speedMul || 0.85;
+    const omega_c = 2.2 * speedMul;
     const roadAngle = -steerInput * MAX_ROAD_ANGLE;
     const tanRoad = Math.tan(roadAngle);
 
@@ -2248,7 +2269,7 @@ isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
 
     /* ─── Flow arrow pulse ─── */
     if (flowOn) {
-      flowTime += dt * (2 + state.speedMul * 3);
+      flowTime += dt * (2 + speedMul * 3);
       flowArrows.forEach(a => {
         const phase = a.userData.phase || 0;
         const pulse = 0.5 + 0.5 * Math.sin(flowTime - phase);
@@ -2269,7 +2290,7 @@ isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
     if (elFillL) elFillL.style.width  = Math.max(2, Math.min(100, rL*50)) + '%';
     if (elFillR) elFillR.style.width = Math.max(2, Math.min(100, rR*50)) + '%';
 
-    const rpmBase = 900 * (state.speedMul / 0.85);
+    const rpmBase = 900 * (speedMul / 0.85);
     const rpmL = (omegaL / omega_c) * rpmBase;
     const rpmR = (omegaR / omega_c) * rpmBase;
     const rpmLEl = document.getElementById('rpm-left');
@@ -2419,6 +2440,15 @@ isolationHiddenParts.push(shadowRL, shadowRR, shadowFL, shadowFR);
     frame++;
     const dt = Math.min(clock.getDelta(), 0.05);
     try {
+      // Ensure renderer size is correct
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      if (w > 0 && h > 0 && (renderer.domElement.width !== w || renderer.domElement.height !== h)) {
+        renderer.setSize(w, h);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+
       if (state.playing) {
         updateDiff(dt);
         updateSectionPlane();
