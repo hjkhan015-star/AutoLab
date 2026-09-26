@@ -151,10 +151,7 @@
   }
 
   /* ═══════════════════════════════════════════════════════════
-     ENGINE CONFIGURATION TOGGLE — lives inline in #module-controls,
-     right next to the Labels / Gas toggles, so it shares that panel's
-     existing floating-pill placement instead of fighting the shell's own
-     top header bar for space.
+     ENGINE CONFIGURATION TOGGLE
      ═══════════════════════════════════════════════════════════ */
   .cfg-group {
     display: flex; align-items: center; gap: 4px;
@@ -182,7 +179,7 @@
   }
 
   /* ═══════════════════════════════════════════════════════════
-     COMPACT LIVE STROKE CHIP (embed mode only, wide screens)
+     COMPACT LIVE STROKE CHIP
      ═══════════════════════════════════════════════════════════ */
   #stroke-chip {
     display: none;
@@ -223,7 +220,6 @@
   }
   #stroke-chip .ch-val.cam { color: #f59e0b; }
 
-  /* Chip visible only when there's room — hides on narrow screens */
   @media (min-width: 780px) {
     body.embedded #stroke-chip { display: flex; }
   }
@@ -278,7 +274,6 @@
     </div>
   </div>
 
-  <!-- Compact live chip (visible on wide screens in embed mode) -->
   <div id="stroke-chip" aria-hidden="true">
     <div class="ch-label">Live cycle</div>
     <div class="ch-name" id="ch-stroke" style="color:#38bdf8">Intake</div>
@@ -419,17 +414,10 @@
   const engine = new THREE.Group();
   scene.add(engine);
 
-  /* masterRig holds the fully-detailed "study" cylinder (liner, head,
-     SOHC valvetrain, combustion gas/particles, timing belt). It exists in
-     every engine configuration as cylinder #1, and is re-tilted / re-slid
-     along Z to sit at that configuration's bank angle and throw position —
-     see ENGINE_CONFIGS / applyEngineConfig() below. At rest (Inline-1,
-     bank 0, throw 0) its transform is identity, so single-cylinder
-     behavior is completely unchanged from before. */
   const masterRig = new THREE.Group();
   engine.add(masterRig);
 
-  /* Liner + fins — adaptive segment count */
+  /* Liner + fins */
   const linerH = STROKE + 0.9;
   const liner = Base.halfCylShell(BORE + 0.12, BORE, linerH, M, LINER_SEGS);
   liner.position.y = HEAD_Y - linerH / 2 - 0.05;
@@ -793,7 +781,7 @@
   flameCore.position.set(0, HEAD_Y - 0.17, -0.40);
   masterRig.add(flameCore);
 
-  /* Piston — adaptive segments */
+  /* Piston */
   const pistonGroup = new THREE.Group();
   const pistonBody = new THREE.Mesh(
     new THREE.CylinderGeometry(BORE*0.97, BORE*0.97, 0.70, PISTON_SEGS),
@@ -820,24 +808,215 @@
   masterRig.add(rodGroup);
 
   /* ═══════════════════════════════════════════════════════════
+     CRANKCASE MATERIALS + BUILDERS  (added)
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Transparent glass — one-sided depth-write off so both walls of the
+     case show through to the spinning crank. */
+  const matCrankGlass = new THREE.MeshPhysicalMaterial({
+    color: 0x9bb0c8,
+    metalness: 0.10,
+    roughness: 0.10,
+    transparent: true,
+    opacity: 0.18,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.12
+  });
+
+  /* Opaque frame edges, bearing bosses, rims */
+  const matCrankFrame = new THREE.MeshStandardMaterial({
+    color: 0x4a5769,
+    metalness: 0.90,
+    roughness: 0.30
+  });
+
+  /* Main-bearing journal Z positions — matches buildCrank's own layout.
+     Placed here so both the crank and the case stay in sync. */
+  function computeMainZ(cfg) {
+    const tz = throwZPositions(cfg);
+    const mainZ = [tz[0] - 0.75];
+    for (let i = 0; i < tz.length - 1; i++) mainZ.push((tz[i] + tz[i + 1]) / 2);
+    mainZ.push(tz[tz.length - 1] + 0.75);
+    return mainZ;
+  }
+
+  /* Box crankcase — Inline‑1 / V‑Twin / V8.
+     Encloses every crank throw + the two end journals. Front & rear
+     faces carry a bearing boss with a torus bore; the deck (top) sits
+     just below the cylinder liners. */
+  function buildCrankcaseBox(cfg) {
+    const group = new THREE.Group();
+    const tz = throwZPositions(cfg);
+    const zMin = tz[0] - 1.15;
+    const zMax = tz[tz.length - 1] + 1.15;
+    const zSpan = zMax - zMin;
+    const zCenter = (zMin + zMax) / 2;
+
+    const xHalf   = 1.30;
+    const topY    = 0.80;
+    const bottomY = -1.05;
+    const h = topY - bottomY;
+    const yCenter = (topY + bottomY) / 2;
+
+    /* ---- transparent glass body ---- */
+    const bodyGeo = new THREE.BoxGeometry(xHalf * 2, h, zSpan);
+    const body = new THREE.Mesh(bodyGeo, matCrankGlass);
+    body.position.set(0, yCenter, zCenter);
+    group.add(body);
+
+    /* ---- solid frame bars (12 edges) ---- */
+    const t = 0.06;
+
+    /* 4 long bars parallel to Z */
+    [[-xHalf, topY], [xHalf, topY], [-xHalf, bottomY], [xHalf, bottomY]].forEach(([x, y]) => {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(t, t, zSpan), matCrankFrame);
+      bar.position.set(x, y, zCenter);
+      bar.castShadow = true;
+      group.add(bar);
+    });
+
+    /* Front & rear rectangular outlines */
+    [zMin, zMax].forEach(z => {
+      [topY, bottomY].forEach(y => {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(xHalf * 2 + t, t, t), matCrankFrame);
+        bar.position.set(0, y, z);
+        bar.castShadow = true;
+        group.add(bar);
+      });
+      [-xHalf, xHalf].forEach(x => {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(t, h + t, t), matCrankFrame);
+        bar.position.set(x, yCenter, z);
+        bar.castShadow = true;
+        group.add(bar);
+      });
+
+      /* Bearing boss on the end wall — crank exits through this */
+      const boss = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.32, 0.32, 0.14, 24),
+        matCrankFrame
+      );
+      boss.rotation.x = Math.PI / 2;
+      boss.position.set(0, 0, z);
+      boss.castShadow = true;
+      group.add(boss);
+
+      /* Dark bore ring highlight */
+      const boreRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.20, 0.035, 8, 32),
+        M.matMetalDark
+      );
+      boreRing.position.set(0, 0, z);
+      group.add(boreRing);
+    });
+
+    /* Internal bulkhead bearing caps at each main journal */
+    const mainZ = computeMainZ(cfg);
+    mainZ.forEach(z => {
+      const cap = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.30, 0.30, 0.16, 24),
+        matCrankFrame
+      );
+      cap.rotation.x = Math.PI / 2;
+      cap.position.set(0, 0, z);
+      cap.castShadow = true;
+      group.add(cap);
+
+      const bore = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.19, 0.19, 0.18, 24),
+        M.matMetalDark
+      );
+      bore.rotation.x = Math.PI / 2;
+      bore.position.set(0, 0, z);
+      group.add(bore);
+
+      /* Vertical web down to bottom of the case (main-bearing saddle) */
+      const web = new THREE.Mesh(
+        new THREE.BoxGeometry(0.60, 0.32, 0.12),
+        matCrankFrame
+      );
+      web.position.set(0, -0.30, z);
+      web.castShadow = true;
+      group.add(web);
+    });
+
+    engine.add(group);
+    return group;
+  }
+
+  /* Drum crankcase — Radial‑5.
+     Cylindrical shell concentric with the crank axis, ends capped with
+     bearing bosses. Cylinder liners bolt onto the drum's circumference. */
+  function buildCrankcaseDrum() {
+    const group = new THREE.Group();
+    const zSpan  = 2.30;
+    const radius = 1.00;
+    const boreR  = 0.24;
+
+    /* Transparent cylindrical shell */
+    const shell = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius, radius, zSpan, 48, 1, true),
+      matCrankGlass
+    );
+    shell.rotation.x = Math.PI / 2;
+    group.add(shell);
+
+    /* Front and rear caps (annulus with central bearing bore) */
+    [zSpan / 2, -zSpan / 2].forEach(z => {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(boreR, radius, 48),
+        matCrankGlass
+      );
+      ring.position.z = z;
+      group.add(ring);
+
+      const boreRing = new THREE.Mesh(
+        new THREE.TorusGeometry(boreR, 0.035, 8, 48),
+        matCrankFrame
+      );
+      boreRing.position.z = z;
+      group.add(boreRing);
+
+      const boss = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.34, 0.34, 0.10, 24),
+        matCrankFrame
+      );
+      boss.rotation.x = Math.PI / 2;
+      boss.position.z = z;
+      boss.castShadow = true;
+      group.add(boss);
+
+      const rim = new THREE.Mesh(
+        new THREE.TorusGeometry(radius, 0.045, 8, 48),
+        matCrankFrame
+      );
+      rim.position.z = z;
+      group.add(rim);
+    });
+
+    /* Longitudinal stiffener bars around the drum */
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const bar = new THREE.Mesh(
+        new THREE.BoxGeometry(0.05, 0.05, zSpan),
+        matCrankFrame
+      );
+      bar.position.set(Math.cos(a) * radius, Math.sin(a) * radius, 0);
+      bar.castShadow = true;
+      group.add(bar);
+    }
+
+    engine.add(group);
+    return group;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
      ENGINE CONFIGURATIONS — Inline‑1 / V‑Twin / Radial‑5 / V8
-     ═══════════════════════════════════════════════════════════
-     Angle convention used throughout this section: a direction is written
-     (sin(phi), cos(phi)) so phi = 0 points straight up — this matches the
-     single-cylinder formulas already used below (pinX = R*sin(th),
-     pinY = R*cos(th)) exactly, so Inline‑1 (bank 0, throw 0) reduces to the
-     ORIGINAL, unmodified single-cylinder geometry and kinematics bit for
-     bit. To physically ORIENT a static mesh at that same angle phi using
-     three.js's own rotation.z (a CCW rotation), you need rotation.z = -phi
-     — every static tilt below applies that one rule consistently, and it
-     is what lets masterRig (cylinder #1's full detailed assembly, built
-     below) simply be re-tilted/re-slid per configuration instead of
-     rebuilt. The full derivation and a numeric proof (rod length stays
-     exactly L for every bank angle & throw phase; the radial articulated
-     solve never goes complex) live in validate_kinematics.js. */
-  const THROW_PITCH   = 0.90;      // main-journal spacing per additional throw (V8)
-  const ARTIC_ROD_LEN = L * 0.82;  // radial slave/articulating-rod length
-  const ARTIC_LINK_R  = 0.34;      // radius of the link pins on the master-rod big end
+     ═══════════════════════════════════════════════════════════ */
+  const THROW_PITCH   = 0.90;
+  const ARTIC_ROD_LEN = L * 0.82;
+  const ARTIC_LINK_R  = 0.34;
 
   const ENGINE_CONFIGS = {
     inline1: {
@@ -878,7 +1057,7 @@
     return Array.from({ length: n }, (_, i) => start + i * THROW_PITCH);
   }
 
-  /* ---------- Generalized crankshaft (N throws, each at its own phase) ---------- */
+  /* ---------- Generalized crankshaft ---------- */
   function buildCrank(cfg, withPulley) {
     const group = new THREE.Group();
     const throwZ = throwZPositions(cfg);
@@ -888,7 +1067,7 @@
       const phi = cfg.throwPhaseDeg[i] * DEG;
       const throwUnit = new THREE.Group();
       throwUnit.position.z = z;
-      throwUnit.rotation.z = -phi; // orient this throw at MY-convention angle phi
+      throwUnit.rotation.z = -phi;
       group.add(throwUnit);
 
       [-0.32, 0.32].forEach(dz => {
@@ -915,11 +1094,7 @@
       throwUnit.add(crankCentre);
     });
 
-    /* main bearing journals: one at each end, one between every adjacent pair
-       of throws (a 4-throw V8 crank correctly gets 5 main journals) */
-    const mainZ = [throwZ[0] - 0.75];
-    for (let i = 0; i < throwZ.length - 1; i++) mainZ.push((throwZ[i] + throwZ[i + 1]) / 2);
-    mainZ.push(throwZ[throwZ.length - 1] + 0.75);
+    const mainZ = computeMainZ(cfg);
     mainZ.forEach(z => {
       const j = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.80, 20), M.matMetal);
       j.rotation.x = Math.PI / 2; j.position.z = z; j.castShadow = true; group.add(j);
@@ -951,38 +1126,13 @@
     return { group, throwZ, mainZ, pinMarkers };
   }
 
-  function buildPedestals(mainZ) {
-    const group = new THREE.Group();
-    mainZ.forEach(z => {
-      const p = new THREE.Group();
-      const lo = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.62, 0.34), M.matIron);
-      lo.position.y = -0.46; lo.castShadow = true; p.add(lo);
-      const up = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.26, 0.34), M.matMetalDark);
-      up.position.y = 0.30; p.add(up);
-      p.position.set(0, 0, z);
-      group.add(p);
-    });
-    engine.add(group);
-    return group;
-  }
-
-  /* ---------- Simplified direct-drive cylinder (V‑Twin's 2nd cylinder, all
-     of V8, and the master/reference cylinder of Radial‑5) ----------
-     Uses the SAME local-frame trick as masterRig: rig.rotation.z = -bankRad,
-     and the piston/rod inside are driven with the plain single-cylinder
-     formulas fed psi = theta + throwPhaseRad - bankRad. Numerically verified
-     in validate_kinematics.js to keep the rod exactly length L for every
-     bank angle & throw phase. */
+  /* ---------- Simplified direct-drive cylinder ---------- */
   function buildSimpleCylinder(bankDeg, throwZ, zStagger) {
     const rig = new THREE.Group();
     rig.position.z = throwZ + zStagger;
     rig.rotation.z = -bankDeg * DEG;
     engine.add(rig);
 
-    // Same bore/piston/rod dimensions as the masterRig cylinder (BORE,
-    // BORE*0.97, etc.) so every cylinder in every configuration reads as
-    // the same physical size — only the full valvetrain/head detail is
-    // left out here, not the scale.
     const linerLen = STROKE + 0.9;
     const linerMesh = new THREE.Mesh(
       new THREE.CylinderGeometry(BORE + 0.12, BORE + 0.12, linerLen, 24, 1, true),
@@ -1020,14 +1170,7 @@
     inst.rodGroup.rotation.z = Math.atan2(pinX, py - pinY);
   }
 
-  /* ---------- Radial articulated slave cylinder ----------
-     The master rod (cylinder #1, bank 0) carries link pins cast into its
-     big end; every other radial cylinder's rod pivots on one of those pins
-     instead of on the crank pin directly (this is what lets 5 cylinders
-     share one crank throw). Solved each frame as a circle/line
-     intersection — see validate_kinematics.js §4 for the derivation and a
-     full-cycle check that the discriminant never goes negative and the
-     articulating-rod length stays exactly ARTIC_ROD_LEN. */
+  /* ---------- Radial articulated slave cylinder ---------- */
   function driveRadialSlave(inst, bankDeg, masterPx, masterPy, masterPistonD) {
     const beta = bankDeg * DEG;
     const deltaMaster = Math.atan2(0 - masterPx, masterPistonD - masterPy);
@@ -1038,8 +1181,6 @@
     const qq = Qx * Qx + Qy * Qy;
     const disc = Math.max(0, a * a - (qq - ARTIC_ROD_LEN * ARTIC_ROD_LEN));
     const d = a + Math.sqrt(disc);
-    // rig.rotation.z = -beta, so express the world pin/piston in the rig's
-    // LOCAL frame by rotating back by +beta.
     const cosB = Math.cos(beta), sinB = Math.sin(beta);
     const localQx = Qx * cosB - Qy * sinB;
     const localQy = Qx * sinB + Qy * cosB;
@@ -1048,19 +1189,23 @@
     inst.rodGroup.rotation.z = Math.atan2(localQx, d - localQy);
   }
 
-  /* ---------- Build all four configurations once, toggle visibility ---------- */
+  /* ---------- Build all configurations once, toggle visibility ----------
+     The crankcase replaces the old pedestals; each config gets its own
+     (radial5 → drum, everyone else → box). */
   const configState = {};
   Object.keys(ENGINE_CONFIGS).forEach(id => {
     const cfg = ENGINE_CONFIGS[id];
     const crank = buildCrank(cfg, id === 'inline1');
-    const pedestals = buildPedestals(crank.mainZ);
+    const crankcase = (id === 'radial5')
+      ? buildCrankcaseDrum()
+      : buildCrankcaseBox(cfg);
     const extras = [];
     for (let i = 1; i < cfg.cyls.length; i++) {
       const cyl = cfg.cyls[i];
       const inst = buildSimpleCylinder(cyl.bankDeg, crank.throwZ[cyl.throw], cyl.zStagger || 0);
       extras.push({ inst, cyl });
     }
-    configState[id] = { cfg, crank, pedestals, extras };
+    configState[id] = { cfg, crank, crankcase, extras };
   });
 
   let activeConfig = 'inline1';
@@ -1071,7 +1216,7 @@
     Object.keys(configState).forEach(key => {
       const on = key === id;
       configState[key].crank.group.visible = on;
-      configState[key].pedestals.visible = on;
+      configState[key].crankcase.visible = on;
       configState[key].extras.forEach(e => { e.inst.rig.visible = on; });
     });
 
@@ -1083,7 +1228,7 @@
     refreshDetailVisibility();
   }
 
-  /* Gas + particles — adaptive counts */
+  /* Gas + particles */
   const gasMesh = new THREE.Mesh(new THREE.CylinderGeometry(BORE*0.92, BORE*0.92, 1, 32, 1, true), M.matGas);
   masterRig.add(gasMesh);
 
@@ -1178,7 +1323,6 @@
   const btnSimple     = document.getElementById('btn-simple');
   const btnAdvanced   = document.getElementById('btn-advanced');
 
-  /* Compact chip refs */
   const chipStrokeEl = document.getElementById('ch-stroke');
   const chipCrankEl  = document.getElementById('ch-crank');
   const chipCamEl    = document.getElementById('ch-cam');
@@ -1204,15 +1348,6 @@
     });
   }
 
-  /* The SOHC valvetrain, combustion gas/particles and intake/exhaust
-     streams only exist (and are only geometrically valid) on the
-     masterRig cylinder, and only make sense to show while that cylinder
-     sits in its Inline‑1 position — for the other configurations we keep
-     cylinder #1's liner/piston/rod visible as a structural reference but
-     hide everything camshaft- and combustion-related. This only ever
-     narrows visibility, so it's safe to call after applyMechView() has
-     set the "intended" Simplified/Advanced state — see applyEngineConfig
-     above. */
   function refreshDetailVisibility() {
     const inline = activeConfig === 'inline1';
     [camGroup, camTowers, rockerIn, rockerEx, rockerPosts, belt,
@@ -1241,7 +1376,7 @@
   btnAdvanced.addEventListener('click', () => setMechView(true));
   applyMechView();
 
-  /* ---------- Engine configuration toggle (top-right) ---------- */
+  /* ---------- Engine configuration toggle ---------- */
   const CONFIG_ORDER = ['inline1', 'vtwin', 'radial5', 'v8'];
   const cfgLabelEl = document.getElementById('cfg-label');
   const cfgPrevEl  = document.getElementById('cfg-prev');
@@ -1489,10 +1624,6 @@
   }
 
   function updateMechanism(th) {
-    // NOTE: the shared crankshaft (configState[activeConfig].crank.group) is
-    // now driven separately, once per frame, by stepEngine() below — it
-    // rotates by the raw crank angle theta, not by this cylinder's local
-    // th (which already has this bank's throw-phase/bank-angle baked in).
     camGroup.rotation.z = -th * 0.5;
 
     const py = pistonY(th);
@@ -1568,13 +1699,6 @@
     return { strokeIdx, deg, pinX, pinY, py };
   }
 
-  /* ---------- Config-aware per-frame driver ----------
-     Drives the shared crankshaft plus every cylinder of the ACTIVE
-     configuration: masterRig (cylinder #1, always full detail) via the
-     unmodified updateMechanism() above, fed this cylinder's effective
-     crank angle psi = theta + throwPhase - bankAngle; every other
-     cylinder via driveDirectCylinder(), or driveRadialSlave() for
-     Radial‑5's articulated cylinders 2‑5. */
   function stepEngine(theta) {
     const cs = configState[activeConfig];
     const cfg = cs.cfg;
@@ -1672,7 +1796,6 @@
 
     setStrokeUI(strokeIdx);
 
-    /* Update readouts */
     const camDeg = ((((theta * 0.5) % TAU) + TAU) % TAU) / DEG;
     const crankDegText = Math.round(deg) + '°';
     const camDegText   = Math.round(camDeg) + '°';
@@ -1681,7 +1804,6 @@
     if (mechCrankDegEl) mechCrankDegEl.textContent = crankDegText;
     if (camDegEl) camDegEl.textContent = camDegText;
 
-    /* Compact chip — updates only when visible */
     if (chipCrankEl && !eduPanel.classList.contains('expanded')) {
       chipCrankEl.textContent = crankDegText;
       if (chipCamEl) chipCamEl.textContent = camDegText;
@@ -1700,9 +1822,6 @@
       updateRpmLabel();
     }
 
-    // labelDefs' pos() functions read masterRig children's LOCAL positions
-    // as if they were world positions, which only holds while masterRig
-    // sits at its Inline‑1 identity transform — so labels are Inline‑1 only.
     if (state.showLabels && activeConfig === 'inline1') {
       if (mechLabelsDirty) { labels.hideAll(); mechLabelsDirty = false; }
       if (frame % 2 === 0) {
