@@ -7,7 +7,6 @@
 <title>Suspension System — Auto Lab</title>
 <link rel="stylesheet" href="base.css">
 <style>
-  /* ---- suspension module additions ---- */
   #mode-badge{
     display:inline-flex;align-items:center;gap:8px;
     padding:5px 12px;border-radius:20px;
@@ -24,7 +23,6 @@
     font-size:11px;font-weight:700;opacity:.8;margin-left:4px;
   }
 
-  /* ---- with / without toggle ---- */
   #view-mode{display:flex;gap:6px;margin-top:10px}
   .vm-btn{
     flex:1;padding:7px 8px;border-radius:9px;
@@ -44,7 +42,6 @@
     box-shadow:0 0 12px rgba(239,68,68,.4);
   }
 
-  /* ---- shock meter ---- */
   #shock-meter{margin-top:11px}
   .shock-head{
     display:flex;justify-content:space-between;
@@ -64,13 +61,41 @@
   }
   #shock-verdict{font-size:10px;color:#7f8da0;margin-top:4px}
 
+  /* ─── Danger meter ─────────────────────────────────── */
+  #danger-meter{
+    margin-top:11px;
+    opacity:.4;transition:opacity .3s;
+  }
+  #danger-meter.active{opacity:1}
+  .dm-head{
+    display:flex;justify-content:space-between;
+    font-size:10.5px;color:#9aa7b9;font-weight:600;
+  }
+  #danger-pct{
+    font-family:ui-monospace,Menlo,Consolas,monospace;
+    color:#e5e7eb;font-weight:800;
+  }
+  #danger-bar{
+    height:8px;border-radius:6px;
+    background:rgba(255,255,255,.08);margin-top:5px;overflow:hidden;
+  }
+  #danger-fill{
+    height:100%;width:0%;background:#22c55e;border-radius:6px;
+    transition:width .12s linear,background .25s;
+  }
+  #danger-verdict{font-size:10px;color:#7f8da0;margin-top:4px}
+  #danger-meter.critical #danger-fill{
+    animation:dpulse .45s ease-in-out infinite alternate;
+  }
+  @keyframes dpulse{from{opacity:.55}to{opacity:1}}
+  #danger-meter.critical .dm-head{color:#fca5a5}
+
   #btn-slowmo.active{
     background:#f97316;color:#0b0e14;
     box-shadow:0 0 14px rgba(249,115,22,.45);
   }
   #rpm-label.slow{color:#fdba74 !important;font-weight:800}
 
-  /* ---- impact overlay (rigid mode) ---- */
   #impact-flash{
     position:fixed;inset:0;pointer-events:none;z-index:8;
     background:radial-gradient(ellipse at center,
@@ -100,15 +125,21 @@
     max-width:88vw;
   }
   #impact-warning.on{opacity:1}
+  #impact-warning.crash{
+    background:rgba(80,5,5,.98);
+    font-size:14px;
+    padding:11px 22px;
+    animation:crashPulse .55s ease-in-out infinite alternate;
+  }
+  @keyframes crashPulse{
+    from{box-shadow:0 10px 30px rgba(239,68,68,.35)}
+    to{box-shadow:0 10px 40px rgba(239,68,68,.85)}
+  }
 
-  /* ═══════════════════════════════════════════════════════════
-     EMBED MODE — align with Auto Lab shell
-     ═══════════════════════════════════════════════════════════ */
   body.embedded {
     --shell-header-h: calc(64px + env(safe-area-inset-top, 0px));
     --shell-pill-h: calc(64px + env(safe-area-inset-bottom, 0px));
   }
-
   body.embedded #edu-panel {
     position: absolute !important;
     top: calc(var(--shell-header-h) + 10px) !important;
@@ -136,7 +167,6 @@
     margin-left: 10px; flex: 1; font-weight: 500;
   }
   body.embedded #edu-panel.expanded #panel-head::after { display: none; }
-
   @media (min-width: 640px) {
     body.embedded #edu-panel { right: auto !important; width: 360px !important; }
     body.embedded #edu-panel #panel-body { display: block; }
@@ -178,6 +208,15 @@
         <div id="shock-verdict">Smooth ride — springs and dampers absorb the bumps</div>
       </div>
 
+      <div id="danger-meter">
+        <div class="dm-head">
+          <span>⚠ Chassis stress</span>
+          <b id="danger-pct">0%</b>
+        </div>
+        <div id="danger-bar"><div id="danger-fill"></div></div>
+        <div id="danger-verdict">Chassis coping fine</div>
+      </div>
+
       <div id="mode-desc">
         <strong>With suspension.</strong> The coil springs and leaf spring flex as each wheel rises over a bump; the shock absorbers (dampers) dissipate the energy. The chassis stays nearly level — passengers feel only a gentle float.
       </div>
@@ -206,7 +245,7 @@
     <label class="toggle"><input type="checkbox" id="chk-gas" checked> Dust FX</label>
   </div>
 
-  <div id="hint">Drag to orbit · Scroll to zoom · Toggle With / Without suspension · Watch the leaf spring flatten and the shackle swing · The red arrow = shock reaching the chassis</div>
+  <div id="hint">Drag to orbit · Scroll to zoom · Toggle With / Without suspension · Watch the leaf spring flatten and the shackle swing</div>
   <div id="labels-root"></div>
   <div id="impact-flash"></div>
   <div id="impact-warning">⚠ IMPACT — every bump slams the chassis</div>
@@ -225,9 +264,6 @@
   const DEG = Base.DEG, TAU = Base.TAU;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  /* ═══════════════════════════════════════════════════════════
-     SHELL DETECTION
-     ═══════════════════════════════════════════════════════════ */
   const IS_EMBEDDED = window.parent && window.parent !== window;
   if (IS_EMBEDDED) document.body.classList.add('embedded');
 
@@ -241,7 +277,7 @@
   const REST_LEN_F = 0.62;
   const EYE_LOCAL = 1.05;
   const EYE_RISE  = 0.30;
-  const TRACK_HALF = 0.62;         // leaf-spring / rail z offset (half track)
+  const TRACK_HALF = 0.62;
 
   const M_BODY = 1.0;
   const I_BODY = 2.2;
@@ -264,7 +300,7 @@
      BOOTSTRAP
      ============================================================ */
   const { scene, camera, renderer, controls, wrap, isCoarse } = Base.buildScene({
-    fov: 42, camPos: [6.8, 5.0, 9.0], target: [-0.1, 1.25, 0], floorY: -0.35
+    fov: 42, camPos: [5.8, 4.2, 7.5], target: [-0.1, 1.25, 0], floorY: -0.35
   });
   Base.attachResize(camera, renderer, wrap, 42);
 
@@ -324,6 +360,8 @@
     transparent: true, opacity: 0.55, side: THREE.DoubleSide,
     clearcoat: 1.0, clearcoatRoughness: 0.05
   });
+  const matDamperBody = new THREE.MeshStandardMaterial({ color: 0x2a2e35, metalness: 0.75, roughness: 0.35 });
+  const matDamperSeal = new THREE.MeshStandardMaterial({ color: 0xd4a34a, metalness: 0.85, roughness: 0.28 });
 
   const world = new THREE.Group();
   scene.add(world);
@@ -349,7 +387,6 @@
   road.receiveShadow = true;
   world.add(road);
 
-  /* Yellow center-line dashes at bump peaks */
   [1.5, 4.5, 7.5, 10.5].forEach(c => {
     [-0.28, -0.09, 0.09, 0.28].forEach(off => {
       const s = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.035, 2.3), matStripe);
@@ -358,7 +395,6 @@
     });
   });
 
-  /* White painted edge lines along both sides of the road */
   for (let side = -1; side <= 1; side += 2) {
     for (let seg = 0; seg < 24; seg++) {
       const x0 = seg * (ROAD_P * 2 / 24);
@@ -373,7 +409,6 @@
     }
   }
 
-  /* Shoulder dirt on each side */
   for (let side = -1; side <= 1; side += 2) {
     const shoulder = new THREE.Mesh(
       new THREE.BoxGeometry(ROAD_P * 2, 0.04, 1.2),
@@ -413,7 +448,6 @@
     const grille = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.30, 1.1), M.matMetalDark);
     grille.position.set(2.40, 1.52, 0); bodyG.add(grille);
 
-    /* Headlights — bright glowing lamps */
     [-0.45, 0.45].forEach(z => {
       const hl = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.09, 16), matHeadLight);
       hl.rotation.z = Math.PI / 2; hl.position.set(2.48, 1.52, z); bodyG.add(hl);
@@ -421,27 +455,22 @@
       ring.rotation.y = Math.PI / 2; ring.position.set(2.52, 1.52, z); bodyG.add(ring);
     });
 
-    /* Brake lights on rear of cab */
     [-0.52, 0.52].forEach(z => {
       const bl = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.10, 0.24), matBrakeLight);
       bl.position.set(-2.52, 1.55, z); bodyG.add(bl);
     });
 
-    /* Cab */
     const cab = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.95, 1.5), M.matPiston);
     cab.position.set(1.35, 2.05, 0); cab.castShadow = true; bodyG.add(cab);
 
-    /* Cab side windows */
     [-0.76, 0.76].forEach(z => {
       const win = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.42, 0.02), matGlassWin);
       win.position.set(1.30, 2.18, z); bodyG.add(win);
     });
 
-    /* Windshield */
     const ws = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.60, 1.2), matGlassWin);
     ws.position.set(2.12, 2.22, 0); ws.rotation.z = -0.45; bodyG.add(ws);
 
-    /* Rear view mirrors */
     [-0.92, 0.92].forEach(z => {
       const arm = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.04, 0.02), M.matMetalDark);
       arm.position.set(2.00, 2.10, z * 0.95); bodyG.add(arm);
@@ -449,7 +478,6 @@
       mirror.position.set(1.98, 2.10, z * 1.05); bodyG.add(mirror);
     });
 
-    /* Bed floor + walls */
     const floor = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.10, 1.5), M.matPiston);
     floor.position.set(-1.25, 1.63, 0); floor.castShadow = true; bodyG.add(floor);
     [-0.72, 0.72].forEach(z => {
@@ -461,7 +489,6 @@
     const bedFront = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.35, 1.5), M.matPiston);
     bedFront.position.set(-0.02, 1.85, 0); bodyG.add(bedFront);
 
-    /* Front coil-spring mounts */
     [-0.38, 0.38].forEach(z => {
       const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.30, 0.05, 20), M.matIronDS);
       plate.position.set(XF - 0.15, SPRING_SEAT_Y, z); bodyG.add(plate);
@@ -472,7 +499,6 @@
       bodyG.add(ring);
     });
 
-    /* Bump stops */
     [-0.38, 0.38].forEach(z => {
       const stem = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.30, 0.05), M.matIronDS);
       stem.position.set(XF, 1.27, z); bodyG.add(stem);
@@ -480,13 +506,11 @@
       stop.position.set(XF, 1.10, z); bodyG.add(stop);
     });
 
-    /* Rear spring hanger brackets */
     [-0.30, 0.30].forEach(z => {
       const br = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.10, 0.16), M.matIronDS);
       br.position.set(XR + 0.45, 1.40, z); bodyG.add(br);
     });
 
-    /* Fixed rear eye-mount hangers (one per side) */
     [-TRACK_HALF, TRACK_HALF].forEach(z => {
       const hanger = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.72, 0.24), M.matIronDS);
       hanger.position.set(XR - EYE_LOCAL - 0.07, 1.06, z);
@@ -494,7 +518,6 @@
       bodyG.add(hanger);
     });
 
-    /* Shackle hanger brackets (one per side) */
     [-TRACK_HALF, TRACK_HALF].forEach(z => {
       const shBr = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.36, 0.24), M.matIronDS);
       shBr.position.set(XR + EYE_LOCAL, 1.22, z);
@@ -502,7 +525,6 @@
       bodyG.add(shBr);
     });
 
-    /* Exhaust pipe at rear of vehicle */
     const exhaust = new THREE.Mesh(
       new THREE.CylinderGeometry(0.055, 0.055, 0.55, 12),
       M.matMetalDark
@@ -542,7 +564,7 @@
     s.position.set(-0.15, 0.15, z); axleF.add(s);
   });
 
-  /* ─── Wheel with brake disc + caliper ───────────────────── */
+  /* ─── Wheel — tire + rim + spinner (disc mounted on axle, not spinner) ─── */
   const wheelSpinners = [];
   function makeWheel() {
     const w = new THREE.Group();
@@ -550,11 +572,9 @@
     w.add(spinner);
     wheelSpinners.push(spinner);
 
-    /* Tyre */
     const tire = new THREE.Mesh(new THREE.CylinderGeometry(RW, RW, 0.34, 28), matRubber);
     tire.rotation.x = Math.PI / 2; tire.castShadow = true; spinner.add(tire);
 
-    /* Tread blocks */
     for (let k = 0; k < 18; k++) {
       const a = (k / 18) * TAU;
       const t = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.055, 0.345), matRubber);
@@ -562,38 +582,34 @@
       t.rotation.z = a; spinner.add(t);
     }
 
-    /* Rim */
     const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.355, 24), M.matAlu);
     rim.rotation.x = Math.PI / 2; spinner.add(rim);
 
-    /* Brake disc (fixed to axle, NOT to wheel — add to axle instead) */
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.02, 24), matDisc);
-    disc.rotation.x = Math.PI / 2;
-    w.parent !== null; // placeholder to avoid lint
-    // actually add disc to the wheel parent (axle), not spinner
-    return { w, spinner, disc };
+    return { w, spinner };
   }
 
   const wheels = [];
-  [[axleF, XF], [axleR, XR]].forEach(([ax]) => {
+  [[axleF], [axleR]].forEach(([ax]) => {
     [-0.78, 0.78].forEach(z => {
-      const { w, disc } = makeWheel();
+      const { w } = makeWheel();
       w.position.set(0, 0, z);
       ax.add(w);
-
-      /* Brake disc rotates with the axle (visual only) */
-      disc.position.set(0, 0, z * 0.62);
-      ax.add(disc);
-      const caliper = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.14), matCaliper);
-      caliper.position.set(0, 0.16, z * 0.62);
-      ax.add(caliper);
-
       wheels.push(w);
+
+      /* Brake disc + caliper — mounted on the axle (doesn't spin with wheel) */
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.02, 24), matDisc);
+      disc.rotation.x = Math.PI / 2;
+      disc.position.set(0, 0, z * 0.94);
+      ax.add(disc);
+
+      const caliper = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.14), matCaliper);
+      caliper.position.set(0, 0.16, z * 0.94);
+      ax.add(caliper);
     });
   });
 
   /* ============================================================
-     HELICAL SPRING
+     HELICAL COIL SPRING
      ============================================================ */
   function makeCoilSpring(radius, wireR, coils, height, mat) {
     const pts = [];
@@ -611,34 +627,63 @@
 
   /* ============================================================
      TELESCOPIC SHOCK ABSORBER
+     Piston head slides inside the outer cylinder.
+     Oil seal ring marks the top of the outer body.
+     Eyelets at each end mount it to frame/axle.
      ============================================================ */
   function makeDamper() {
     const g = new THREE.Group();
 
-    const bodyC = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.42, 16), M.matMetalDark);
+    /* Outer cylinder (body) */
+    const bodyC = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.42, 16), matDamperBody);
     bodyC.position.y = 0.21; bodyC.castShadow = true; g.add(bodyC);
 
+    /* Oil seal ring at top of body */
+    const seal = new THREE.Mesh(new THREE.TorusGeometry(0.086, 0.014, 8, 20), matDamperSeal);
+    seal.rotation.x = Math.PI / 2;
+    seal.position.y = 0.42;
+    g.add(seal);
+
+    /* Bottom collar (mount) */
     const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.10, 0.10, 14), M.matIronDS);
     collar.position.y = 0.06; g.add(collar);
 
+    /* Piston head — travels with the rod, visible through the seal gap when extended */
+    const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.078, 0.045, 16), M.matMetalDark);
+    g.add(piston);
+
+    /* Rod */
     const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.62, 10), M.matValve);
     g.add(rod);
 
+    /* Boot / bump stop rings along exposed rod */
     const boots = [];
     for (let i = 0; i < 4; i++) {
       const b = new THREE.Mesh(new THREE.TorusGeometry(0.052, 0.014, 8, 18), M.matInsulator);
       b.rotation.x = Math.PI / 2; g.add(b); boots.push(b);
     }
 
+    /* Top cap + eyelet */
     const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.06, 10), M.matMetal);
     g.add(cap);
+    const eyeTop = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.012, 6, 14), M.matMetal);
+    eyeTop.rotation.y = Math.PI / 2;
+    g.add(eyeTop);
 
+    /* Bottom mount */
     const foot = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.16), M.matMetalDark);
     foot.position.y = -0.02; g.add(foot);
 
     function set(L) {
-      rod.position.y = L - 0.31;
-      cap.position.y = L - 0.03;
+      const rodTop = L - 0.03;
+      const rodCenter = rodTop - 0.31;
+      rod.position.y = rodCenter;
+      cap.position.y = rodTop;
+      eyeTop.position.y = rodTop + 0.055;
+
+      /* Piston sits at the rod's lower end (inside the outer body when compressed) */
+      piston.position.y = rodCenter - 0.28;
+
       const exposed = Math.max(0, L - 0.50);
       for (let i = 0; i < 4; i++) {
         boots[i].position.y = 0.46 + ((i + 0.5) / 4) * exposed;
@@ -686,20 +731,61 @@
   });
 
   /* ============================================================
-     LEAF SPRING — factory, one per side
+     DEFORMABLE LEAF SPRING
+     Each leaf is a ribbon of N segments. Per frame we fit a
+     quadratic Bézier through (leftEye, centroid, rightEye) and
+     rewrite the vertex positions to follow the curve. The stack
+     shares the same Bézier, offset vertically per leaf.
      ============================================================ */
-  function makeLeafArc(R, span, t, width, mat) {
-    const a0 = -Math.PI / 2 - span / 2;
-    const a1 = -Math.PI / 2 + span / 2;
-    const sh = new THREE.Shape();
-    sh.absarc(0, 0, R + t, a0, a1, false);
-    sh.absarc(0, 0, R, a1, a0, true);
-    sh.closePath();
-    const geo = new THREE.ExtrudeGeometry(sh, { depth: width, bevelEnabled: false, curveSegments: 30 });
-    geo.translate(0, 0, -width / 2);
-    const m = new THREE.Mesh(geo, mat);
-    m.castShadow = true;
-    return m;
+  const LEAF_N = 18;
+
+  function makeDeformableLeafGeo(N, halfWidth, thickness) {
+    const vertCount = (N + 1) * 4;
+    const positions = new Float32Array(vertCount * 3);
+    const indices = [];
+    for (let i = 0; i < N; i++) {
+      const a = i * 4, b = (i + 1) * 4;
+      indices.push(a+0, a+1, b+1, a+0, b+1, b+0);  // top face
+      indices.push(a+2, b+2, b+3, a+2, b+3, a+3);  // bottom face
+      indices.push(a+0, b+0, b+2, a+0, b+2, a+2);  // front side
+      indices.push(a+1, a+3, b+3, a+1, b+3, b+1);  // back side
+    }
+    indices.push(0, 2, 1, 0, 3, 1);                        // start cap
+    const L = N * 4;
+    indices.push(L+0, L+1, L+2, L+2, L+1, L+3);            // end cap
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return { geo, positions, halfWidth, thickness };
+  }
+
+  /* Per-frame: sample the Bézier and rewrite vertex positions */
+  function deformLeaf(d, P0, C, P2, stackOffset) {
+    const { positions, halfWidth, thickness } = d;
+    const N = LEAF_N;
+    const tS = d.tS, tE = d.tE;
+    const hw = halfWidth, ht = thickness * 0.5;
+
+    for (let i = 0; i <= N; i++) {
+      const t = tS + (tE - tS) * (i / N);
+      const mt = 1 - t;
+      const cx = mt*mt*P0.x + 2*mt*t*C.x + t*t*P2.x;
+      const cy = mt*mt*P0.y + 2*mt*t*C.y + t*t*P2.y + stackOffset;
+
+      const yT = cy + ht;
+      const yB = cy - ht;
+
+      const base = i * 12;
+      positions[base + 0] = cx; positions[base + 1] = yT; positions[base + 2] = -hw;
+      positions[base + 3] = cx; positions[base + 4] = yT; positions[base + 5] = +hw;
+      positions[base + 6] = cx; positions[base + 7] = yB; positions[base + 8] = -hw;
+      positions[base + 9] = cx; positions[base +10] = yB; positions[base +11] = +hw;
+    }
+    d.geo.attributes.position.needsUpdate = true;
+    d.geo.computeVertexNormals();
+    d.geo.computeBoundingSphere();
   }
 
   const leafSprings = [];
@@ -711,17 +797,37 @@
     const leavesGroup = new THREE.Group();
     group.add(leavesGroup);
 
-    const RC = 1.99, LT = 0.034;
-    [1.114, 0.85, 0.63, 0.42, 0.24].forEach((span, i) => {
-      const leaf = makeLeafArc(RC + i * LT, span, LT, 0.24, M.matSpring);
-      leaf.position.set(0, RC, 0);
-      leavesGroup.add(leaf);
+    /* Leaf stack — main (longest, thickest) to shortest/thinnest */
+    const leafSpec = [
+      { spanHalf: 0.50, halfW: 0.13, thick: 0.036 },
+      { spanHalf: 0.42, halfW: 0.125, thick: 0.032 },
+      { spanHalf: 0.35, halfW: 0.115, thick: 0.030 },
+      { spanHalf: 0.28, halfW: 0.105, thick: 0.028 },
+      { spanHalf: 0.22, halfW: 0.095, thick: 0.026 },
+    ];
+    const stackGap = 0.038;
+
+    const leafData = [];
+    leafSpec.forEach((spec, i) => {
+      const dGeo = makeDeformableLeafGeo(LEAF_N, spec.halfW, spec.thick);
+      const mesh = new THREE.Mesh(dGeo.geo, M.matSpring);
+      mesh.castShadow = true;
+      leavesGroup.add(mesh);
+
+      const d = {
+        geo: dGeo.geo,
+        positions: dGeo.positions,
+        halfWidth: spec.halfW,
+        thickness: spec.thick,
+        tS: 0.5 - spec.spanHalf,
+        tE: 0.5 + spec.spanHalf,
+        stackOffset: -i * stackGap
+      };
+      leafData.push(d);
     });
 
-    const eyeF = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.052, 0.052, 0.24, 12),
-      M.matMetalDark
-    );
+    /* Eyes at leaf ends */
+    const eyeF = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.26, 12), M.matMetalDark);
     eyeF.rotation.x = Math.PI / 2;
     group.add(eyeF);
 
@@ -732,17 +838,17 @@
     const cb = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.26, 8), M.matMetalDark);
     cb.position.set(0, 0.02, 0); group.add(cb);
     const cbn = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.04, 0.055), M.matMetal);
-    cbn.position.set(0, -0.19, 0); group.add(cbn);
+    cbn.position.set(0, -0.20, 0); group.add(cbn);
 
-    /* U-bolt plates */
+    /* U-bolt plates — span the leaf stack */
     [-0.22, 0.22].forEach(x => {
       const topPlate = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.05, 0.55), M.matMetalDark);
-      topPlate.position.set(x, 0.24, 0); group.add(topPlate);
+      topPlate.position.set(x, 0.06, 0); group.add(topPlate);
       const botPlate = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.55), M.matMetalDark);
-      botPlate.position.set(x, -0.225, 0); group.add(botPlate);
+      botPlate.position.set(x, -0.20, 0); group.add(botPlate);
       [-0.20, 0.20].forEach(zz => {
-        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.50, 8), M.matMetal);
-        rod.position.set(x, 0, zz); group.add(rod);
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.30, 8), M.matMetal);
+        rod.position.set(x, -0.07, zz); group.add(rod);
       });
     });
 
@@ -750,18 +856,17 @@
     suspParts.push(group);
 
     const state = {
-      group, leavesGroup, eyeF, eyeR,
+      group, leavesGroup, eyeF, eyeR, leafData,
       leafSx: 1, leafSy: 1, z: zPos
     };
     leafSprings.push(state);
     return state;
   }
 
-  /* Two leaf springs — one per side */
   const leafL = makeLeafSpring(-TRACK_HALF);
   const leafR = makeLeafSpring( TRACK_HALF);
 
-  /* ─── Shackles — one per side ───────────────────────────── */
+  /* ─── Shackles ──────────────────────────────────────────── */
   const shackles = [];
   [-TRACK_HALF, TRACK_HALF].forEach(z => {
     const sh = new THREE.Mesh(
@@ -873,9 +978,9 @@
   }
 
   /* ============================================================
-     SPARK PARTICLES (impact FX, rigid mode)
+     SPARK PARTICLES
      ============================================================ */
-  const SPARK_N = isCoarse ? 100 : 200;
+  const SPARK_N = isCoarse ? 100 : 240;
   const sparkData = [];
   const sparkPos = new Float32Array(SPARK_N * 3);
   const sparkCol = new Float32Array(SPARK_N * 3);
@@ -890,7 +995,7 @@
   sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
   sparkGeo.setAttribute('color', new THREE.BufferAttribute(sparkCol, 3));
   const sparkMat = new THREE.PointsMaterial({
-    map: particleTex, size: 0.14, transparent: true, depthWrite: false,
+    map: particleTex, size: 0.16, transparent: true, depthWrite: false,
     blending: THREE.AdditiveBlending, vertexColors: true
   });
   const sparkPoints = new THREE.Points(sparkGeo, sparkMat);
@@ -929,7 +1034,6 @@
         sparkPos[i3]     = s.px;
         sparkPos[i3 + 1] = s.py;
         sparkPos[i3 + 2] = s.pz;
-        /* White-hot near death → orange → red */
         sparkCol[i3]     = 1.0;
         sparkCol[i3 + 1] = 0.35 + 0.55 * f;
         sparkCol[i3 + 2] = 0.05 * f;
@@ -953,16 +1057,26 @@
   let h = 0, phi = 0, hv = 0, phiv = 0;
   let prevCf = 0, prevCr = 0, hPrev1 = 0, hPrev2 = 0;
   let prevYwf = RW, prevYwr = RW;
+  let prevPrevYwf = RW, prevPrevYwr = RW;
   let bodyAcc = 0, dispShock = 0;
   let axleYf = RW, axleYr = RW;
   let labelsDirty = false;
   let _firstFrame = true;
 
+  /* Rigid-mode violence state */
+  let rigidChatterPhase = 0;
+  let impactKick = 0;
+  let axleHopF = 0, axleHopR = 0;
+
+  /* Danger */
+  let danger = 0;
+  let crashed = false;
+  let crashTime = 0;
+
   /* Camera shake */
   let shakeAmt = 0;
   const shakeOffset = new THREE.Vector3();
 
-  /* Impact cooldown */
   let lastImpactT = 0;
 
   const SLOWMO_MULT = 0.08;
@@ -976,6 +1090,10 @@
   const shockPctEl    = document.getElementById('shock-pct');
   const shockFillEl   = document.getElementById('shock-fill');
   const shockVerdictEl= document.getElementById('shock-verdict');
+  const dangerMeterEl = document.getElementById('danger-meter');
+  const dangerPctEl   = document.getElementById('danger-pct');
+  const dangerFillEl  = document.getElementById('danger-fill');
+  const dangerVerdictEl = document.getElementById('danger-verdict');
   const modeDescEl    = document.getElementById('mode-desc');
   const rpmLabelEl    = document.getElementById('rpm-label');
   const impactFlashEl = document.getElementById('impact-flash');
@@ -983,18 +1101,20 @@
 
   let flashTimeout = 0;
 
-  function flashImpact(power) {
+  function flashImpact(power, permanent) {
     impactFlashEl.style.opacity = String(Math.min(0.85, 0.35 + power * 0.5));
     impactWarnEl.classList.add('on');
     clearTimeout(flashTimeout);
-    flashTimeout = setTimeout(() => {
-      impactFlashEl.style.opacity = '0';
-      impactWarnEl.classList.remove('on');
-    }, 160 + power * 120);
+    if (!permanent) {
+      flashTimeout = setTimeout(() => {
+        impactFlashEl.style.opacity = '0';
+        impactWarnEl.classList.remove('on');
+      }, 160 + power * 120);
+    }
   }
 
   const DESC_WITH = '<strong>With suspension.</strong> The coil springs and leaf spring flex as each wheel rises over a bump; the shock absorbers (dampers) dissipate the energy. The chassis stays nearly level — passengers feel only a gentle float.';
-  const DESC_WITHOUT = '<strong>Without suspension.</strong> Rigid links connect the axles straight to the chassis. Every bump hits the frame directly — violent jolts, poor road holding, and a bone-shaking ride. Watch the sparks, the camera shake and the flashing warning.';
+  const DESC_WITHOUT = '<strong>Without suspension.</strong> Rigid links connect the axles straight to the chassis. Every bump hits the frame directly — violent jolts, poor road holding, and a bone-shaking ride. High speed on rough ground will trigger a crash.';
 
   /* ============================================================
      LABELS
@@ -1043,6 +1163,8 @@
     prevCf = (axleYf - (h + phi * XF)) - RW;
     prevCr = (axleYr - (h + phi * XR)) - RW;
     shakeAmt = 0;
+    impactKick = 0;
+    axleHopF = 0; axleHopR = 0;
 
     bridge.setStatus(withSusp ? 'With Suspension' : 'Without Suspension',
                      withSusp ? '#38bdf8' : '#ef4444');
@@ -1067,8 +1189,18 @@
     h = 0; phi = 0; hv = 0; phiv = 0;
     prevCf = 0; prevCr = 0; hPrev1 = 0; hPrev2 = 0;
     prevYwf = RW; prevYwr = RW;
+    prevPrevYwf = RW; prevPrevYwr = RW;
     bodyAcc = 0; dispShock = 0;
     shakeAmt = 0;
+    impactKick = 0;
+    axleHopF = 0; axleHopR = 0;
+    danger = 0;
+    crashed = false;
+    crashTime = 0;
+    impactWarnEl.classList.remove('crash');
+    impactWarnEl.textContent = '⚠ IMPACT — every bump slams the chassis';
+    impactFlashEl.style.opacity = '0';
+    impactWarnEl.classList.remove('on');
     _firstFrame = true;
     dustData.forEach(p => { p.life = 0; });
     sparkData.forEach(s => { s.life = 0; });
@@ -1136,21 +1268,55 @@
 
       bodyAcc = (Ff + Fr) / M_BODY;
       prevCf = cf; prevCr = cr;
+
+      /* Decay axle hop to zero when suspension is active */
+      axleHopF *= Math.exp(-8 * dt);
+      axleHopR *= Math.exp(-8 * dt);
     } else {
       hPrev2 = hPrev1; hPrev1 = h;
       h = (ywf + ywr) / 2 - RW;
       phi = Math.atan2(ywf - ywr, XF - XR) * 0.9;
       hv = 0; phiv = 0;
       bodyAcc = _firstFrame ? 0 : (h - 2 * hPrev1 + hPrev2) / (dt * dt);
+
+      /* ── Rigid mode: axle hop ──
+         Wheels lag the terrain, then overshoot. Sharp wheel velocity kicks
+         a decaying hop offset that visually shows the wheel leaving the
+         ground. Computed via second-derivative of the wheel path. */
+      if (!_firstFrame) {
+        const wAccF = (ywf - 2 * prevYwf + prevPrevYwf) / (dt * dt);
+        const wAccR = (ywr - 2 * prevYwr + prevPrevYwr) / (dt * dt);
+        if (Math.abs(wAccF) > 15) {
+          axleHopF += -Math.sign(wAccF) * Math.min(0.09, Math.abs(wAccF) * 0.0015);
+        }
+        if (Math.abs(wAccR) > 15) {
+          axleHopR += -Math.sign(wAccR) * Math.min(0.09, Math.abs(wAccR) * 0.0015);
+        }
+      }
+      axleHopF *= Math.exp(-5 * dt);
+      axleHopR *= Math.exp(-5 * dt);
+      axleHopF = clamp(axleHopF, -0.12, 0.12);
+      axleHopR = clamp(axleHopR, -0.12, 0.12);
     }
+    prevPrevYwf = prevYwf; prevPrevYwr = prevYwr;
     prevYwf = ywf; prevYwr = ywr;
-    axleYf = ywf; axleYr = ywr;
+    axleYf = ywf + axleHopF;
+    axleYr = ywr + axleHopR;
     _firstFrame = false;
 
-    /* Visual buzz in rigid mode — high freq chatter */
-    const chatter = withSusp
-      ? 0
-      : 0.008 * Math.sin(roadScroll * 55) * clamp(v / 2.4, 0.2, 1.5);
+    /* Rigid mode chatter — three frequencies (low thud, mid bounce, high rattle) */
+    let chatter = 0;
+    if (!withSusp) {
+      rigidChatterPhase += dt * (18 + v * 6);
+      const speedFactor = clamp(v / 2.4, 0.2, 1.6);
+      chatter =
+        0.006 * speedFactor * Math.sin(rigidChatterPhase * 0.35) +   // low thud
+        0.010 * speedFactor * Math.sin(rigidChatterPhase * 1.0)  +   // mid bounce
+        0.006 * speedFactor * Math.sin(rigidChatterPhase * 2.8)  +   // high rattle
+        0.004 * speedFactor * Math.sin(rigidChatterPhase * 7.0);     // tiny jitter
+      chatter += impactKick;
+      impactKick *= Math.exp(-9 * dt);
+    }
 
     const hVis = h + chatter;
 
@@ -1159,22 +1325,23 @@
       const accel = Math.abs(bodyAcc);
       const now = performance.now();
 
-      /* Continuous rumble proportional to speed */
-      const rumble = clamp(v / 2.4, 0, 1.4) * 0.006;
+      const rumble = clamp(v / 2.4, 0, 1.4) * 0.008;
       shakeAmt = Math.max(shakeAmt, rumble);
 
-      /* Sharp kick on big impacts */
-      if (accel > 4 && now - lastImpactT > 120) {
+      /* Impact: strong vertical acceleration */
+      if (accel > 3.5 && now - lastImpactT > 110) {
         lastImpactT = now;
-        const power = clamp(accel / 10, 0.2, 1.4);
+        const power = clamp(accel / 8, 0.3, 1.6);
 
-        spawnSparks(XF, axleYf - 0.15, 0.68, Math.round(8 * power), power);
-        spawnSparks(XF, axleYf - 0.15, -0.68, Math.round(8 * power), power);
-        spawnSparks(XR, axleYr - 0.15, 0.55, Math.round(6 * power), power);
-        spawnSparks(XR, axleYr - 0.15, -0.55, Math.round(6 * power), power);
+        const sparkCount = Math.round(6 + state.speedMul * 8 * power);
+        spawnSparks(XF, axleYf - 0.15, 0.68, sparkCount, power);
+        spawnSparks(XF, axleYf - 0.15, -0.68, sparkCount, power);
+        spawnSparks(XR, axleYr - 0.15, 0.55, Math.round(sparkCount * 0.75), power);
+        spawnSparks(XR, axleYr - 0.15, -0.55, Math.round(sparkCount * 0.75), power);
 
-        shakeAmt = Math.max(shakeAmt, 0.06 + power * 0.07);
-        flashImpact(power);
+        shakeAmt = Math.max(shakeAmt, 0.05 + power * 0.06);
+        impactKick = -Math.sign(bodyAcc) * Math.min(0.035, power * 0.02);
+        flashImpact(power, false);
       }
     }
 
@@ -1182,12 +1349,11 @@
     axleR.position.y = axleYr;
     bodyG.position.y = hVis;
 
-    /* Amplify body pitch in rigid mode for drama */
     const phiVis = withSusp ? phi : phi * 1.35;
     bodyG.rotation.z = phiVis;
 
     const spin = (v * dt) / RW;
-    wheels.forEach(w => { w.rotation.z -= spin; });
+    wheelSpinners.forEach(s => { s.rotation.z -= spin; });
 
     road.position.x = -(roadScroll % ROAD_P);
 
@@ -1197,7 +1363,12 @@
     [coiloverL, coiloverR].forEach(co => {
       co.position.set(XF - 0.15, baseY, co.userData.z);
       const L = clamp(seatY - baseY, 0.28, 0.86);
-      co.userData.spring.scale.y = L / REST_LEN_F;
+      const scaleY = L / REST_LEN_F;
+      co.userData.spring.scale.y = scaleY;
+      /* Poisson bulge: constant volume means radius scales as 1/sqrt(height scale) */
+      const bulge = clamp(1 / Math.sqrt(scaleY), 0.92, 1.18);
+      co.userData.spring.scale.x = bulge;
+      co.userData.spring.scale.z = bulge;
       co.userData.damper.set(L + 0.08);
     });
 
@@ -1208,7 +1379,7 @@
       d.set(clamp(rSeatY - (axleYr + 0.05), 0.40, 1.05));
     });
 
-    /* ── Leaf springs (both sides) ── */
+    /* ── Leaf springs — deformable ribbons fit a Bézier each frame ── */
     const asmY = axleYr - 0.10;
     const eyeBodyY = 0.75 + hVis + phiVis * (XR - EYE_LOCAL);
 
@@ -1216,17 +1387,27 @@
       la.group.position.set(XR, asmY, la.z);
       la.leafSy = clamp((eyeBodyY - asmY) / EYE_RISE, 0.35, 1.25);
       la.leafSx = 1 + 0.16 * (1 - la.leafSy);
-      la.leavesGroup.scale.set(la.leafSx, la.leafSy, 1);
-      la.eyeF.position.set(-EYE_LOCAL * la.leafSx, EYE_RISE * la.leafSy, 0);
-      la.eyeR.position.set( EYE_LOCAL * la.leafSx, EYE_RISE * la.leafSy, 0);
+
+      const eyeX = EYE_LOCAL * la.leafSx;
+      const eyeY = EYE_RISE * la.leafSy;
+
+      /* Bézier control points (local): eyes at ±eyeX, eyeY; centroid at (0, 0) */
+      const P0 = { x: -eyeX, y: eyeY };
+      const P2 = { x:  eyeX, y: eyeY };
+      const C  = { x: 0, y: -eyeY };
+
+      /* Rewrite each leaf ribbon */
+      la.leafData.forEach(d => deformLeaf(d, P0, C, P2, d.stackOffset));
+
+      /* Eyes track the leaf ribbon's endpoints */
+      la.eyeF.position.set(-eyeX, eyeY, 0);
+      la.eyeR.position.set( eyeX, eyeY, 0);
     });
 
-    /* ── Shackles (both sides) ── */
+    /* ── Shackles ── */
     shackles.forEach(sh => {
       const shTopX = XR + EYE_LOCAL;
       const shTopY = 1.04 + hVis + phiVis * (XR + EYE_LOCAL);
-
-      /* Both shackles share the same leaf geometry (rigid axle, both wheels at same height) */
       const la = leafSprings[0];
       const ex = XR + EYE_LOCAL * la.leafSx;
       const ey = asmY + EYE_RISE * la.leafSy;
@@ -1252,13 +1433,72 @@
     if (state.showGas && !_firstFrame) {
       [[XF, wvF], [XR, wvR]].forEach(([x, wv]) => {
         const mag = Math.abs(wv);
-        const threshold = withSusp ? 0.55 : 0.40;
+        const threshold = withSusp ? 0.55 : 0.30;
         if (mag > threshold) {
-          spawnDust(x, Math.min(12, Math.round(mag * 10 * (withSusp ? 1 : 1.8))),
-                       withSusp ? 0.65 : 1.0);
+          spawnDust(x, Math.min(14, Math.round(mag * 12 * (withSusp ? 1 : 1.8))),
+                       withSusp ? 0.65 : 1.15);
         }
       });
     }
+  }
+
+  /* ============================================================
+     DANGER METER
+     ============================================================ */
+  const DANGER_RATE_UP   = 0.30;
+  const DANGER_RATE_DOWN = 0.55;
+
+  function updateDanger(dt) {
+    if (!withSusp && state.playing && !crashed) {
+      const speedFactor = Math.pow(state.speedMul / 2.5, 1.4);
+      danger += DANGER_RATE_UP * speedFactor * dt;
+    } else {
+      danger -= DANGER_RATE_DOWN * dt;
+    }
+    danger = clamp(danger, 0, 1);
+
+    const pct = Math.round(danger * 100);
+    dangerPctEl.textContent = pct + '%';
+    dangerFillEl.style.width = pct + '%';
+
+    let band = '#22c55e';
+    let verdict = 'Chassis coping fine';
+    if (danger > 0.90) { band = '#dc2626'; verdict = '⚠ ACCIDENT IMMINENT — slow down or re-enable suspension'; }
+    else if (danger > 0.70) { band = '#ef4444'; verdict = 'Severe impacts — structural risk'; }
+    else if (danger > 0.40) { band = '#f59e0b'; verdict = 'Ride deteriorating — re-enable suspension'; }
+    dangerFillEl.style.background = band;
+    dangerVerdictEl.textContent = verdict;
+    dangerMeterEl.classList.toggle('active', !withSusp);
+    dangerMeterEl.classList.toggle('critical', danger > 0.90);
+
+    if (danger > 0.995 && !crashed && !withSusp) triggerCrash();
+    if (danger < 0.85 && crashed) {
+      crashed = false;
+      impactWarnEl.classList.remove('crash');
+      impactWarnEl.textContent = '⚠ IMPACT — every bump slams the chassis';
+    }
+  }
+
+  /* ============================================================
+     CRASH EVENT
+     ============================================================ */
+  function triggerCrash() {
+    crashed = true;
+    crashTime = 0;
+
+    spawnSparks(XF, axleYf - 0.05,  0.75, 55, 2.2);
+    spawnSparks(XF, axleYf - 0.05, -0.75, 55, 2.2);
+    spawnSparks(XR, axleYr - 0.05,  0.75, 55, 2.2);
+    spawnSparks(XR, axleYr - 0.05, -0.75, 55, 2.2);
+
+    spawnDust(XF, 40, 1.6);
+    spawnDust(XR, 40, 1.6);
+
+    flashImpact(2.0, true);
+    impactWarnEl.classList.add('crash');
+    impactWarnEl.textContent = '⚠ CRASHED — Reset or re-enable suspension';
+    shakeAmt = 0.28;
+    impactKick = -0.10;
   }
 
   function updateShockReadouts(dt) {
@@ -1294,15 +1534,24 @@
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.033);
 
-    /* Undo last frame's shake */
     camera.position.sub(shakeOffset);
 
     if (state.playing && dt > 0) {
       updateVehicle(dt);
     }
+
+    /* Crash aftermath motion */
+    if (crashed) {
+      crashTime += dt;
+      const dive = Math.min(1, crashTime * 2.2) * 0.13;
+      bodyG.rotation.z = -dive;
+      shakeAmt = Math.max(shakeAmt, 0.16);
+    }
+
     updateDust(dt);
     updateSparks(dt);
     updateShockReadouts(dt);
+    updateDanger(dt);
 
     if (state.speedMul !== lastSpeedMul) {
       lastSpeedMul = state.speedMul;
@@ -1322,7 +1571,7 @@
 
     controls.update();
 
-    /* Apply new shake AFTER controls.update so it doesn't fight damping */
+    /* Camera shake after controls so damping doesn't fight it */
     if (shakeAmt > 0.0008) {
       shakeOffset.set(
         (Math.random() - 0.5) * shakeAmt,
