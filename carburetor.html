@@ -364,7 +364,12 @@
 
   function makeButterfly(y, angle) {
     const g = new THREE.Group();
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.40,0.40,0.025,32), carbMats.butterfly);
+    /* Size the disc to the bore diameter AT THIS HEIGHT, not a fixed
+       radius — the barrel tapers, so a plate that fits the throttle's
+       bore (radius 0.40) would leave a visible gap around it anywhere
+       else, like the choke plate up near the air inlet (bore 0.42). */
+    const R = carbBarrelRadius(y);
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.025, 32), carbMats.butterfly);
     g.add(disc);
     const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.98,8), carbMats.body);
     shaft.rotation.z = Math.PI/2; g.add(shaft);
@@ -372,9 +377,18 @@
     carburetorGroup.add(g);
     return g;
   }
-  makeButterfly( 1.25, Math.PI * 0.42);
+  /* Choke plate, up near the air inlet — shown open (a warm, running
+     engine has the choke retracted), fixed since this module has no
+     cold-start control. */
+  const chokeButterfly = makeButterfly( 1.25, Math.PI * 0.42);
   const ACCEL_MIN_ANGLE = Math.PI * 0.05;
-  const ACCEL_MAX_ANGLE = Math.PI * 0.80;
+  /* A flat disc rotating away from "closed" (0°) opens as sin(angle)
+     grows, peaking at exactly 90° (edge-on to the airflow = true wide
+     open throttle) and then closing again past that. The old max of
+     144° overshot this peak, so full pedal travel actually rotated the
+     plate PAST wide-open and partway back toward closed. Capping at 90°
+     makes 100% pedal = maximum throttle opening, as it should be. */
+  const ACCEL_MAX_ANGLE = Math.PI / 2;
   const throttleButterfly = makeButterfly(-0.10, ACCEL_MIN_ANGLE);
 
   /* Float chamber */
@@ -577,6 +591,7 @@
   /* Labels */
   const labelDefs = [
     { id:'air',    text:'Air in',               pos: new THREE.Vector3(0, 1.80, 0) },
+    { id:'choke',  text:'Choke plate (open)',    pos: new THREE.Vector3(0.62, 1.25, 0) },
     { id:'venturi',text:'Venturi (low pressure)', pos: new THREE.Vector3(0.65, 0.40, 0) },
     { id:'float',  text:'Float chamber',         pos: new THREE.Vector3(-0.95, 0.60, 0) },
     { id:'jet',    text:'Fuel jet',              pos: new THREE.Vector3(-0.20, -0.65, 0) },
@@ -593,6 +608,12 @@
   const accelPctEl       = document.getElementById('accel-pct');
   const accelCtrlPctEl   = document.getElementById('accel-control-pct');
   const accelCtrlLabelEl = document.getElementById('accel-control-label');
+  const rpmLabelEl        = document.getElementById('rpm-label');
+  /* The label's initial markup ("~900 rpm") corresponds to the Speed
+     slider's default value (0.85) — scale from that same reference
+     point so the two stay consistent at every slider position. */
+  const RPM_AT_DEFAULT_SPEED = 900;
+  const DEFAULT_SPEED_MUL    = 0.85;
 
   let accelPos = 0;
   let accelDragging = false;
@@ -729,6 +750,18 @@
 
     const ratio = afrRatio(accelPos);
     setMixtureUI(accelPos, ratio);
+    if (rpmLabelEl) {
+      rpmLabelEl.textContent = `~${Math.round(RPM_AT_DEFAULT_SPEED * (state.speedMul / DEFAULT_SPEED_MUL))} rpm`;
+    }
+
+    /* The throttle plate's angle is a direct, immediate function of pedal
+       position — like a real cable/linkage, it must track input even
+       while the simulation is paused. Only the flow animation (particle
+       motion) is gated by "playing"; otherwise the valve could sit
+       frozen at a stale angle while the readouts above it already
+       report the new throttle % and AFR, disagreeing with what's shown. */
+    const targetAngle = ACCEL_MIN_ANGLE + (ACCEL_MAX_ANGLE - ACCEL_MIN_ANGLE) * accelPos;
+    throttleButterfly.rotation.z += (targetAngle - throttleButterfly.rotation.z) * 0.15;
 
     if (state.playing) {
       const simDt = dt * state.speedMul;
@@ -736,9 +769,6 @@
       const fuelFlowMul = Math.max(0.35, Math.min(2.0, (airFlowMul * 14.7) / ratio));
 
       updateCarb(simDt, airFlowMul, fuelFlowMul, ratio);
-
-      const targetAngle = ACCEL_MIN_ANGLE + (ACCEL_MAX_ANGLE - ACCEL_MIN_ANGLE) * accelPos;
-      throttleButterfly.rotation.z += (targetAngle - throttleButterfly.rotation.z) * 0.15;
     }
 
     /* Labels at 30 Hz for smoother frame pacing */
