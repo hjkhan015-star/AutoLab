@@ -684,24 +684,32 @@
   const spiderBotMarker = new THREE.Mesh(new THREE.BoxGeometry(0.43, 0.05, SPIDER_T*1.10), SPIDER_MARKER_MAT);
   spiderBotGroup.add(spiderBotMarker);
 
+  /* Half-shafts + hub flanges: each is one rigid piece bolted between the
+     side gear (spinning at phCarrier+phSideL/R) and the wheel (same speed)
+     — so the whole assembly must spin at that speed too. Grouped per side
+     so a single rotation.x update below drives shaft, flange and lugs
+     together, instead of leaving them static as before. */
+  const axleAssemblyL = new THREE.Group(); differentialGroup.add(axleAssemblyL);
+  const axleAssemblyR = new THREE.Group(); differentialGroup.add(axleAssemblyR);
+
   const axleL = new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,AXLE_LEN,16), diffMats.axle);
   axleL.rotation.z = Math.PI / 2; axleL.position.x = -SIDE_X - AXLE_LEN/2 + 0.15;
-  differentialGroup.add(axleL);
+  axleAssemblyL.add(axleL);
   const axleR = new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,AXLE_LEN,16), diffMats.axle);
   axleR.rotation.z = Math.PI / 2; axleR.position.x = SIDE_X + AXLE_LEN/2 - 0.15;
-  differentialGroup.add(axleR);
+  axleAssemblyR.add(axleR);
 
   const HUB_FLANGE_X = SIDE_X + AXLE_LEN - 0.20;
-  [-1,1].forEach(dir => {
+  [[-1, axleAssemblyL], [1, axleAssemblyR]].forEach(([dir, assembly]) => {
     const f = new THREE.Mesh(new THREE.CylinderGeometry(0.20,0.20,0.05,24), diffMats.hub);
     f.rotation.z = Math.PI / 2; f.position.x = dir * HUB_FLANGE_X;
-    differentialGroup.add(f);
+    assembly.add(f);
     for (let i = 0; i < 5; i++) {
       const a = (i/5)*Math.PI*2;
       const lug = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.04,6), diffMats.hub);
       lug.rotation.z = Math.PI / 2;
       lug.position.set(dir*(HUB_FLANGE_X+0.03), Math.cos(a)*0.12, Math.sin(a)*0.12);
-      differentialGroup.add(lug);
+      assembly.add(lug);
     }
   });
 
@@ -1120,7 +1128,7 @@
     phSideL   += dt * (omegaL - omega_c);
     phSideR   += dt * (omegaR - omega_c);
     phSpider  += dt * (omegaR - omegaL) * 0.5;
-    phPinion  += dt * omega_c * (RING_R / PINION_R);
+    phPinion  += dt * omega_c * (RING_TEETH / PINION_TEETH);
     phFrontWheels += dt * v / FRONT_WHEEL_R;
 
     carrierGroup.rotation.x    =  phCarrier;
@@ -1132,17 +1140,27 @@
 
     wheelL.rotation.x = phCarrier + phSideL;
     wheelR.rotation.x = phCarrier + phSideR;
+    axleAssemblyL.rotation.x = phCarrier + phSideL;
+    axleAssemblyR.rotation.x = phCarrier + phSideR;
 
     const ack = ackermannAngles(roadAngle);
     if (Math.abs(roadAngle) < 1e-4) {
       frontPivotL.rotation.y = 0;
       frontPivotR.rotation.y = 0;
     } else if (roadAngle < 0) {
-      frontPivotR.rotation.y = -ack.inner;
-      frontPivotL.rotation.y = -ack.outer;
+      /* roadAngle < 0 => yawRate < 0 => heading swings toward -X => a LEFT
+         turn, whose center of curvature is on the vehicle's left (-X) side.
+         The LEFT wheel is therefore the inside wheel and must take the
+         larger (inner) Ackermann angle; the right wheel takes the smaller
+         (outer) angle. (Verified: the previous code had this swapped —
+         it gave the inner angle to the right wheel in a left turn.) */
+      frontPivotL.rotation.y = -ack.inner;
+      frontPivotR.rotation.y = -ack.outer;
     } else {
-      frontPivotL.rotation.y =  ack.inner;
-      frontPivotR.rotation.y =  ack.outer;
+      /* roadAngle > 0 => RIGHT turn, center of curvature on the right
+         (+X) side => the RIGHT wheel is inside and takes the larger angle. */
+      frontPivotR.rotation.y =  ack.inner;
+      frontPivotL.rotation.y =  ack.outer;
     }
     frontWheelL.rotation.x = phFrontWheels;
     frontWheelR.rotation.x = phFrontWheels;
@@ -1185,7 +1203,13 @@
     if (elFillL) elFillL.style.width  = Math.max(2, Math.min(100, rL*50)) + '%';
     if (elFillR) elFillR.style.width = Math.max(2, Math.min(100, rR*50)) + '%';
 
-    const rpmBase = 900 * (omega_c / 2.2 / 0.85) * 2.2;
+    /* rpmBase: previously "900 * (omega_c/2.2/0.85) * 2.2" — the /2.2 and
+       trailing *2.2 don't cancel with anything else in between, they just
+       reintroduce the 2.2 factor, so this read 1980 rpm at the default
+       Speed setting instead of the intended ~900 (confirmed numerically).
+       omega_c/2.2 is exactly state.speedMul by construction, so simplify
+       directly off that. */
+    const rpmBase = 900 * (state.speedMul / 0.85);
     const rpmL = (omegaL / omega_c) * rpmBase;
     const rpmR = (omegaR / omega_c) * rpmBase;
     const rpmLEl = document.getElementById('rpm-left');
@@ -1198,6 +1222,11 @@
       rpmREl.textContent = Math.round(rpmR) + (slip && tractionMode === 'right' ? ' ⚠' : '');
       rpmREl.classList.toggle('warn', slip && tractionMode === 'right');
     }
+    /* The generic Speed-slider readout (shared markup with the other
+       modules) was never wired up in this file at all — it sat frozen at
+       its initial "~900 rpm" regardless of the slider. */
+    const rpmLabelEl = document.getElementById('rpm-label');
+    if (rpmLabelEl) rpmLabelEl.textContent = `~${Math.round(rpmBase)} rpm`;
 
     const trEl = document.getElementById('turn-radius');
     if (trEl) {
