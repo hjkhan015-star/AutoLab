@@ -76,7 +76,7 @@ window.AUTO_MODULES = [
   subtitle: 'Engine Lubrication',
   file: 'lubrication.html', color: '#f59e0b',
   icon: '<path d="M12 3c-2 3-5 7-5 10a5 5 0 0 0 10 0c0-3-3-7-5-10z"/><circle cx="12" cy="14" r="2"/>'
-  }
+  },
   {
     id: 'turbo', label: 'Turbo', title: 'Turbocharger',
     subtitle: 'Forced Induction · Simulator',
