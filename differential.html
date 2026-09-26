@@ -3,214 +3,392 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0b0e14">
+<meta name="theme-color" content="#0d1117">
 <title>Differential — Auto Lab</title>
 <link rel="stylesheet" href="base.css">
 <style>
-  /* ═══════════════════════════════════════════════════════════
-     STEERING WHEEL OVERLAY
-     ═══════════════════════════════════════════════════════════ */
+  :root {
+    --lab-bg:            #0d1117;
+    --lab-panel:         rgba(20, 26, 36, 0.85);
+    --lab-surface:       rgba(255, 255, 255, 0.06);
+    --lab-surface-hi:    rgba(255, 255, 255, 0.14);
+    --lab-border:        rgba(255, 255, 255, 0.08);
+    --lab-border-hi:     rgba(255, 255, 255, 0.12);
+    --lab-text:          #e5e7eb;
+    --lab-text-dim:      #8b96a5;
+    --lab-text-mute:     #94a3b8;
+    --lab-text-hint:     #4a5568;
+    --lab-accent:        #38bdf8;
+    --lab-accent-glow:   0 0 14px rgba(56, 189, 248, 0.4);
+    --lab-amber:         #f59e0b;
+    --lab-danger:        #f87171;
+    --lab-radius:        14px;
+    --lab-radius-sm:     8px;
+    --lab-shadow:        0 10px 30px rgba(0, 0, 0, 0.5);
+    --lab-shadow-sm:     0 4px 14px rgba(0, 0, 0, 0.4);
+    --lab-blur:          blur(14px);
+    --lab-blur-sm:       blur(8px);
+    --lab-mono:          ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --lab-font:          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  html, body {
+    font-family: var(--lab-font);
+    color: var(--lab-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #edu-panel.panel {
+    background: var(--lab-panel) !important;
+    border: 1px solid var(--lab-border) !important;
+    border-radius: var(--lab-radius) !important;
+    box-shadow: var(--lab-shadow) !important;
+    backdrop-filter: var(--lab-blur) !important;
+    -webkit-backdrop-filter: var(--lab-blur) !important;
+    color: var(--lab-text) !important;
+    overflow: hidden;
+  }
+  #panel-head { padding: 12px 14px; }
+  #module-kicker {
+    color: var(--lab-text-dim) !important;
+    font-size: 10px !important; font-weight: 700 !important;
+    letter-spacing: 0.08em !important; text-transform: uppercase !important;
+    margin: 0 0 2px 0 !important;
+  }
+  #module-title {
+    color: var(--lab-text) !important;
+    font-weight: 700 !important; font-size: 15px !important;
+    letter-spacing: 0.01em !important; line-height: 1.25 !important;
+  }
+  #panel-toggle {
+    background: var(--lab-surface) !important;
+    border: 1px solid var(--lab-border-hi) !important;
+    border-radius: var(--lab-radius-sm) !important;
+    color: var(--lab-text) !important;
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.15s, border-color 0.15s !important;
+    cursor: pointer;
+  }
+  #panel-toggle:hover { background: var(--lab-surface-hi) !important; }
+  #panel-toggle svg { width: 18px; height: 18px; transition: transform 0.2s; }
+  #panel-toggle svg path { fill: var(--lab-text-mute) !important; }
+
+  #panel-body { padding: 0 14px 14px !important; }
+  #stroke-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(56, 189, 248, 0.10);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    color: var(--lab-accent);
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 999px;
+    margin-bottom: 10px !important;
+  }
+  #stroke-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--lab-accent);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+  }
+  .extra-label {
+    color: var(--lab-text-dim) !important;
+    font-size: 10px !important; font-weight: 700 !important;
+    letter-spacing: 0.08em !important; text-transform: uppercase !important;
+    margin-bottom: 6px !important;
+  }
+  #stroke-desc {
+    color: var(--lab-text-mute) !important;
+    font-size: 12.5px !important; line-height: 1.55 !important;
+  }
+  #stroke-desc strong { color: var(--lab-text) !important; font-weight: 700 !important; }
+
+  #diff-readout { margin: 6px 0 8px; }
+  .diff-row {
+    display: flex; align-items: center; gap: 8px;
+    margin: 6px 0; font-size: 12px; font-family: var(--lab-mono);
+  }
+  .diff-name {
+    min-width: 74px; display: flex; align-items: center; gap: 6px;
+    color: var(--lab-text-mute); font-family: var(--lab-font);
+    font-weight: 600; letter-spacing: 0.02em;
+  }
+  .diff-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    display: inline-block; box-shadow: 0 0 6px currentColor;
+  }
+  .diff-bar {
+    flex: 1; height: 5px; background: rgba(255, 255, 255, 0.06);
+    border-radius: 3px; overflow: hidden; position: relative;
+  }
+  .diff-bar::after {
+    content: ""; position: absolute; inset: 0; border-radius: 3px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    pointer-events: none;
+  }
+  .diff-fill {
+    height: 100%; border-radius: 3px; transition: width 0.08s linear;
+    width: 50%; box-shadow: 0 0 8px currentColor;
+  }
+  .diff-num {
+    min-width: 50px; text-align: right;
+    font-variant-numeric: tabular-nums; color: var(--lab-text);
+    font-weight: 700; font-size: 11.5px; letter-spacing: 0.01em;
+  }
+  #diff-eq {
+    text-align: center; color: var(--lab-text-dim);
+    font-size: 11.5px; margin: 8px 0 2px;
+    font-family: var(--lab-mono); letter-spacing: 0.03em;
+    padding: 6px 8px;
+    border-top: 1px solid var(--lab-border);
+    border-bottom: 1px solid var(--lab-border);
+  }
+  #diff-eq sub { color: var(--lab-text-mute); }
+
+  #wheel-speed-extra {
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--lab-border);
+    display: flex; flex-direction: column; gap: 5px;
+    font-size: 11.5px; color: var(--lab-text-dim);
+  }
+  #wheel-speed-extra .row {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; font-family: var(--lab-mono);
+  }
+  #wheel-speed-extra .row > span:first-child {
+    font-family: var(--lab-font); font-weight: 500; letter-spacing: 0.01em;
+  }
+  #wheel-speed-extra .val {
+    color: var(--lab-text); font-weight: 700;
+    font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+  }
+  #wheel-speed-extra .warn { color: var(--lab-danger); font-weight: 800; }
+  #diff-mode-row .val { color: var(--lab-accent); }
+
+  .select-group {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: var(--lab-text-dim);
+    letter-spacing: 0.04em; text-transform: uppercase; font-weight: 700;
+  }
+  .select-group select {
+    background: var(--lab-surface); border: 1px solid var(--lab-border-hi);
+    color: var(--lab-text); padding: 6px 24px 6px 10px;
+    border-radius: var(--lab-radius-sm); font-family: var(--lab-font);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.03em;
+    cursor: pointer; outline: none;
+    appearance: none; -webkit-appearance: none;
+    transition: background 0.15s, border-color 0.15s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 9px center;
+  }
+  .select-group select:hover { background: var(--lab-surface-hi); }
+  .select-group select option { background: #161b22; color: var(--lab-text); }
+
   #steer-overlay {
     position: fixed; bottom: 32px; right: 32px; z-index: 50;
-    display: flex; flex-direction: column; align-items: center; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none;
   }
   #steer-wheel {
     pointer-events: auto; cursor: grab;
-    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
-    width: 110px; height: 110px;
+    width: 118px; height: 118px;
+    filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.65));
+    transition: filter 0.2s;
+  }
+  #steer-wheel:hover {
+    filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.65))
+            drop-shadow(0 0 12px rgba(56, 189, 248, 0.22));
   }
   #steer-wheel.grabbing { cursor: grabbing; }
-  #steer-rotor { transition: transform 0.03s linear; will-change: transform; }
-  .sw-rim { fill: none; stroke: #2e3745; stroke-width: 8; }
-  .sw-rim-hi { fill: none; stroke: #a0b0c8; stroke-width: 3; opacity: 0.5; }
-  .sw-spoke { fill: #4a5568; }
-  .sw-hub { fill: #2d3748; stroke: #a0b0c8; stroke-width: 2; }
-  .sw-marker { fill: #f59e0b; }
+  #steer-rotor {
+    transition: transform 0.03s linear;
+    will-change: transform; transform-origin: center center;
+  }
+  .sw-rim-shadow { fill: none; stroke: rgba(0, 0, 0, 0.55); stroke-width: 9; opacity: 0.55; }
+  .sw-rim { fill: none; stroke: url(#sw-rim-grad); stroke-width: 8; }
+  .sw-rim-hi { fill: none; stroke: url(#sw-rim-hi-grad); stroke-width: 2.5; opacity: 0.75; }
+  .sw-spoke { fill: url(#sw-spoke-grad); stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.8; }
+  .sw-hub-ring { fill: none; stroke: rgba(0, 0, 0, 0.55); stroke-width: 2; }
+  .sw-hub { fill: url(#sw-hub-grad); stroke: #b9c2cc; stroke-width: 1.4; }
+  .sw-hub-dot { fill: #b9c2cc; opacity: 0.85; }
+  .sw-marker { fill: var(--lab-accent); filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.9)); }
+
   #steer-label {
-    margin-top: 8px; color: #9ca3af; font-size: 12px; font-weight: 500;
-    letter-spacing: 0.5px; text-transform: uppercase;
-    background: rgba(10,14,20,0.7); padding: 4px 12px; border-radius: 20px;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.08); pointer-events: none;
+    margin-top: 10px; color: var(--lab-text-mute);
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    background: var(--lab-panel); padding: 5px 12px; border-radius: 999px;
+    backdrop-filter: var(--lab-blur-sm); -webkit-backdrop-filter: var(--lab-blur-sm);
+    border: 1px solid var(--lab-border);
+    pointer-events: none; box-shadow: var(--lab-shadow-sm);
   }
 
-  /* ═══════════════════════════════════════════════════════════
-     CAMERA PRESETS
-     ═══════════════════════════════════════════════════════════ */
   #cam-presets {
     position: fixed; top: 16px; right: 16px; z-index: 40;
-    display: flex; gap: 6px; background: rgba(10,14,20,0.72); padding: 6px;
-    border-radius: 12px; backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.06);
+    display: flex; gap: 4px; background: var(--lab-panel); padding: 6px;
+    border-radius: 12px;
+    backdrop-filter: var(--lab-blur); -webkit-backdrop-filter: var(--lab-blur);
+    border: 1px solid var(--lab-border); box-shadow: var(--lab-shadow-sm);
   }
   .cam-btn {
-    background: transparent; border: none; color: #94a3b8;
-    padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px;
-    font-weight: 600; letter-spacing: 0.3px; transition: all 0.15s;
-    font-family: inherit;
+    background: transparent; border: 1px solid transparent;
+    color: var(--lab-text-mute); padding: 7px 13px;
+    border-radius: var(--lab-radius-sm); cursor: pointer;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; transition: all 0.15s; font-family: inherit;
   }
-  .cam-btn:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+  .cam-btn:hover { background: var(--lab-surface); color: var(--lab-text); }
   .cam-btn.active {
-    background: #f59e0b; color: #0b0e14;
-    box-shadow: 0 2px 10px rgba(245,158,11,0.4);
+    background: var(--lab-accent); color: var(--lab-bg);
+    border-color: var(--lab-accent); box-shadow: var(--lab-accent-glow);
   }
 
-  /* ═══════════════════════════════════════════════════════════
-     READOUTS
-     ═══════════════════════════════════════════════════════════ */
-  #diff-readout { margin: 8px 0; }
-  .diff-row {
-    display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px;
-  }
-  .diff-name { min-width: 64px; display: flex; align-items: center; gap: 6px; color: #cbd5e1; }
-  .diff-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-  .diff-bar {
-    flex: 1; height: 6px; background: rgba(255,255,255,0.08);
-    border-radius: 3px; overflow: hidden;
-  }
-  .diff-fill { height: 100%; border-radius: 3px; transition: width 0.08s linear; width: 50%; }
-  .diff-num {
-    min-width: 42px; text-align: right; font-variant-numeric: tabular-nums;
-    color: #e2e8f0; font-weight: 500; font-size: 12px;
-  }
-  #diff-eq {
-    text-align: center; color: #94a3b8; font-size: 13px; margin-top: 4px;
-    font-style: italic; letter-spacing: 0.3px;
-  }
-  #wheel-speed-extra {
-    margin-top: 10px; padding-top: 8px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    display: flex; flex-direction: column; gap: 4px;
-    font-size: 12px; color: #94a3b8;
-  }
-  #wheel-speed-extra .row { display: flex; justify-content: space-between; }
-  #wheel-speed-extra .val { color: #e2e8f0; font-weight: 600; font-variant-numeric: tabular-nums; }
-  #wheel-speed-extra .warn { color: #f87171; font-weight: 700; }
-  .select-group { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #94a3b8; }
-  .select-group select {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1); color: #e2e8f0;
-    padding: 5px 8px; border-radius: 6px;
-    font-family: inherit; font-size: 12px; cursor: pointer; outline: none;
-  }
-  .select-group select:hover { background: rgba(255,255,255,0.08); }
-
-  /* ═══════════════════════════════════════════════════════════
-     STATUS FLASH
-     ═══════════════════════════════════════════════════════════ */
   #status-flash {
     position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    color: #f87171; font-size: 22px; font-weight: 800; letter-spacing: 2px;
+    color: var(--lab-danger); font-family: var(--lab-mono);
+    font-size: 20px; font-weight: 800; letter-spacing: 0.14em;
     text-transform: uppercase; pointer-events: none;
     opacity: 0; transition: opacity 0.2s;
-    text-shadow: 0 0 30px rgba(248,113,113,0.8); z-index: 60;
-    text-align: center; max-width: 80vw;
+    text-shadow: 0 0 24px rgba(248, 113, 113, 0.85),
+                 0 0 60px rgba(248, 113, 113, 0.5);
+    z-index: 60; text-align: center; max-width: 80vw;
+    padding: 8px 18px; border-radius: var(--lab-radius-sm);
+    background: rgba(20, 26, 36, 0.55);
+    border: 1px solid rgba(248, 113, 113, 0.28);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }
-  #status-flash.on { opacity: 1; animation: pulse 1s infinite; }
-  @keyframes pulse { 50% { opacity: 0.4; } }
+  #status-flash.on { opacity: 1; animation: flashPulse 1s infinite; }
+  @keyframes flashPulse { 50% { opacity: 0.55; } }
+
+  .tyre-speed-chip {
+    position: fixed; z-index: 41;
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 6px 11px; border-radius: 10px;
+    background: var(--lab-panel); border: 1px solid var(--lab-border-hi);
+    backdrop-filter: var(--lab-blur-sm); -webkit-backdrop-filter: var(--lab-blur-sm);
+    font-family: var(--lab-mono); pointer-events: none;
+    transform: translate(-50%, -50%);
+    left: -999px; top: -999px; white-space: nowrap;
+    box-shadow: var(--lab-shadow-sm);
+  }
+  .tyre-speed-chip .tsc-label {
+    font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+    font-weight: 700; font-family: var(--lab-font);
+  }
+  .tyre-speed-chip .tsc-val {
+    font-size: 12px; font-weight: 800; color: var(--lab-text);
+    font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+  }
+  #tyre-speed-left {
+    border-color: rgba(56, 189, 248, 0.45) !important;
+    box-shadow: var(--lab-shadow-sm), inset 0 0 0 1px rgba(56, 189, 248, 0.08);
+  }
+  #tyre-speed-right {
+    border-color: rgba(245, 158, 11, 0.45) !important;
+    box-shadow: var(--lab-shadow-sm), inset 0 0 0 1px rgba(245, 158, 11, 0.08);
+  }
+
+  #hint {
+    color: var(--lab-text-hint) !important;
+    font-size: 10.5px !important; letter-spacing: 0.04em !important;
+    font-family: var(--lab-mono) !important;
+  }
 
   @media (max-width: 600px) {
     #steer-overlay { bottom: 16px; right: 16px; }
-    #steer-wheel { width: 90px; height: 90px; }
+    #steer-wheel { width: 96px; height: 96px; }
+    #steer-label { font-size: 9.5px; padding: 4px 10px; }
     #cam-presets { top: auto; bottom: 16px; left: 16px; right: auto; }
-    #status-flash { font-size: 16px; letter-spacing: 1px; }
+    #status-flash { font-size: 14px; letter-spacing: 0.10em; padding: 6px 14px; }
+    .cam-btn { padding: 6px 10px; font-size: 10px; }
   }
 
-  /* ═══════════════════════════════════════════════════════════
-     EMBED MODE — align with Auto Lab shell
-     ═══════════════════════════════════════════════════════════ */
   body.embedded {
     --shell-header-h: calc(64px + env(safe-area-inset-top, 0px));
     --shell-pill-h: calc(64px + env(safe-area-inset-bottom, 0px));
   }
-
   body.embedded #edu-panel {
     position: absolute !important;
     top: calc(var(--shell-header-h) + 10px) !important;
-    left: 12px !important;
-    right: 12px !important;
-    width: auto !important;
-    max-width: 420px !important;
-    border-radius: 14px !important;
-    z-index: 15 !important;
-    box-shadow: 0 12px 40px rgba(0,0,0,.55) !important;
+    left: 12px !important; right: 12px !important;
+    width: auto !important; max-width: 420px !important;
+    border-radius: var(--lab-radius) !important;
+    z-index: 15 !important; box-shadow: var(--lab-shadow) !important;
   }
   body.embedded #edu-panel #panel-body {
     display: none;
     max-height: calc(100dvh - var(--shell-header-h) - var(--shell-pill-h) - 140px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    overflow-y: auto; overscroll-behavior: contain;
   }
   body.embedded #edu-panel.expanded #panel-body { display: block; }
   body.embedded #panel-head { padding: 12px 14px; }
-  body.embedded #module-title { font-size: 16px; }
+  body.embedded #module-title { font-size: 15px; }
   body.embedded #module-kicker { font-size: 10px; }
   body.embedded #panel-head::after {
     content: "Tap for details";
-    font-size: 10px; color: #64748b;
+    font-size: 10px; color: var(--lab-text-hint);
     margin-left: 10px; flex: 1; font-weight: 500;
+    font-family: var(--lab-font); letter-spacing: 0.04em;
   }
   body.embedded #edu-panel.expanded #panel-head::after { display: none; }
-
   @media (min-width: 640px) {
     body.embedded #edu-panel { right: auto !important; width: 360px !important; }
     body.embedded #edu-panel #panel-body { display: block; }
     body.embedded #panel-head::after { display: none; }
   }
-
-  /* Camera presets — reposition below shell header, right-aligned */
   body.embedded #cam-presets {
     position: absolute !important;
     top: calc(var(--shell-header-h) + 10px) !important;
-    bottom: auto !important;
-    left: auto !important;
-    right: 12px !important;
-    z-index: 14 !important;
-    padding: 5px !important;
+    bottom: auto !important; left: auto !important; right: 12px !important;
+    z-index: 14 !important; padding: 5px !important;
   }
   @media (max-width: 640px) {
     body.embedded #cam-presets {
       top: auto !important;
       bottom: calc(var(--shell-pill-h) + 14px) !important;
-      right: 12px !important;
-      left: auto !important;
+      right: 12px !important; left: auto !important;
     }
   }
-
-  /* Steering wheel — above shell pill */
   body.embedded #steer-overlay {
     position: absolute !important;
     bottom: calc(var(--shell-pill-h) + 14px) !important;
-    right: 14px !important;
-    z-index: 20 !important;
+    right: 14px !important; z-index: 20 !important;
   }
-
-  /* Status flash — below shell header */
   body.embedded #status-flash {
     top: calc(var(--shell-header-h) + 100px) !important;
-    font-size: 16px !important;
+    font-size: 14px !important;
   }
-.tyre-speed-chip {
-  position: fixed;
-  z-index: 41;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 5px 10px;
-  border-radius: 10px;
-  background: rgba(10,14,20,.80);
-  border: 1px solid rgba(255,255,255,.12);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  font-family: ui-monospace, Menlo, Consolas, monospace;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  left: -999px; top: -999px; /* positioned every frame from JS */
-  white-space: nowrap;
-}
-.tyre-speed-chip .tsc-label { font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
-.tyre-speed-chip .tsc-val   { font-size: 12px; font-weight: 800; color: #e5e7eb; }
+
+  #module-controls.panel {
+    background: var(--lab-panel) !important;
+    border: 1px solid var(--lab-border) !important;
+    border-radius: var(--lab-radius) !important;
+    box-shadow: var(--lab-shadow) !important;
+    backdrop-filter: var(--lab-blur) !important;
+    -webkit-backdrop-filter: var(--lab-blur) !important;
+  }
+  .ctrl-btn {
+    background: var(--lab-surface) !important;
+    border: 1px solid var(--lab-border-hi) !important;
+    border-radius: var(--lab-radius-sm) !important;
+    color: var(--lab-text) !important;
+    transition: background 0.15s, border-color 0.15s !important;
+  }
+  .ctrl-btn:hover { background: var(--lab-surface-hi) !important; }
+  .ctrl-btn svg path { fill: var(--lab-text) !important; }
+  .slider-group { color: var(--lab-text-dim) !important; font-size: 11px !important; }
+  .slider-group input[type=range] { accent-color: var(--lab-accent) !important; }
+  #rpm-label {
+    color: var(--lab-text-mute) !important;
+    font-family: var(--lab-mono) !important;
+    font-size: 11px !important;
+  }
+  .toggle {
+    color: var(--lab-text-mute) !important;
+    font-size: 11px !important; font-weight: 600 !important;
+    letter-spacing: 0.02em !important;
+  }
+  .toggle input[type=checkbox] { accent-color: var(--lab-accent) !important; }
 </style>
 </head>
 <body>
@@ -232,18 +410,18 @@
         <div class="extra-label">Wheel speed split</div>
         <div id="diff-readout">
           <div class="diff-row">
-            <span class="diff-name"><span class="diff-dot" style="background:#38bdf8"></span>Left</span>
-            <div class="diff-bar"><div class="diff-fill" id="diff-fill-left" style="background:#38bdf8; width:50%"></div></div>
+            <span class="diff-name"><span class="diff-dot" style="background:#38bdf8;color:#38bdf8"></span>Left</span>
+            <div class="diff-bar"><div class="diff-fill" id="diff-fill-left" style="background:#38bdf8;color:#38bdf8;width:50%"></div></div>
             <span class="diff-num" id="diff-left-val">1.00×</span>
           </div>
           <div class="diff-row">
-            <span class="diff-name"><span class="diff-dot" style="background:#94a3b8"></span>Carrier</span>
-            <div class="diff-bar"><div class="diff-fill" style="background:#94a3b8; width:50%"></div></div>
+            <span class="diff-name"><span class="diff-dot" style="background:#94a3b8;color:#94a3b8"></span>Carrier</span>
+            <div class="diff-bar"><div class="diff-fill" style="background:#94a3b8;color:#94a3b8;width:50%"></div></div>
             <span class="diff-num" id="diff-carrier-val">1.00×</span>
           </div>
           <div class="diff-row">
-            <span class="diff-name"><span class="diff-dot" style="background:#f59e0b"></span>Right</span>
-            <div class="diff-bar"><div class="diff-fill" id="diff-fill-right" style="background:#f59e0b; width:50%"></div></div>
+            <span class="diff-name"><span class="diff-dot" style="background:#f59e0b;color:#f59e0b"></span>Right</span>
+            <div class="diff-bar"><div class="diff-fill" id="diff-fill-right" style="background:#f59e0b;color:#f59e0b;width:50%"></div></div>
             <span class="diff-num" id="diff-right-val">1.00×</span>
           </div>
         </div>
@@ -306,12 +484,34 @@
          aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0">
       <div id="steer-rotor">
         <svg viewBox="-60 -60 120 120" aria-hidden="true">
+          <defs>
+            <radialGradient id="sw-rim-grad" cx="35%" cy="28%" r="85%">
+              <stop offset="0%"  stop-color="#6b7788"/>
+              <stop offset="45%" stop-color="#3a4555"/>
+              <stop offset="100%" stop-color="#161c24"/>
+            </radialGradient>
+            <radialGradient id="sw-rim-hi-grad" cx="35%" cy="24%" r="70%">
+              <stop offset="0%"  stop-color="#c8d1dc" stop-opacity="0.9"/>
+              <stop offset="70%" stop-color="#c8d1dc" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="sw-spoke-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"  stop-color="#5a6577"/>
+              <stop offset="100%" stop-color="#262d38"/>
+            </linearGradient>
+            <radialGradient id="sw-hub-grad" cx="35%" cy="30%" r="80%">
+              <stop offset="0%"  stop-color="#4a5568"/>
+              <stop offset="100%" stop-color="#151a22"/>
+            </radialGradient>
+          </defs>
+          <circle class="sw-rim-shadow" cx="0" cy="2" r="48"/>
           <circle class="sw-rim" cx="0" cy="0" r="48"/>
           <circle class="sw-rim-hi" cx="0" cy="0" r="48"/>
           <rect class="sw-spoke" x="-48" y="-6" width="34" height="12" rx="6"/>
-          <rect class="sw-spoke" x="14" y="-6" width="34" height="12" rx="6"/>
-          <rect class="sw-spoke" x="-6" y="14" width="12" height="34" rx="6"/>
+          <rect class="sw-spoke" x="14"  y="-6" width="34" height="12" rx="6"/>
+          <rect class="sw-spoke" x="-6"  y="14" width="12" height="34" rx="6"/>
+          <circle class="sw-hub-ring" cx="0" cy="0" r="16"/>
           <circle class="sw-hub" cx="0" cy="0" r="14"/>
+          <circle class="sw-hub-dot" cx="0" cy="0" r="3.5"/>
           <path class="sw-marker" d="M0,-57 L-8,-45 L8,-45 Z"/>
         </svg>
       </div>
@@ -323,8 +523,6 @@
   <div id="hint">Drag to orbit · Drag the wheel to steer</div>
   <div id="labels-root"></div>
 
-  <!-- Always-on tyre speed readouts with a leader ("dimension") line to
-       each rear wheel — deliberately NOT gated by the Labels checkbox. -->
   <svg id="tyre-dim-svg" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:40;"></svg>
   <div id="tyre-speed-left"  class="tyre-speed-chip" style="border-color:rgba(56,189,248,.45)">
     <span class="tsc-label" style="color:#38bdf8">Left tyre</span>
@@ -353,9 +551,6 @@
 
   const DEG = Base.DEG || (Math.PI / 180);
 
-  /* ═══════════════════════════════════════════════════════════
-     SHELL DETECTION + ADAPTIVE QUALITY
-     ═══════════════════════════════════════════════════════════ */
   const IS_EMBEDDED = window.parent && window.parent !== window;
   if (IS_EMBEDDED) document.body.classList.add('embedded');
 
@@ -365,11 +560,10 @@
   const isLowEnd = cores <= 4 || mem <= 2;
   const isMidEnd = !isLowEnd && (cores <= 6 || isCoarse);
 
-  /* Adaptive counts */
   const RING_TEETH    = isLowEnd ? 24 : 36;
   const PINION_TEETH  = isLowEnd ? 10 : 14;
   const BEVEL_SEGS    = isLowEnd ? 4  : 6;
-  const WHEEL_SEGS    = isLowEnd ? 20 : 32;
+  const WHEEL_SEGS    = isLowEnd ? 24 : 36;   /* slightly bumped for smoother tyres */
   const TRAIL_REAR_N  = isLowEnd ? 100 : 180;
   const TRAIL_FRONT_N = isLowEnd ? 70  : 120;
 
@@ -408,7 +602,6 @@
         const theta = t * toothAngle + spiralAngle * frac;
         pts.push(new THREE.Vector3(Math.cos(theta) * r, Math.sin(theta) * r, 0));
       }
-
       for (let s = 0; s < segments; s++) {
         const a = pts[s], b = pts[s + 1];
         const mid = a.clone().add(b).multiplyScalar(0.5);
@@ -416,28 +609,19 @@
         const segLen = dir.length() * 1.05;
         dir.normalize();
         const perp = new THREE.Vector3(-dir.y, dir.x, 0);
-
         const w = toothWidth * (1 - toothTaper * (s / segments));
         const h = toothHeight;
-
         const box = new THREE.BoxGeometry(segLen, w, h);
-
         const m = new THREE.Matrix4().makeBasis(dir, perp, new THREE.Vector3(0, 0, 1));
         const q = new THREE.Quaternion().setFromRotationMatrix(m);
-
-        const pos = new THREE.Vector3(
-          mid.x, mid.y,
-          thickness * 0.5 + h * 0.5 - 0.008
-        );
+        const pos = new THREE.Vector3(mid.x, mid.y, thickness * 0.5 + h * 0.5 - 0.008);
         const mat4 = new THREE.Matrix4().compose(pos, q, new THREE.Vector3(1, 1, 1));
         box.applyMatrix4(mat4);
         toothGeos.push(box);
       }
     }
-
     const merged = mergeGeometries(toothGeos, false);
     if (merged) group.add(new THREE.Mesh(merged, toothMat));
-
     return group;
   }
 
@@ -450,16 +634,29 @@
     pinion:  new THREE.MeshStandardMaterial({ color:0x9aa3b0, metalness:0.88, roughness:0.30 }),
     side:    new THREE.MeshStandardMaterial({ color:0xd4a34a, metalness:0.82, roughness:0.30 }),
     spider:  new THREE.MeshStandardMaterial({ color:0xc9984a, metalness:0.82, roughness:0.32 }),
-    carrier: new THREE.MeshStandardMaterial({ color:0x5a6373, metalness:0.60, roughness:0.40,
-               transparent:true, opacity:0.22, side:THREE.DoubleSide, depthWrite:false }),
-    housing: new THREE.MeshStandardMaterial({ color:0x8a93a5, metalness:0.30, roughness:0.45,
-               transparent:true, opacity:0.10, side:THREE.DoubleSide, depthWrite:false }),
+    /* Diff housing — near-glass so the gearset inside is fully visible */
+    carrier: new THREE.MeshStandardMaterial({ color:0x8fa0b8, metalness:0.55, roughness:0.35,
+               transparent:true, opacity:0.16, side:THREE.DoubleSide, depthWrite:false }),
+    housing: new THREE.MeshStandardMaterial({ color:0xb8c6da, metalness:0.25, roughness:0.30,
+               transparent:true, opacity:0.07, side:THREE.DoubleSide, depthWrite:false }),
+    /* Chassis frame */
+    frame:      new THREE.MeshStandardMaterial({ color:0x5a6577, metalness:0.80, roughness:0.32 }),
+    frameDark:  new THREE.MeshStandardMaterial({ color:0x2e3742, metalness:0.70, roughness:0.42 }),
+    frameAccent:new THREE.MeshStandardMaterial({ color:0x38bdf8, metalness:0.60, roughness:0.35,
+                  emissive:0x38bdf8, emissiveIntensity:0.18 }),
+    /* Driveline */
     axle:    new THREE.MeshStandardMaterial({ color:0x7a8393, metalness:0.78, roughness:0.32 }),
     drive:   new THREE.MeshStandardMaterial({ color:0x6a7383, metalness:0.78, roughness:0.32 }),
-    wheel:   new THREE.MeshStandardMaterial({ color:0x2a2f38, metalness:0.30, roughness:0.70 }),
-    hub:     new THREE.MeshStandardMaterial({ color:0x9aa3b0, metalness:0.80, roughness:0.30 }),
-    frontTyre: new THREE.MeshStandardMaterial({ color:0x1e242e, metalness:0.20, roughness:0.80 }),
-    frontHub:  new THREE.MeshStandardMaterial({ color:0x8a9bb0, metalness:0.75, roughness:0.35 }),
+    /* Tyres */
+    tyre:    new THREE.MeshStandardMaterial({ color:0x16191f, metalness:0.05, roughness:0.94 }),
+    tyreGroove: new THREE.MeshStandardMaterial({ color:0x05070a, metalness:0.05, roughness:0.98 }),
+    frontTyre: new THREE.MeshStandardMaterial({ color:0x16191f, metalness:0.05, roughness:0.94 }),
+    /* Rims / hubs */
+    rim:      new THREE.MeshStandardMaterial({ color:0xb4bdc9, metalness:0.88, roughness:0.24 }),
+    rimDark:  new THREE.MeshStandardMaterial({ color:0x7a8391, metalness:0.85, roughness:0.30 }),
+    hub:      new THREE.MeshStandardMaterial({ color:0xc4ccd7, metalness:0.90, roughness:0.22 }),
+    frontHub: new THREE.MeshStandardMaterial({ color:0xb4bdc9, metalness:0.88, roughness:0.26 }),
+    /* Misc */
     chassis: new THREE.LineBasicMaterial({ color: 0x4a5568, transparent: true, opacity: 0.35 }),
     kingpin: new THREE.MeshStandardMaterial({ color:0x6b7a8f, metalness:0.80, roughness:0.30 }),
     tieRod:  new THREE.MeshStandardMaterial({ color:0x7a8a9e, metalness:0.70, roughness:0.35 }),
@@ -481,14 +678,10 @@
   const labels = Base.createLabelSystem();
   const state = Base.createUIState();
 
-  /* ═══════════════════════════════════════════════════════════
-     GROUND + BOUNDARY (fix for infinite runaway)
-     ═══════════════════════════════════════════════════════════ */
   const GROUND_Y = -0.44;
-  const BOUNDARY_HALF = 20;      /* visual boundary */
-  const CLAMP_HALF    = 17;      /* vehicle origin clamped here */
+  const BOUNDARY_HALF = 20;
+  const CLAMP_HALF    = 17;
 
-  /* ---------- Light/dark theme detection ---------- */
   function isLightTheme() {
     const dt = document.documentElement.getAttribute('data-theme');
     if (dt === 'light') return true;
@@ -498,19 +691,13 @@
     return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
   }
 
-  /* Procedural grid texture — repeated, fades nicely at distance.
-     Previously hardcoded to a dark base regardless of theme, which is
-     why the ground stayed dark even when the shell switched to light —
-     it now takes the palette as an argument. */
   function makeGroundTex(light) {
     const size = 512;
     const c = document.createElement('canvas');
     c.width = c.height = size;
     const g = c.getContext('2d');
-
     g.fillStyle = light ? '#e8ecf3' : '#0a0d13';
     g.fillRect(0, 0, size, size);
-
     g.strokeStyle = light ? 'rgba(30,64,110,0.09)' : 'rgba(56,189,248,0.055)';
     g.lineWidth = 1;
     const div = 4;
@@ -519,17 +706,12 @@
       g.beginPath(); g.moveTo(p, 0); g.lineTo(p, size); g.stroke();
       g.beginPath(); g.moveTo(0, p); g.lineTo(size, p); g.stroke();
     }
-
     g.strokeStyle = light ? 'rgba(30,64,110,0.22)' : 'rgba(56,189,248,0.14)';
     g.lineWidth = 1;
     g.beginPath();
-    g.moveTo(0.5, 0.5);
-    g.lineTo(size - 0.5, 0.5);
-    g.lineTo(size - 0.5, size - 0.5);
-    g.lineTo(0.5, size - 0.5);
-    g.closePath();
-    g.stroke();
-
+    g.moveTo(0.5, 0.5); g.lineTo(size - 0.5, 0.5);
+    g.lineTo(size - 0.5, size - 0.5); g.lineTo(0.5, size - 0.5);
+    g.closePath(); g.stroke();
     const tex = new THREE.CanvasTexture(c);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
     tex.repeat.set(20, 20);
@@ -539,10 +721,7 @@
   }
 
   const groundMat = new THREE.MeshStandardMaterial({
-    map: makeGroundTex(isLightTheme()),
-    color: 0xffffff,
-    roughness: 0.95,
-    metalness: 0.05
+    map: makeGroundTex(isLightTheme()), color: 0xffffff, roughness: 0.95, metalness: 0.05
   });
   const groundMesh = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), groundMat);
   groundMesh.rotation.x = -Math.PI / 2;
@@ -550,7 +729,6 @@
   groundMesh.receiveShadow = true;
   scene.add(groundMesh);
 
-  /* Visible boundary rectangle */
   const boundaryGeo = new THREE.EdgesGeometry(
     new THREE.PlaneGeometry(BOUNDARY_HALF * 2, BOUNDARY_HALF * 2)
   );
@@ -562,39 +740,21 @@
   boundaryRect.position.y = GROUND_Y + 0.005;
   scene.add(boundaryRect);
 
-  /* Corner posts — visual cue that this is the limit */
   const cornerMat = new THREE.MeshStandardMaterial({
     color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.7
   });
   [-1, 1].forEach(sx => {
     [-1, 1].forEach(sz => {
-      const post = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.06, 0.06, 0.7, 8),
-        cornerMat
-      );
-      post.position.set(
-        sx * BOUNDARY_HALF,
-        GROUND_Y + 0.35,
-        sz * BOUNDARY_HALF
-      );
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.7, 8), cornerMat);
+      post.position.set(sx * BOUNDARY_HALF, GROUND_Y + 0.35, sz * BOUNDARY_HALF);
       post.castShadow = true;
       scene.add(post);
-
-      const cap = new THREE.Mesh(
-        new THREE.SphereGeometry(0.12, 12, 8),
-        cornerMat
-      );
-      cap.position.set(
-        sx * BOUNDARY_HALF,
-        GROUND_Y + 0.72,
-        sz * BOUNDARY_HALF
-      );
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 8), cornerMat);
+      cap.position.set(sx * BOUNDARY_HALF, GROUND_Y + 0.72, sz * BOUNDARY_HALF);
       scene.add(cap);
     });
   });
 
-  /* Re-tint ground/fog/boundary whenever the shell's theme changes,
-     instead of only ever painting the dark palette once at load. */
   function applyGroundTheme() {
     const light = isLightTheme();
     const oldMap = groundMat.map;
@@ -617,29 +777,22 @@
   new MutationObserver(applyGroundTheme).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
   /* ═══════════════════════════════════════════════════════════
-     ROAD — a paved oval circuit (two turns) instead of empty
-     bounded ground, so the vehicle has somewhere to actually drive
-     to/from. The surrounding ground plane is still fully driveable —
-     nothing stops the car leaving the road surface.
+     ROAD — oval circuit
      ═══════════════════════════════════════════════════════════ */
   const ROAD_HALF_WIDTH = 2.3;
-  const ROAD_STRAIGHT   = 9;    /* half-length of each straight */
-  const ROAD_TURN_R     = 6;    /* turn radius, to the centerline */
+  const ROAD_STRAIGHT   = 9;
+  const ROAD_TURN_R     = 6;
 
   function buildOvalPoints(straight, turnR, segsPerTurn) {
     const pts = [];
-    /* Bottom straight, left -> right, z = -turnR */
     pts.push(new THREE.Vector3(-straight, 0, -turnR));
     pts.push(new THREE.Vector3( straight, 0, -turnR));
-    /* Right turn: semicircle around (straight, 0), from -90° to +90° */
     for (let i = 1; i < segsPerTurn; i++) {
       const a = -Math.PI/2 + (i/segsPerTurn) * Math.PI;
       pts.push(new THREE.Vector3(straight + Math.cos(a)*turnR, 0, Math.sin(a)*turnR));
     }
-    /* Top straight, right -> left, z = +turnR */
     pts.push(new THREE.Vector3( straight, 0,  turnR));
     pts.push(new THREE.Vector3(-straight, 0,  turnR));
-    /* Left turn: semicircle around (-straight, 0), from 90° to 270° */
     for (let i = 1; i < segsPerTurn; i++) {
       const a = Math.PI/2 + (i/segsPerTurn) * Math.PI;
       pts.push(new THREE.Vector3(-straight + Math.cos(a)*turnR, 0, Math.sin(a)*turnR));
@@ -679,13 +832,12 @@
   roadMesh.receiveShadow = true;
   scene.add(roadMesh);
 
-  /* Dashed centerline */
   const dashGroup = new THREE.Group();
   scene.add(dashGroup);
   const DASH_COUNT = 70;
   const dashMat = new THREE.MeshBasicMaterial({ color: 0xf5c542 });
   for (let i = 0; i < DASH_COUNT; i++) {
-    if (i % 2 === 1) continue; /* skip every other for the dashed look */
+    if (i % 2 === 1) continue;
     const t = i / DASH_COUNT;
     const p = roadCurve.getPointAt(t);
     const tangent = roadCurve.getTangentAt(t);
@@ -696,7 +848,6 @@
     dashGroup.add(dash);
   }
 
-  /* Solid edge lines */
   [1, -1].forEach(side => {
     const edgeMat = new THREE.MeshBasicMaterial({ color: 0xe5e7eb });
     const edgePts = roadCurve.getSpacedPoints(96).map((p, i, arr) => {
@@ -728,6 +879,7 @@
   const CARRIER_W = 0.62;
   const AXLE_LEN = 1.55;
   const WHEEL_R = 0.42;
+  const WHEEL_WIDTH = 0.26;
 
   const FRONT_AXLE_Z = 2.8;
   const WHEELBASE    = FRONT_AXLE_Z;
@@ -742,6 +894,117 @@
   const MAX_ROAD_ANGLE  = 0.61;
 
   /* ═══════════════════════════════════════════════════════════
+     WHEEL BUILDER — shared by front and rear
+     Generates a lathe-profiled tyre carcass with longitudinal
+     tread grooves, a metallic rim disc, spokes, and a coloured
+     marker spoke (colour-coded L/R for orientation readout).
+     ═══════════════════════════════════════════════════════════ */
+  function makeTyreCarcass(radius, width, segs) {
+    const halfW = width * 0.5;
+    const rimSeat  = radius * 0.62;
+    const shoulder = radius * 0.94;
+    const tread    = radius;
+
+    /* Cross-section from inner sidewall → tread → other sidewall */
+    const profile = [
+      new THREE.Vector2(rimSeat,             -halfW),
+      new THREE.Vector2(shoulder * 0.97,     -halfW),
+      new THREE.Vector2(shoulder,            -halfW * 0.90),
+      new THREE.Vector2(shoulder * 1.015,    -halfW * 0.78),
+      new THREE.Vector2(tread,               -halfW * 0.72),
+      new THREE.Vector2(tread,                halfW * 0.72),
+      new THREE.Vector2(shoulder * 1.015,     halfW * 0.78),
+      new THREE.Vector2(shoulder,             halfW * 0.90),
+      new THREE.Vector2(shoulder * 0.97,      halfW),
+      new THREE.Vector2(rimSeat,              halfW),
+    ];
+    const lathe = new THREE.LatheGeometry(profile, segs);
+    lathe.rotateZ(Math.PI / 2);
+    const mesh = new THREE.Mesh(lathe, diffMats.tyre);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    return mesh;
+  }
+
+  function makeWheelAssembly(radius, width, markerColor, opts = {}) {
+    const { rimScale = 0.60, spokeCount = 5, showDual = 0 } = opts;
+    const g = new THREE.Group();
+
+    /* Tyre carcass */
+    g.add(makeTyreCarcass(radius, width, WHEEL_SEGS));
+
+    /* Longitudinal tread grooves — 3 rings around the tread band */
+    const treadR = radius;
+    [-0.42, 0, 0.42].forEach(off => {
+      const groove = new THREE.Mesh(
+        new THREE.TorusGeometry(treadR * 0.995, 0.011, 4, WHEEL_SEGS),
+        diffMats.tyreGroove
+      );
+      groove.rotation.y = Math.PI / 2;
+      groove.position.x = off * width;
+      g.add(groove);
+    });
+
+    /* Rim dish */
+    const rimR = radius * rimScale;
+    const rim = new THREE.Mesh(
+      new THREE.CylinderGeometry(rimR, rimR, width * 0.85, 24),
+      diffMats.rim
+    );
+    rim.rotation.z = Math.PI / 2;
+    g.add(rim);
+
+    /* Rim outer face (inset ring) */
+    [-1, 1].forEach(side => {
+      const face = new THREE.Mesh(
+        new THREE.CylinderGeometry(rimR * 0.98, rimR * 0.98, 0.015, 24),
+        diffMats.rimDark
+      );
+      face.rotation.z = Math.PI / 2;
+      face.position.x = side * (width * 0.42);
+      g.add(face);
+    });
+
+    /* Spokes — radial bars from hub to rim edge */
+    const markerMat = new THREE.MeshBasicMaterial({ color: markerColor });
+    for (let i = 0; i < spokeCount; i++) {
+      const a = (i / spokeCount) * Math.PI * 2;
+      const isMarker = (i === 0);
+      const spoke = new THREE.Mesh(
+        new THREE.BoxGeometry(0.02, rimR * 0.78, 0.055),
+        isMarker ? markerMat : diffMats.rimDark
+      );
+      spoke.position.set(0, Math.cos(a) * rimR * 0.55, Math.sin(a) * rimR * 0.55);
+      spoke.rotation.x = a;
+      g.add(spoke);
+    }
+
+    /* Center hub cap */
+    const hubCap = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.075, 0.075, width * 1.02, 16),
+      diffMats.hub
+    );
+    hubCap.rotation.z = Math.PI / 2;
+    g.add(hubCap);
+
+    /* Marker bolt through the hub — visible as a rotating stripe */
+    const bolt = new THREE.Mesh(
+      new THREE.BoxGeometry(width * 1.05, 0.035, 0.035),
+      markerMat
+    );
+    g.add(bolt);
+
+    /* Dual tyre (bolt-on second tyre outboard) */
+    if (showDual) {
+      const dual = makeTyreCarcass(radius, width, WHEEL_SEGS);
+      dual.position.x = showDual * 0.30;
+      g.add(dual);
+    }
+
+    return g;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
      VEHICLE
      ═══════════════════════════════════════════════════════════ */
   const vehicleGroup = new THREE.Group();
@@ -751,27 +1014,120 @@
   let vehicleHeading = 0;
   let hudTyreSpeedL = 0, hudTyreSpeedR = 0;
 
+  /* ═══════════════════════════════════════════════════════════
+     LADDER CHASSIS FRAME
+     Two C-channel side rails, six cross members, an X-brace
+     between the rear-most pair, top accent strips, and corner
+     gussets — all reading as a real production ladder frame.
+     ═══════════════════════════════════════════════════════════ */
   {
-    const bodyW = REAR_TRACK * 1.02;
-    const bodyL = FRONT_AXLE_Z + 0.9;
-    const bodyH = 0.85;
-    const box = new THREE.BoxGeometry(bodyW, bodyH, bodyL);
-    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(box), diffMats.chassis);
-    edges.position.set(0, 0.05, FRONT_AXLE_Z / 2);
-    vehicleGroup.add(edges);
+    const railSpacing = 1.10;   /* centre-to-centre of the two side rails */
+    const railW = 0.14, railH = 0.20;
+    const rearZ = -1.85;
+    const frontZ = 3.55;
+    const midZ = (rearZ + frontZ) * 0.5;
+    const totalLen = frontZ - rearZ;
+    const railY = 0.05;
 
-    const railMat = new THREE.MeshStandardMaterial({
-      color: 0x3a4555, metalness: 0.6, roughness: 0.5,
-      transparent: true, opacity: 0.5
-    });
-    [-1, 1].forEach(dir => {
-      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, FRONT_AXLE_Z + 0.5), railMat);
-      rail.position.set(dir * 0.55, -0.30, FRONT_AXLE_Z / 2);
+    /* --- Two main side rails (channel-look: box + inner flange + top strip) --- */
+    [-1, 1].forEach(side => {
+      const rail = new THREE.Mesh(
+        new THREE.BoxGeometry(railW, railH, totalLen),
+        diffMats.frame
+      );
+      rail.position.set(side * railSpacing * 0.5, railY, midZ);
+      rail.castShadow = true;
+      rail.receiveShadow = true;
       vehicleGroup.add(rail);
+
+      /* Inner lower flange — reads as the C-channel bottom */
+      const flange = new THREE.Mesh(
+        new THREE.BoxGeometry(0.05, railH * 0.45, totalLen - 0.3),
+        diffMats.frameDark
+      );
+      flange.position.set(
+        side * (railSpacing * 0.5 - railW * 0.5 - 0.025),
+        railY - railH * 0.22,
+        midZ
+      );
+      vehicleGroup.add(flange);
+
+      /* Cyan accent strip along the top edge — Engine Lab accent */
+      const topStrip = new THREE.Mesh(
+        new THREE.BoxGeometry(railW * 0.55, 0.018, totalLen - 0.25),
+        diffMats.frameAccent
+      );
+      topStrip.position.set(
+        side * railSpacing * 0.5,
+        railY + railH * 0.5 + 0.01,
+        midZ
+      );
+      vehicleGroup.add(topStrip);
     });
+
+    /* --- Six cross members --- */
+    const crossZ = [-1.55, -0.85, 0.15, 1.05, 2.05, 3.05];
+    crossZ.forEach((z, i) => {
+      const isEnd = (i === 0 || i === crossZ.length - 1);
+      const w = railSpacing + railW * 0.9;
+      const h = isEnd ? railH * 1.10 : railH * 0.85;
+      const thick = isEnd ? 0.16 : 0.11;
+      const cross = new THREE.Mesh(
+        new THREE.BoxGeometry(w, h, thick),
+        diffMats.frame
+      );
+      cross.position.set(0, railY, z);
+      cross.castShadow = true;
+      vehicleGroup.add(cross);
+
+      /* Rear face gussets on the two end cross members */
+      if (isEnd) {
+        const cap = new THREE.Mesh(
+          new THREE.BoxGeometry(w + 0.14, h * 0.35, thick * 0.55),
+          diffMats.frameDark
+        );
+        cap.position.set(0, railY - h * 0.36, z);
+        vehicleGroup.add(cap);
+      }
+    });
+
+    /* --- X-brace in the rear bay (spans the differential) --- */
+    const xZ0 = -1.55, xZ1 = -0.85;
+    const xLen = Math.hypot(railSpacing, xZ1 - xZ0);
+    const xAngle = Math.atan2(xZ1 - xZ0, railSpacing);
+    [[-1, 1], [1, -1]].forEach(([sx]) => {
+      const brace = new THREE.Mesh(
+        new THREE.BoxGeometry(xLen * 0.98, railH * 0.55, 0.075),
+        diffMats.frameDark
+      );
+      brace.position.set(0, railY - 0.02, (xZ0 + xZ1) * 0.5);
+      brace.rotation.y = sx > 0 ? -xAngle : xAngle;
+      vehicleGroup.add(brace);
+    });
+
+    /* --- Corner gussets — small triangular reinforcements at each end --- */
+    [rearZ + 0.08, frontZ - 0.08].forEach(z => {
+      [-1, 1].forEach(side => {
+        const gusset = new THREE.Mesh(
+          new THREE.BoxGeometry(0.10, railH * 0.9, 0.10),
+          diffMats.frameDark
+        );
+        gusset.position.set(side * railSpacing * 0.5, railY - railH * 0.10, z);
+        gusset.rotation.x = 0.10;
+        vehicleGroup.add(gusset);
+      });
+    });
+
+    /* --- Central spine (short, runs across the diff bay) --- */
+    const spine = new THREE.Mesh(
+      new THREE.BoxGeometry(0.09, railH * 0.6, xZ1 - xZ0 - 0.2),
+      diffMats.frameDark
+    );
+    spine.position.set(0, railY + 0.02, (xZ0 + xZ1) * 0.5);
+    vehicleGroup.add(spine);
   }
 
-  /* Differential */
+  /* Differential carrier group */
   const differentialGroup = new THREE.Group();
   vehicleGroup.add(differentialGroup);
 
@@ -791,17 +1147,11 @@
 
   /* Crown wheel */
   const ringGear = makeSpiralBevelGear({
-    outerR:      RING_R,
-    innerR:      RING_R * 0.55,
-    toothCount:  RING_TEETH,
-    toothHeight: 0.10,
-    toothWidth:  0.075,
-    spiralAngle: 0.35,
-    thickness:   RING_T,
-    bodyMat:     diffMats.ring,
-    toothMat:    diffMats.teeth,
-    segments:    BEVEL_SEGS,
-    toothTaper:  0.30,
+    outerR: RING_R, innerR: RING_R * 0.55,
+    toothCount: RING_TEETH, toothHeight: 0.10, toothWidth: 0.075,
+    spiralAngle: 0.35, thickness: RING_T,
+    bodyMat: diffMats.ring, toothMat: diffMats.teeth,
+    segments: BEVEL_SEGS, toothTaper: 0.30,
   });
   ringGear.rotation.y = -Math.PI / 2;
   ringGear.position.x = RING_X;
@@ -819,13 +1169,11 @@
   /* Side gears */
   const sideLGroup = new THREE.Group(); sideLGroup.position.x = -SIDE_X; carrierGroup.add(sideLGroup);
   { const g = Base.makeCog(SIDE_R, SIDE_T, 20, 0.075, 0.065, diffMats.side);
-    g.rotation.z = Math.PI / 2;
-    sideLGroup.add(g); }
+    g.rotation.z = Math.PI / 2; sideLGroup.add(g); }
 
   const sideRGroup = new THREE.Group(); sideRGroup.position.x = SIDE_X; carrierGroup.add(sideRGroup);
   { const g = Base.makeCog(SIDE_R, SIDE_T, 20, 0.075, 0.065, diffMats.side);
-    g.rotation.z = Math.PI / 2;
-    sideRGroup.add(g); }
+    g.rotation.z = Math.PI / 2; sideRGroup.add(g); }
 
   /* Cross pin */
   const crossPin = new THREE.Mesh(
@@ -850,11 +1198,7 @@
   const spiderBotMarker = new THREE.Mesh(new THREE.BoxGeometry(0.43, 0.05, SPIDER_T*1.10), SPIDER_MARKER_MAT);
   spiderBotGroup.add(spiderBotMarker);
 
-  /* Half-shafts + hub flanges: each is one rigid piece bolted between the
-     side gear (spinning at phCarrier+phSideL/R) and the wheel (same speed)
-     — so the whole assembly must spin at that speed too. Grouped per side
-     so a single rotation.x update below drives shaft, flange and lugs
-     together, instead of leaving them static as before. */
+  /* Half-shaft assemblies — each spins with its side */
   const axleAssemblyL = new THREE.Group(); differentialGroup.add(axleAssemblyL);
   const axleAssemblyR = new THREE.Group(); differentialGroup.add(axleAssemblyR);
 
@@ -879,40 +1223,16 @@
     }
   });
 
-  const DUAL_TYRE_GAP = 0.30; /* center-to-center offset for the second tyre */
+  const DUAL_TYRE_GAP = 0.30;
 
-  function makeRearWheel(markerColor, dualSign) {
-    const g = new THREE.Group();
-    const tyre = new THREE.Mesh(new THREE.CylinderGeometry(WHEEL_R,WHEEL_R,0.24,WHEEL_SEGS), diffMats.wheel);
-    tyre.rotation.z = Math.PI / 2; g.add(tyre);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.28,20), diffMats.hub);
-    hub.rotation.z = Math.PI / 2; g.add(hub);
-    const markerMat = new THREE.MeshBasicMaterial({ color: markerColor });
-    for (let i = 0; i < 4; i++) {
-      const a = (i/4)*Math.PI*2;
-      const isMarker = (i === 0);
-      const mat = isMarker ? markerMat : diffMats.hub;
-      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.28,0.34,isMarker?0.06:0.04), mat);
-      spoke.position.set(0, Math.cos(a)*0.17, Math.sin(a)*0.17);
-      spoke.rotation.x = a;
-      g.add(spoke);
-    }
-    /* Dual (dually) tyre: rigidly bolted to the same hub, so it's just
-       another child of this same rotating group — one rotation update
-       already drives both tyres on this side together. Mounted outboard
-       (away from the vehicle centerline, given by dualSign) for the
-       classic dual-rear-wheel look: more contact patch for traction on
-       rough/uneven surfaces, spreading the load across two tyres per side. */
-    if (dualSign) {
-      const dualTyre = new THREE.Mesh(new THREE.CylinderGeometry(WHEEL_R,WHEEL_R,0.24,WHEEL_SEGS), diffMats.wheel);
-      dualTyre.rotation.z = Math.PI / 2;
-      dualTyre.position.x = dualSign * DUAL_TYRE_GAP;
-      g.add(dualTyre);
-    }
-    return g;
-  }
-  const wheelL = makeRearWheel(0x38bdf8, -1); wheelL.position.x = wheelLX; differentialGroup.add(wheelL);
-  const wheelR = makeRearWheel(0xf59e0b,  1); wheelR.position.x = wheelRX; differentialGroup.add(wheelR);
+  /* Rear wheels — realistic treaded tyres with rim + marker spoke */
+  const wheelL = makeWheelAssembly(WHEEL_R, WHEEL_WIDTH, 0x38bdf8, { showDual: -1 });
+  wheelL.position.x = wheelLX;
+  differentialGroup.add(wheelL);
+
+  const wheelR = makeWheelAssembly(WHEEL_R, WHEEL_WIDTH, 0xf59e0b, { showDual: 1 });
+  wheelR.position.x = wheelRX;
+  differentialGroup.add(wheelR);
 
   /* Pinion */
   const pinionGroup = new THREE.Group();
@@ -921,17 +1241,11 @@
   const pinionSpinGroup = new THREE.Group(); pinionGroup.add(pinionSpinGroup);
 
   const pinionCog = makeSpiralBevelGear({
-    outerR:      PINION_R,
-    innerR:      PINION_R * 0.35,
-    toothCount:  PINION_TEETH,
-    toothHeight: 0.065,
-    toothWidth:  0.050,
-    spiralAngle: 0.70,
-    thickness:   PINION_T,
-    bodyMat:     diffMats.pinion,
-    toothMat:    diffMats.pinion,
-    segments:    BEVEL_SEGS,
-    toothTaper:  0.40,
+    outerR: PINION_R, innerR: PINION_R * 0.35,
+    toothCount: PINION_TEETH, toothHeight: 0.065, toothWidth: 0.050,
+    spiralAngle: 0.70, thickness: PINION_T,
+    bodyMat: diffMats.pinion, toothMat: diffMats.pinion,
+    segments: BEVEL_SEGS, toothTaper: 0.40,
   });
   pinionCog.rotation.x = Math.PI;
   pinionSpinGroup.add(pinionCog);
@@ -965,18 +1279,43 @@
   const engineFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.06,20), diffMats.drive);
   engineFlange.rotation.x = Math.PI / 2; engineFlange.position.z = 1.42; driveAssembly.add(engineFlange);
 
-  /* Housing */
+  /* Diff housing — ghost shell with wireframe edges so the internals read clearly */
   const housingGroup = new THREE.Group(); differentialGroup.add(housingGroup);
   const PUMPKIN_R = RING_R * 1.05;
-  housingGroup.add(new THREE.Mesh(new THREE.SphereGeometry(PUMPKIN_R, 24, 16), diffMats.housing));
+
+  const pumpkinGeo = new THREE.SphereGeometry(PUMPKIN_R, 24, 16);
+  housingGroup.add(new THREE.Mesh(pumpkinGeo, diffMats.housing));
+
+  /* Cyan wireframe edge overlay — makes the housing read as a shell */
+  const pumpkinEdges = new THREE.LineSegments(
+    new THREE.WireframeGeometry(pumpkinGeo),
+    new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.14 })
+  );
+  housingGroup.add(pumpkinEdges);
+
+  /* Axle tubes + bearing collars */
   [-1,1].forEach(dir => {
-    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.28,1.8,20,1,true), diffMats.housing);
-    tube.rotation.z = Math.PI / 2; tube.position.x = dir*1.2; housingGroup.add(tube);
-    const tf = new THREE.Mesh(new THREE.TorusGeometry(0.28,0.05,8,20), diffMats.housing);
-    tf.rotation.y = Math.PI / 2; tf.position.x = dir*2.1; housingGroup.add(tf);
+    const tube = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.28, 0.28, 1.8, 20, 1, true),
+      diffMats.housing
+    );
+    tube.rotation.z = Math.PI / 2;
+    tube.position.x = dir * 1.2;
+    housingGroup.add(tube);
+
+    const tf = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.05, 8, 20), diffMats.housing);
+    tf.rotation.y = Math.PI / 2;
+    tf.position.x = dir * 2.1;
+    housingGroup.add(tf);
   });
-  const frontCover = new THREE.Mesh(new THREE.SphereGeometry(RING_R*0.85, 24, 16, 0, Math.PI*2, 0, Math.PI/2), diffMats.housing);
-  frontCover.rotation.x = -Math.PI / 2; frontCover.position.z = -0.3; housingGroup.add(frontCover);
+
+  const frontCover = new THREE.Mesh(
+    new THREE.SphereGeometry(RING_R*0.85, 24, 16, 0, Math.PI*2, 0, Math.PI/2),
+    diffMats.housing
+  );
+  frontCover.rotation.x = -Math.PI / 2;
+  frontCover.position.z = -0.3;
+  housingGroup.add(frontCover);
 
   /* Front axle */
   const frontAxleGroup = new THREE.Group();
@@ -996,37 +1335,17 @@
     frontAxleGroup.add(kp);
   });
 
-  function makeFrontWheelGroup(markerColor) {
-    const g = new THREE.Group();
-    const tyre = new THREE.Mesh(new THREE.CylinderGeometry(FRONT_WHEEL_R, FRONT_WHEEL_R, 0.22, WHEEL_SEGS), diffMats.frontTyre);
-    tyre.rotation.z = Math.PI / 2; g.add(tyre);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.26, 18), diffMats.frontHub);
-    hub.rotation.z = Math.PI / 2; g.add(hub);
-    const markerMat = new THREE.MeshBasicMaterial({ color: markerColor });
-    for (let i = 0; i < 5; i++) {
-      const a = (i/5)*Math.PI*2;
-      const isMarker = (i === 0);
-      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.30, isMarker ? 0.06 : 0.04), isMarker ? markerMat : diffMats.frontHub);
-      spoke.position.set(0, Math.cos(a)*0.16, Math.sin(a)*0.16);
-      spoke.rotation.x = a;
-      g.add(spoke);
-    }
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.10, 0.32), diffMats.kingpin);
-    arm.position.set(0, -0.16, 0.16);
-    g.add(arm);
-    return g;
-  }
-
+  /* Front wheels — same tyre/rim builder, slightly smaller radius */
   const frontPivotL = new THREE.Group();
   frontPivotL.position.set(-FRONT_TRACK/2, 0, 0);
   frontAxleGroup.add(frontPivotL);
-  const frontWheelL = makeFrontWheelGroup(0x38bdf8);
+  const frontWheelL = makeWheelAssembly(FRONT_WHEEL_R, 0.22, 0x38bdf8, { rimScale: 0.62, spokeCount: 5 });
   frontPivotL.add(frontWheelL);
 
   const frontPivotR = new THREE.Group();
   frontPivotR.position.set(FRONT_TRACK/2, 0, 0);
   frontAxleGroup.add(frontPivotR);
-  const frontWheelR = makeFrontWheelGroup(0xf59e0b);
+  const frontWheelR = makeWheelAssembly(FRONT_WHEEL_R, 0.22, 0xf59e0b, { rimScale: 0.62, spokeCount: 5 });
   frontPivotR.add(frontWheelR);
 
   const tieRod = new THREE.Mesh(
@@ -1101,11 +1420,7 @@
   labelDefs.forEach(d => labels.add(d.id, d.text));
 
   /* ═══════════════════════════════════════════════════════════
-     AUTO DRIVE — pure-pursuit path following along roadCurve.
-     Manual steering (drag or arrow keys) disengages it immediately so
-     the car can be driven off the road at any time; the checkbox
-     re-engages it, and it re-acquires the road from wherever the car
-     currently is (no need to be back on the pavement first).
+     AUTO DRIVE — pure-pursuit path following
      ═══════════════════════════════════════════════════════════ */
   let autoDrive = true;
   const chkAutoDrive = document.getElementById('chk-autodrive');
@@ -1128,20 +1443,15 @@
     return best;
   }
 
-  /* Returns the steerInput (same units as manual steering, -1..1) needed
-     to steer the rear-axle reference point toward a lookahead point on
-     the road, via the standard pure-pursuit curvature formula. */
   function computeAutoSteerInput(pos, heading) {
     const nearest = nearestRoadIndex(pos);
     const stepsAhead = Math.max(1, Math.round(AUTO_LOOKAHEAD / roadSampleStepLen));
     const target = roadSamplePts[(nearest + stepsAhead) % roadSamplePts.length];
-
     const dx = target.x - pos.x, dz = target.z - pos.z;
     const cosH = Math.cos(heading), sinH = Math.sin(heading);
-    const localX = dx * cosH - dz * sinH;   /* + = target is to the right */
-    const localZ = dx * sinH + dz * cosH;   /* + = target is ahead */
+    const localX = dx * cosH - dz * sinH;
+    const localZ = dx * sinH + dz * cosH;
     const Ld = Math.max(0.75, Math.sqrt(localX * localX + localZ * localZ));
-
     const curvature = 2 * localX / (Ld * Ld);
     const desiredRoadAngle = Math.atan(WHEELBASE * curvature);
     return Math.max(-1, Math.min(1, -desiredRoadAngle / MAX_ROAD_ANGLE));
@@ -1229,7 +1539,6 @@
     Base.wirePanelToggle();
   } catch (err) { console.warn('[Differential] shared UI wiring issue:', err); }
 
-  /* Panel toggle — embed-aware */
   const eduPanel = document.getElementById('edu-panel');
   document.getElementById('panel-toggle').onclick = (e) => {
     e.stopPropagation();
@@ -1293,18 +1602,14 @@
     return { inner, outer };
   }
 
-  /* Reusable scratch to avoid allocations per frame */
   const _l2w_scratch = { x: 0, z: 0 };
 
   function updateDiff(dt) {
     if (autoDrive && !steerDragging) {
-      /* Follow the road: steer the wheel itself toward the pure-pursuit
-         target, so the on-screen wheel visibly "drives itself". */
       const desiredInput = computeAutoSteerInput(vehiclePos, vehicleHeading);
       const desiredAngle = desiredInput * MAX_STEER_ANGLE;
       steerAngle += (desiredAngle - steerAngle) * Math.min(1, dt * AUTO_STEER_RATE);
     } else if (!steerDragging && steerAngle !== 0) {
-      /* Auto-return steering to center on release (manual mode only) */
       steerAngle += (0 - steerAngle) * Math.min(1, dt * STEER_RETURN_RATE);
       if (Math.abs(steerAngle) < 0.002) steerAngle = 0;
     }
@@ -1335,30 +1640,24 @@
     let v = omega_c * WHEEL_R;
     if (slip && !diffLocked) v = 0;
 
-    /* Actual tyre surface speed (rolling speed) for the always-on HUD
-       chips — this is exactly what makes the outer wheel's readout
-       climb above the inner wheel's in a turn. */
     hudTyreSpeedL = omegaL * WHEEL_R;
     hudTyreSpeedR = omegaR * WHEEL_R;
 
     const yawRate = v * tanRoad / WHEELBASE;
     vehicleHeading += yawRate * dt;
 
-    /* ── BOUNDARY CLAMP ─────────────────────────────────── */
     const dx = v * Math.sin(vehicleHeading) * dt;
     const dz = v * Math.cos(vehicleHeading) * dt;
     const newX = vehiclePos.x + dx;
     const newZ = vehiclePos.z + dz;
 
-    /* Clamp so the vehicle origin stays within CLAMP_HALF of the boundary */
     let clampedX = newX;
     let clampedZ = newZ;
-    let hitBoundary = false;
 
-    if (clampedX >  CLAMP_HALF) { clampedX =  CLAMP_HALF; hitBoundary = true; }
-    if (clampedX < -CLAMP_HALF) { clampedX = -CLAMP_HALF; hitBoundary = true; }
-    if (clampedZ >  CLAMP_HALF) { clampedZ =  CLAMP_HALF; hitBoundary = true; }
-    if (clampedZ < -CLAMP_HALF) { clampedZ = -CLAMP_HALF; hitBoundary = true; }
+    if (clampedX >  CLAMP_HALF) { clampedX =  CLAMP_HALF; }
+    if (clampedX < -CLAMP_HALF) { clampedX = -CLAMP_HALF; }
+    if (clampedZ >  CLAMP_HALF) { clampedZ =  CLAMP_HALF; }
+    if (clampedZ < -CLAMP_HALF) { clampedZ = -CLAMP_HALF; }
 
     vehiclePos.x = clampedX;
     vehiclePos.z = clampedZ;
@@ -1366,7 +1665,6 @@
     vehicleGroup.position.copy(vehiclePos);
     vehicleGroup.rotation.y = vehicleHeading;
 
-    /* Phase accumulation */
     phCarrier += dt * omega_c;
     phSideL   += dt * (omegaL - omega_c);
     phSideR   += dt * (omegaR - omega_c);
@@ -1391,17 +1689,9 @@
       frontPivotL.rotation.y = 0;
       frontPivotR.rotation.y = 0;
     } else if (roadAngle < 0) {
-      /* roadAngle < 0 => yawRate < 0 => heading swings toward -X => a LEFT
-         turn, whose center of curvature is on the vehicle's left (-X) side.
-         The LEFT wheel is therefore the inside wheel and must take the
-         larger (inner) Ackermann angle; the right wheel takes the smaller
-         (outer) angle. (Verified: the previous code had this swapped —
-         it gave the inner angle to the right wheel in a left turn.) */
       frontPivotL.rotation.y = -ack.inner;
       frontPivotR.rotation.y = -ack.outer;
     } else {
-      /* roadAngle > 0 => RIGHT turn, center of curvature on the right
-         (+X) side => the RIGHT wheel is inside and takes the larger angle. */
       frontPivotR.rotation.y =  ack.inner;
       frontPivotL.rotation.y =  ack.outer;
     }
@@ -1409,7 +1699,6 @@
     frontWheelR.rotation.x = phFrontWheels;
     tieRod.rotation.z = Math.PI / 2 + roadAngle * 0.4;
 
-    /* Trails */
     const cosH = Math.cos(vehicleHeading), sinH = Math.sin(vehicleHeading);
     function l2w(lx, lz) {
       _l2w_scratch.x = vehiclePos.x + lx * cosH + lz * sinH;
@@ -1435,7 +1724,6 @@
     trailRearL.commit();  trailRearR.commit();
     trailFrontL.commit(); trailFrontR.commit();
 
-    /* Readouts */
     const rL = omegaL / omega_c, rR = omegaR / omega_c;
     const elLeft = document.getElementById('diff-left-val');
     const elRight = document.getElementById('diff-right-val');
@@ -1446,12 +1734,6 @@
     if (elFillL) elFillL.style.width  = Math.max(2, Math.min(100, rL*50)) + '%';
     if (elFillR) elFillR.style.width = Math.max(2, Math.min(100, rR*50)) + '%';
 
-    /* rpmBase: previously "900 * (omega_c/2.2/0.85) * 2.2" — the /2.2 and
-       trailing *2.2 don't cancel with anything else in between, they just
-       reintroduce the 2.2 factor, so this read 1980 rpm at the default
-       Speed setting instead of the intended ~900 (confirmed numerically).
-       omega_c/2.2 is exactly state.speedMul by construction, so simplify
-       directly off that. */
     const rpmBase = 900 * (state.speedMul / 0.85);
     const rpmL = (omegaL / omega_c) * rpmBase;
     const rpmR = (omegaR / omega_c) * rpmBase;
@@ -1465,9 +1747,6 @@
       rpmREl.textContent = Math.round(rpmR) + (slip && tractionMode === 'right' ? ' ⚠' : '');
       rpmREl.classList.toggle('warn', slip && tractionMode === 'right');
     }
-    /* The generic Speed-slider readout (shared markup with the other
-       modules) was never wired up in this file at all — it sat frozen at
-       its initial "~900 rpm" regardless of the slider. */
     const rpmLabelEl = document.getElementById('rpm-label');
     if (rpmLabelEl) rpmLabelEl.textContent = `~${Math.round(rpmBase)} rpm`;
 
@@ -1536,12 +1815,11 @@
     camera.lookAt(camera.userData.lookAt);
   }
 
-  /* Render loop */
   const clock = new THREE.Clock();
   let frame = 0;
 
   /* ═══════════════════════════════════════════════════════════
-     ALWAYS-ON TYRE SPEED HUD (independent of the Labels toggle)
+     ALWAYS-ON TYRE SPEED HUD
      ═══════════════════════════════════════════════════════════ */
   const tyreDimSvg  = document.getElementById('tyre-dim-svg');
   const tyreChipL   = document.getElementById('tyre-speed-left');
@@ -1625,7 +1903,7 @@
 
   try {
     if (bridge && typeof bridge.setStatus === 'function') {
-      bridge.setStatus('Differential', '#f59e0b');
+      bridge.setStatus('Differential', '#38bdf8');
     }
   } catch (_) {}
 
