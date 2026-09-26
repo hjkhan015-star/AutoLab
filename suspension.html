@@ -149,7 +149,64 @@
     body.embedded #edu-panel #panel-body{display:block}
     body.embedded #panel-head::after{display:none}
   }
-  body.embedded #road-info{bottom:calc(var(--shell-pill-h) + 16px)}
+
+  /* ═══════════════════════════════════════════════════════════
+     EMBEDDED MODE OVERRIDES — Fix overlap and polish UI
+     ═══════════════════════════════════════════════════════════ */
+  body.embedded #module-controls {
+    position: absolute !important;
+    bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px 12px !important;
+    padding: 6px 12px !important;
+    background: rgba(20, 26, 38, 0.88) !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    border-radius: 16px !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45) !important;
+    z-index: 20 !important;
+    max-width: calc(100vw - 24px) !important;
+    flex-wrap: wrap !important;
+  }
+
+  body.embedded #road-info {
+    position: absolute !important;
+    bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 20 !important;
+    white-space: nowrap !important;
+    background: rgba(20, 26, 38, 0.88) !important;
+    border: 1px solid rgba(148, 163, 184, 0.2) !important;
+    border-radius: 10px !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+    padding: 6px 14px !important;
+    font-size: 11px !important;
+  }
+
+  /* Hide non-essential elements in embedded mode to save space */
+  body.embedded #module-controls #btn-play,
+  body.embedded #module-controls #btn-reset,
+  body.embedded #module-controls .slider-group,
+  body.embedded #module-controls #chk-labels,
+  body.embedded #module-controls #chk-gas {
+    display: none !important;
+  }
+
+  /* Make the SUSP button more prominent and touch-friendly */
+  body.embedded #btn-susp-toggle {
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    border-radius: 10px !important;
+    min-height: 44px !important;
+  }
 </style>
 </head>
 <body>
